@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pacman Odyssey Web</title>
+  <style>
+    :root {
+      --bg: #070914;
+      --panel: rgba(15, 22, 42, 0.86);
+      --panel-strong: rgba(21, 31, 58, 0.96);
+      --line: rgba(116, 224, 255, 0.28);
+      --text: #f4f7ff;
+      --muted: #9fb1ca;
+      --yellow: #ffe15a;
+      --cyan: #44e7ff;
+      --green: #45e080;
+      --red: #ff596f;
+      --purple: #b06cff;
+      --orange: #ff9f48;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(68, 231, 255, 0.2), transparent 26rem),
+        radial-gradient(circle at 82% 20%, rgba(255, 159, 72, 0.14), transparent 24rem),
+        radial-gradient(circle at 58% 90%, rgba(176, 108, 255, 0.16), transparent 28rem),
+        linear-gradient(150deg, #070914, #10182c 55%, #070914);
+      overflow-x: hidden;
+    }
+
+    button { font: inherit; }
+
+    .app {
+      width: min(1180px, calc(100vw - 20px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 14px 0 18px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 1;
+      letter-spacing: 0;
+      color: var(--yellow);
+      text-shadow: 0 0 18px rgba(255, 225, 90, 0.28);
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hud,
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .chip,
+    .tool {
+      min-height: 36px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      white-space: nowrap;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .tool {
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .tool:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 225, 90, 0.75);
+      background: rgba(27, 39, 72, 0.96);
+    }
+
+    .stage {
+      position: relative;
+      min-height: 560px;
+      border: 1px solid rgba(116, 224, 255, 0.24);
+      border-radius: 10px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        rgba(4, 7, 17, 0.74);
+      background-size: 32px 32px;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+    }
+
+    canvas {
+      width: 100%;
+      height: min(72vh, 680px);
+      min-height: 540px;
+      display: block;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(7, 9, 20, 0.82), rgba(7, 9, 20, 0.62));
+    }
+
+    .modal {
+      width: min(720px, 100%);
+      padding: 24px;
+      border: 1px solid rgba(68, 231, 255, 0.38);
+      border-radius: 10px;
+      background: rgba(10, 15, 30, 0.94);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+    }
+
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 5vw, 58px);
+      color: var(--yellow);
+      line-height: 1;
+    }
+
+    .modal p {
+      margin: 8px 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary {
+      min-width: 150px;
+      min-height: 44px;
+      border: 1px solid rgba(255, 225, 90, 0.75);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255, 225, 90, 0.26), rgba(255, 159, 72, 0.18));
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .secondary {
+      min-width: 130px;
+      min-height: 44px;
+      border: 1px solid rgba(68, 231, 255, 0.55);
+      border-radius: 8px;
+      background: rgba(18, 28, 52, 0.9);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 2px;
+    }
+
+    .touch {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: none;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .dpad,
+    .skillpad {
+      display: grid;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .dpad {
+      grid-template-columns: 48px 48px 48px;
+      grid-template-rows: 48px 48px 48px;
+    }
+
+    .touch button {
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 8px;
+      background: rgba(12, 18, 34, 0.76);
+      color: var(--text);
+      min-width: 48px;
+      min-height: 48px;
+    }
+
+    .up { grid-column: 2; grid-row: 1; }
+    .left { grid-column: 1; grid-row: 2; }
+    .right { grid-column: 3; grid-row: 2; }
+    .down { grid-column: 2; grid-row: 3; }
+
+    .skillpad {
+      align-content: end;
+    }
+
+    .skillpad button {
+      min-width: 92px;
+      min-height: 52px;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 760px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+      .hud,
+      .toolbar {
+        justify-content: flex-start;
+      }
+      canvas {
+        min-height: 500px;
+        height: 68vh;
+      }
+      .touch {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Pacman Odyssey Web</h1>
+        <p>浏览器版霓虹远征：吃豆、冲刺、传送门、水晶门、核心与追猎者。</p>
+      </div>
+      <div class="hud" aria-live="polite">
+        <div class="chip" id="score">Score 0</div>
+        <div class="chip" id="lives">Lives 3</div>
+        <div class="chip" id="level">Level 1</div>
+        <div class="chip" id="objective">Objective</div>
+      </div>
+    </header>
+
+    <nav class="toolbar">
+      <button class="tool" id="restartBtn">重新开始</button>
+      <button class="tool" id="pauseBtn">暂停</button>
+      <button class="tool" id="soundBtn">声音：开</button>
+      <button class="tool" id="guideBtn">说明</button>
+    </nav>
+
+    <section class="stage">
+      <canvas id="game" width="960" height="640"></canvas>
+      <div class="overlay" id="overlay">
+        <div class="modal">
+          <h2 id="overlayTitle">Pacman Odyssey</h2>
+          <p id="overlayText">用方向键或 WASD 移动，空格冲刺。每关目标不同，不只是吃完豆豆。</p>
+          <div class="actions">
+            <button class="primary" id="startBtn">开始游戏</button>
+            <button class="secondary" id="levelBtn">切换关卡</button>
+          </div>
+        </div>
+      </div>
+      <div class="touch" aria-label="touch controls">
+        <div class="dpad">
+          <button class="up" data-dir="up">↑</button>
+          <button class="left" data-dir="left">←</button>
+          <button class="right" data-dir="right">→</button>
+          <button class="down" data-dir="down">↓</button>
+        </div>
+        <div class="skillpad">
+          <button data-action="dash">冲刺</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>键盘：方向键 / WASD 移动，Space 冲刺，Esc 暂停。</span>
+      <span>这个版本是纯 HTML + Canvas，直接打开或上传到静态网站即可分享。</span>
+    </footer>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlayTitle');
+    const overlayText = document.getElementById('overlayText');
+    const scoreEl = document.getElementById('score');
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
+    const objectiveEl = document.getElementById('objective');
+    const soundBtn = document.getElementById('soundBtn');
+
+    const TILE = 28;
+    const GRID_W = 25;
+    const GRID_H = 17;
+    const BOARD_X = 40;
+    const BOARD_Y = 82;
+    const BOARD_W = GRID_W * TILE;
+    const BOARD_H = GRID_H * TILE;
+
+    const COLORS = {
+      bg: '#070914',
+      wall: '#2365d6',
+      wallGlow: '#44e7ff',
+      text: '#f4f7ff',
+      muted: '#9fb1ca',
+      yellow: '#ffe15a',
+      cyan: '#44e7ff',
+      green: '#45e080',
+      red: '#ff596f',
+      pink: '#ff65c4',
+      purple: '#b06cff',
+      orange: '#ff9f48',
+      blue: '#76a8ff'
+    };
+
+    const DIRS = {
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 },
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 }
+    };
+
+    let audioCtx = null;
+    let soundOn = true;
+
+    function playTone(freq, duration = 0.06, type = 'sine', gain = 0.05) {
+      if (!soundOn) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        g.gain.value = gain;
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start();
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (_) {}
+    }
+
+    function rectCells(x1, y1, x2, y2) {
+      const out = [];
+      for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) out.push(`${x},${y}`);
+      return out;
+    }
+
+    const LEVELS = [
+      {
+        name: '01 Neon Pantry',
+        objective: '吃完所有光豆',
+        start: [12, 13],
+        ghosts: [[12, 7, 'chase'], [11, 7, 'ambush'], [13, 7, 'wander']],
+        blocks: [
+          ...rectCells(3, 3, 6, 3), ...rectCells(18, 3, 21, 3),
+          ...rectCells(3, 13, 6, 13), ...rectCells(18, 13, 21, 13),
+          ...rectCells(5, 5, 5, 11), ...rectCells(19, 5, 19, 11),
+          ...rectCells(9, 5, 15, 5), ...rectCells(9, 11, 15, 11),
+          ...rectCells(11, 7, 13, 9), '12,6', '12,10'
+        ],
+        pellets: ['2,2', '22,2', '2,14', '22,14'],
+        shields: ['12,2'],
+        win: 'dots'
+      },
+      {
+        name: '02 Crystal Gate',
+        objective: '收集3个水晶后进入绿门',
+        start: [2, 14],
+        ghosts: [[12, 8, 'chase'], [20, 2, 'sentinel'], [21, 13, 'ambush'], [4, 3, 'wander']],
+        blocks: [
+          ...rectCells(4, 2, 4, 8), ...rectCells(20, 8, 20, 14),
+          ...rectCells(7, 4, 17, 4), ...rectCells(7, 12, 17, 12),
+          ...rectCells(8, 7, 10, 9), ...rectCells(14, 7, 16, 9),
+          ...rectCells(12, 2, 12, 6), ...rectCells(12, 10, 12, 14)
+        ],
+        pellets: ['2,2', '22,14'],
+        crystals: ['22,2', '12,8', '3,12'],
+        shields: ['7,14'],
+        portals: [['1,8', '23,8'], ['12,1', '12,15']],
+        gate: '22,8',
+        win: 'crystal'
+      },
+      {
+        name: '03 Reactor Heist',
+        objective: '偷走4个核心并撤离',
+        start: [12, 15],
+        ghosts: [[12, 2, 'warden'], [3, 8, 'chase'], [21, 8, 'ambush'], [12, 8, 'sentinel']],
+        blocks: [
+          ...rectCells(2, 4, 8, 4), ...rectCells(16, 4, 22, 4),
+          ...rectCells(2, 12, 8, 12), ...rectCells(16, 12, 22, 12),
+          ...rectCells(6, 6, 6, 10), ...rectCells(18, 6, 18, 10),
+          ...rectCells(10, 6, 14, 6), ...rectCells(10, 10, 14, 10), '12,7', '12,9'
+        ],
+        pellets: ['1,1', '23,1', '1,15', '23,15'],
+        cores: ['3,2', '21,2', '3,14', '21,14'],
+        shields: ['12,8', '12,1'],
+        traps: ['8,8', '9,8', '15,8', '16,8', '12,4', '12,12'],
+        portals: [['1,8', '23,8']],
+        gate: '12,1',
+        win: 'cores'
+      }
+    ];
+
+    function key(cell) { return `${cell.x},${cell.y}`; }
+    function parseKey(k) { const [x, y] = k.split(',').map(Number); return { x, y }; }
+    function center(cell) { return { x: BOARD_X + cell.x * TILE + TILE / 2, y: BOARD_Y + cell.y * TILE + TILE / 2 }; }
+    function worldToCell(pos) { return { x: Math.floor((pos.x - BOARD_X) / TILE), y: Math.floor((pos.y - BOARD_Y) / TILE) }; }
+    function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    class Maze {
+      constructor(level) {
+        this.level = level;
+        this.walls = new Set();
+        this.dots = new Set();
+        this.pellets = new Set(level.pellets || []);
+        this.crystals = new Set(level.crystals || []);
+        this.cores = new Set(level.cores || []);
+        this.shields = new Set(level.shields || []);
+        this.traps = new Set(level.traps || []);
+        this.portals = level.portals || [];
+        this.gate = level.gate || null;
+        this.build();
+      }
+      build() {
+        for (let x = 0; x < GRID_W; x++) {
+          this.walls.add(`${x},0`);
+          this.walls.add(`${x},${GRID_H - 1}`);
+        }
+        for (let y = 0; y < GRID_H; y++) {
+          this.walls.add(`0,${y}`);
+          this.walls.add(`${GRID_W - 1},${y}`);
+        }
+        for (const b of this.level.blocks) this.walls.add(b);
+        const blocked = new Set([...this.walls, ...this.pellets, ...this.crystals, ...this.cores, ...this.shields, ...this.traps]);
+        if (this.gate) blocked.add(this.gate);
+        for (const pair of this.portals) pair.forEach(p => blocked.add(p));
+        blocked.add(`${this.level.start[0]},${this.level.start[1]}`);
+        this.level.ghosts.forEach(g => blocked.add(`${g[0]},${g[1]}`));
+        for (let y = 1; y < GRID_H - 1; y++) {
+          for (let x = 1; x < GRID_W - 1; x++) {
+            const k = `${x},${y}`;
+            if (!blocked.has(k) && (x + y) % 2 === 0) this.dots.add(k);
+          }
+        }
+        this.totalDots = this.dots.size;
+      }
+      isWall(cell) {
+        if (cell.x < 0 || cell.y < 0 || cell.x >= GRID_W || cell.y >= GRID_H) return true;
+        return this.walls.has(key(cell));
+      }
+      canMove(pos, radius = 10) {
+        const points = [
+          { x: pos.x - radius, y: pos.y - radius },
+          { x: pos.x + radius, y: pos.y - radius },
+          { x: pos.x - radius, y: pos.y + radius },
+          { x: pos.x + radius, y: pos.y + radius }
+        ];
+        return points.every(p => !this.isWall(worldToCell(p)));
+      }
+      openDirs(cell) {
+        return Object.values(DIRS).filter(d => !this.isWall({ x: cell.x + d.x, y: cell.y + d.y }));
+      }
+      portalDest(k) {
+        for (const [a, b] of this.portals) {
+          if (k === a) return b;
+          if (k === b) return a;
+        }
+        return null;
+      }
+      gateOpen() {
+        if (game.level.win === 'crystal') return this.crystals.size === 0;
+        if (game.level.win === 'cores') return this.cores.size === 0;
+        return true;
+      }
+      dotProgress() {
+        if (!this.totalDots) return 1;
+        return (this.totalDots - this.dots.size) / this.totalDots;
+      }
+    }
+
+    class Player {
+      constructor(start) {
+        this.pos = center({ x: start[0], y: start[1] });
+        this.dir = { x: 0, y: 0 };
+        this.next = { x: 0, y: 0 };
+        this.radius = 11;
+        this.speed = 150;
+        this.dash = 0;
+        this.cooldown = 0;
+        this.power = 0;
+        this.shield = 0;
+        this.mouth = 0;
+      }
+      queue(d) { this.next = { ...d }; }
+      triggerDash() {
+        if (this.cooldown <= 0 && (this.dir.x || this.dir.y)) {
+          this.dash = 0.18;
+          this.cooldown = 2.1;
+          playTone(1100, 0.05, 'square', 0.035);
+        }
+      }
+      update(dt, maze) {
+        this.power = Math.max(0, this.power - dt);
+        this.dash = Math.max(0, this.dash - dt);
+        this.cooldown = Math.max(0, this.cooldown - dt);
+        const cell = worldToCell(this.pos);
+        const c = center(cell);
+        const near = dist(this.pos, c) < 5;
+        if (near && (this.next.x || this.next.y)) {
+          const test = { x: this.pos.x + this.next.x * 8, y: this.pos.y + this.next.y * 8 };
+          if (maze.canMove(test, this.radius)) {
+            this.dir = { ...this.next };
+            this.pos = c;
+          }
+        }
+        const speed = this.speed * (this.dash > 0 ? 3 : 1);
+        const nextPos = { x: this.pos.x + this.dir.x * speed * dt, y: this.pos.y + this.dir.y * speed * dt };
+        if (maze.canMove(nextPos, this.radius)) this.pos = nextPos;
+        else {
+          this.pos = c;
+          this.dir = { x: 0, y: 0 };
+        }
+        this.mouth += dt * 10;
+      }
+    }
+
+    class Ghost {
+      constructor(x, y, type) {
+        this.spawn = [x, y];
+        this.pos = center({ x, y });
+        this.type = type;
+        this.radius = type === 'warden' ? 15 : 12;
+        this.speed = type === 'warden' ? 92 : 112;
+        this.dir = { ...Object.values(DIRS)[Math.floor(Math.random() * 4)] };
+        this.decide = 0;
+        this.respawn = 0;
+      }
+      reset() {
+        this.pos = center({ x: this.spawn[0], y: this.spawn[1] });
+        this.respawn = 1.0;
+      }
+      target(player) {
+        const p = worldToCell(player.pos);
+        if (this.type === 'ambush') return { x: p.x + player.dir.x * 4, y: p.y + player.dir.y * 4 };
+        if (this.type === 'wander') return [{x:1,y:1},{x:23,y:1},{x:1,y:15},{x:23,y:15}][Math.floor(Math.random()*4)];
+        if (this.type === 'sentinel') return { x: 12, y: 8 };
+        return p;
+      }
+      update(dt, maze, player, boost) {
+        if (this.respawn > 0) { this.respawn -= dt; return; }
+        this.decide -= dt;
+        const cell = worldToCell(this.pos);
+        const c = center(cell);
+        if (dist(this.pos, c) < 5 && this.decide <= 0) {
+          let opts = maze.openDirs(cell);
+          if (opts.length > 1) opts = opts.filter(d => !(d.x === -this.dir.x && d.y === -this.dir.y));
+          let target = this.target(player);
+          if (player.power > 0) target = { x: cell.x * 2 - target.x, y: cell.y * 2 - target.y };
+          opts.sort((a, b) => {
+            const aa = Math.abs(cell.x + a.x - target.x) + Math.abs(cell.y + a.y - target.y) + Math.random() * 0.7;
+            const bb = Math.abs(cell.x + b.x - target.x) + Math.abs(cell.y + b.y - target.y) + Math.random() * 0.7;
+            return aa - bb;
+          });
+          if (opts[0]) {
+            this.dir = { ...opts[0] };
+            this.pos = c;
+          }
+          this.decide = this.type === 'warden' ? 0.22 : 0.12;
+        }
+        const speed = this.speed * boost * (player.power > 0 ? 0.72 : 1);
+        const next = { x: this.pos.x + this.dir.x * speed * dt, y: this.pos.y + this.dir.y * speed * dt };
+        if (maze.canMove(next, this.radius)) this.pos = next;
+        else this.dir = { x: -this.dir.x, y: -this.dir.y };
+      }
+    }
+
+    const game = {
+      state: 'menu',
+      levelIndex: 0,
+      level: LEVELS[0],
+      maze: null,
+      player: null,
+      ghosts: [],
+      score: 0,
+      lives: 3,
+      combo: 0,
+      message: '',
+      messageTime: 0,
+      time: 0,
+      last: 0
+    };
+
+    function start(levelIndex = game.levelIndex, resetScore = true) {
+      game.levelIndex = levelIndex % LEVELS.length;
+      game.level = LEVELS[game.levelIndex];
+      game.maze = new Maze(game.level);
+      game.player = new Player(game.level.start);
+      game.ghosts = game.level.ghosts.map(g => new Ghost(g[0], g[1], g[2]));
+      game.state = 'playing';
+      game.time = 0;
+      game.combo = 0;
+      game.message = game.level.objective;
+      game.messageTime = 3;
+      if (resetScore) {
+        game.score = 0;
+        game.lives = 3;
+      }
+      overlay.classList.add('hidden');
+      playTone(520, 0.08, 'triangle');
+      updateHud();
+    }
+
+    function loseLife() {
+      if (game.player.shield > 0) {
+        game.player.shield = 0;
+        game.player.dash = 0.25;
+        game.message = '护盾挡下一次伤害';
+        game.messageTime = 1.5;
+        playTone(720, 0.09, 'triangle');
+        return;
+      }
+      game.lives--;
+      game.combo = 0;
+      playTone(160, 0.18, 'sawtooth', 0.055);
+      if (game.lives <= 0) {
+        game.state = 'gameover';
+        showOverlay('远征失败', `最终分数：${game.score}。点击重新开始。`, '重新开始');
+        return;
+      }
+      game.player = new Player(game.level.start);
+      game.ghosts.forEach(g => g.reset());
+      game.message = `损失生命，还剩 ${game.lives}`;
+      game.messageTime = 2;
+    }
+
+    function addScore(n) {
+      game.score += n;
+      updateHud();
+    }
+
+    function update(dt) {
+      if (game.state !== 'playing') return;
+      game.time += dt;
+      game.messageTime = Math.max(0, game.messageTime - dt);
+      game.player.update(dt, game.maze);
+      const cell = worldToCell(game.player.pos);
+      const k = key(cell);
+
+      if (game.maze.dots.delete(k)) {
+        game.combo = Math.min(20, game.combo + 1);
+        addScore(10 + game.combo);
+        playTone(760, 0.035, 'square', 0.025);
+      }
+      if (game.maze.pellets.delete(k)) {
+        game.player.power = 7;
+        game.combo = 0;
+        addScore(80);
+        game.message = '能量模式：反击幽灵';
+        game.messageTime = 2;
+        playTone(980, 0.09, 'triangle');
+      }
+      if (game.maze.crystals.delete(k)) {
+        addScore(350);
+        game.message = '水晶到手';
+        game.messageTime = 1.5;
+        playTone(620, 0.1, 'triangle');
+      }
+      if (game.maze.cores.delete(k)) {
+        addScore(450);
+        game.message = '核心回收，追猎升级';
+        game.messageTime = 1.7;
+        playTone(460, 0.1, 'square');
+      }
+      if (game.maze.shields.delete(k)) {
+        game.player.shield = 1;
+        addScore(120);
+        game.message = '获得护盾';
+        game.messageTime = 1.5;
+        playTone(700, 0.09, 'sine');
+      }
+      if (game.maze.traps.has(k) && game.player.dash <= 0) loseLife();
+
+      const dest = game.maze.portalDest(k);
+      if (dest && dist(game.player.pos, center(cell)) < 6) {
+        game.player.pos = center(parseKey(dest));
+        game.player.dash = Math.max(game.player.dash, 0.12);
+        playTone(1180, 0.08, 'sine', 0.035);
+      }
+
+      const boost = 1 + Math.min(0.38, game.time / 230);
+      game.ghosts.forEach(ghost => {
+        ghost.update(dt, game.maze, game.player, boost);
+        if (ghost.respawn <= 0 && dist(ghost.pos, game.player.pos) < ghost.radius + game.player.radius - 2) {
+          if (game.player.power > 0) {
+            game.combo++;
+            addScore(200 * game.combo);
+            ghost.reset();
+            playTone(420 + game.combo * 70, 0.08, 'triangle');
+          } else if (game.player.dash <= 0) {
+            loseLife();
+          }
+        }
+      });
+
+      checkWin(cell);
+      updateHud();
+    }
+
+    function checkWin(cell) {
+      let won = false;
+      if (game.level.win === 'dots') won = game.maze.dots.size === 0;
+      if (game.level.win === 'crystal') won = game.maze.gate === key(cell) && game.maze.gateOpen();
+      if (game.level.win === 'cores') won = game.maze.gate === key(cell) && game.maze.gateOpen();
+      if (!won) return;
+      addScore(1000 + Math.max(0, Math.floor(2600 - game.time * 8)));
+      playTone(1040, 0.16, 'triangle', 0.06);
+      if (game.levelIndex < LEVELS.length - 1) {
+        start(game.levelIndex + 1, false);
+      } else {
+        game.state = 'win';
+        showOverlay('远征完成', `最终分数：${game.score}。你把浏览器版也打通了。`, '再来一局');
+      }
+    }
+
+    function updateHud() {
+      scoreEl.textContent = `Score ${game.score}`;
+      livesEl.textContent = `Lives ${game.lives}`;
+      levelEl.textContent = game.level ? game.level.name : 'Level 1';
+      objectiveEl.textContent = game.level ? game.level.objective : 'Objective';
+    }
+
+    function showOverlay(title, text, button = '开始游戏') {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      document.getElementById('startBtn').textContent = button;
+      overlay.classList.remove('hidden');
+    }
+
+    function drawRoundedRect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      g.addColorStop(0, '#090d1d');
+      g.addColorStop(1, '#050711');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = 'rgba(68,231,255,0.08)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 32) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 90, canvas.height); ctx.stroke();
+      }
+      for (let y = 34; y < canvas.height; y += 42) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      if (!game.maze) return;
+      drawBoard();
+      drawPlayer();
+      drawHudInCanvas();
+    }
+
+    function drawBoard() {
+      drawRoundedRect(BOARD_X - 8, BOARD_Y - 8, BOARD_W + 16, BOARD_H + 16, 12, '#070b18', 'rgba(68,231,255,0.32)');
+      const maze = game.maze;
+      maze.walls.forEach(k => {
+        const c = parseKey(k);
+        const x = BOARD_X + c.x * TILE + 2;
+        const y = BOARD_Y + c.y * TILE + 2;
+        drawRoundedRect(x, y, TILE - 4, TILE - 4, 6, COLORS.wall, COLORS.wallGlow);
+      });
+      maze.dots.forEach(k => {
+        const p = center(parseKey(k));
+        ctx.fillStyle = '#ffeab0';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+      });
+      maze.pellets.forEach(k => drawCircle(center(parseKey(k)), 8 + Math.sin(performance.now() / 140) * 2, COLORS.text, COLORS.cyan));
+      maze.crystals.forEach(k => drawDiamond(center(parseKey(k)), 13, COLORS.cyan));
+      maze.cores.forEach(k => {
+        const p = center(parseKey(k));
+        drawCircle(p, 12, COLORS.orange, COLORS.yellow);
+        drawCircle(p, 5, COLORS.yellow);
+      });
+      maze.shields.forEach(k => drawCircle(center(parseKey(k)), 11, 'transparent', COLORS.green, 3));
+      maze.traps.forEach(k => {
+        const p = center(parseKey(k));
+        ctx.fillStyle = COLORS.red;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 10, p.y + 10);
+        ctx.lineTo(p.x, p.y - 12 + Math.sin(performance.now() / 130) * 3);
+        ctx.lineTo(p.x + 10, p.y + 10);
+        ctx.closePath();
+        ctx.fill();
+      });
+      maze.portals.forEach(([a, b]) => {
+        drawPortal(center(parseKey(a)), COLORS.purple);
+        drawPortal(center(parseKey(b)), COLORS.cyan);
+      });
+      if (maze.gate) {
+        const p = center(parseKey(maze.gate));
+        const open = maze.gateOpen();
+        drawRoundedRect(p.x - 12, p.y - 16, 24, 32, 6, open ? COLORS.green : COLORS.red, COLORS.text);
+        if (!open) {
+          ctx.strokeStyle = COLORS.text; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(p.x - 9, p.y - 10); ctx.lineTo(p.x + 9, p.y + 10); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(p.x + 9, p.y - 10); ctx.lineTo(p.x - 9, p.y + 10); ctx.stroke();
+        }
+      }
+      game.ghosts.forEach(drawGhost);
+    }
+
+    function drawCircle(p, r, fill, stroke, width = 1) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      if (fill !== 'transparent') { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.stroke(); }
+    }
+
+    function drawDiamond(p, r, color) {
+      ctx.fillStyle = color;
+      ctx.strokeStyle = COLORS.text;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - r);
+      ctx.lineTo(p.x + r, p.y);
+      ctx.lineTo(p.x, p.y + r);
+      ctx.lineTo(p.x - r, p.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawPortal(p, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = COLORS.text;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    function ghostColor(type) {
+      return { chase: COLORS.red, ambush: COLORS.pink, wander: COLORS.orange, sentinel: COLORS.purple, warden: COLORS.blue }[type] || COLORS.red;
+    }
+
+    function drawGhost(ghost) {
+      const p = ghost.pos;
+      const frightened = game.player.power > 0;
+      const color = frightened ? COLORS.blue : ghostColor(ghost.type);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - 5, ghost.radius, Math.PI, 0);
+      ctx.lineTo(p.x + ghost.radius, p.y + 10);
+      ctx.lineTo(p.x - ghost.radius, p.y + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = COLORS.text;
+      ctx.beginPath(); ctx.arc(p.x - 5, p.y - 5, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x + 5, p.y - 5, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = COLORS.bg;
+      ctx.beginPath(); ctx.arc(p.x - 5, p.y - 5, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x + 5, p.y - 5, 1.8, 0, Math.PI * 2); ctx.fill();
+      if (ghost.type === 'warden') drawCircle(p, ghost.radius + 4, 'transparent', COLORS.text, 2);
+    }
+
+    function drawPlayer() {
+      const p = game.player.pos;
+      const dir = game.player.dir;
+      let angle = 0;
+      if (dir.x < 0) angle = Math.PI;
+      if (dir.y < 0) angle = -Math.PI / 2;
+      if (dir.y > 0) angle = Math.PI / 2;
+      const mouth = Math.abs(Math.sin(game.player.mouth)) * 0.55 + 0.12;
+      ctx.fillStyle = game.player.dash > 0 ? COLORS.text : COLORS.yellow;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, game.player.radius, angle + mouth, angle + Math.PI * 2 - mouth);
+      ctx.closePath();
+      ctx.fill();
+      if (game.player.shield > 0) drawCircle(p, game.player.radius + 7, 'transparent', COLORS.green, 2);
+      if (game.player.power > 0) drawCircle(p, game.player.radius + 11, 'transparent', COLORS.cyan, 1);
+    }
+
+    function drawHudInCanvas() {
+      ctx.font = '20px Microsoft YaHei, sans-serif';
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText(game.level.name, 42, 40);
+      ctx.fillStyle = COLORS.muted;
+      const dash = game.player.cooldown <= 0 ? 'READY' : game.player.cooldown.toFixed(1);
+      ctx.fillText(`Dash ${dash}`, 650, 40);
+      if (game.player.power > 0) ctx.fillText(`Power ${game.player.power.toFixed(1)}s`, 770, 40);
+      if (game.messageTime > 0) {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = COLORS.yellow;
+        ctx.fillText(game.message, canvas.width / 2, 610);
+        ctx.textAlign = 'left';
+      }
+    }
+
+    function loop(t) {
+      const dt = Math.min(0.033, (t - game.last) / 1000 || 0);
+      game.last = t;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function togglePause() {
+      if (game.state === 'playing') {
+        game.state = 'paused';
+        showOverlay('已暂停', '点击继续，或重新开始。', '继续');
+      } else if (game.state === 'paused') {
+        game.state = 'playing';
+        overlay.classList.add('hidden');
+      }
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      if (game.state === 'paused') {
+        game.state = 'playing';
+        overlay.classList.add('hidden');
+      } else {
+        start(game.levelIndex, true);
+      }
+    });
+
+    document.getElementById('levelBtn').addEventListener('click', () => {
+      game.levelIndex = (game.levelIndex + 1) % LEVELS.length;
+      game.level = LEVELS[game.levelIndex];
+      showOverlay(game.level.name, game.level.objective, '开始这一关');
+      updateHud();
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', () => start(game.levelIndex, true));
+    document.getElementById('pauseBtn').addEventListener('click', togglePause);
+    document.getElementById('guideBtn').addEventListener('click', () => {
+      game.state = 'guide';
+      showOverlay('玩法说明', '方向键/WASD移动，Space冲刺。吃能量豆可反杀幽灵；护盾抵挡一次伤害；水晶/核心用于打开出口。这个网页版本可直接浏览器运行。', '开始游戏');
+    });
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      soundBtn.textContent = `声音：${soundOn ? '开' : '关'}`;
+    });
+
+    window.addEventListener('keydown', e => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) e.preventDefault();
+      const map = {
+        ArrowLeft: DIRS.left, a: DIRS.left, A: DIRS.left,
+        ArrowRight: DIRS.right, d: DIRS.right, D: DIRS.right,
+        ArrowUp: DIRS.up, w: DIRS.up, W: DIRS.up,
+        ArrowDown: DIRS.down, s: DIRS.down, S: DIRS.down
+      };
+      if (game.state === 'playing' && map[e.key]) game.player.queue(map[e.key]);
+      if (game.state === 'playing' && (e.key === ' ' || e.key === 'Spacebar')) game.player.triggerDash();
+      if (e.key === 'Escape') togglePause();
+      if (game.state !== 'playing' && e.key === 'Enter') start(game.levelIndex, true);
+    });
+
+    document.querySelectorAll('[data-dir]').forEach(btn => {
+      btn.addEventListener('pointerdown', () => {
+        if (game.state === 'playing') game.player.queue(DIRS[btn.dataset.dir]);
+      });
+    });
+    document.querySelector('[data-action="dash"]').addEventListener('pointerdown', () => {
+      if (game.state === 'playing') game.player.triggerDash();
+    });
+
+    updateHud();
+    showOverlay('Pacman Odyssey Web', '真正的枫叶学子游戏：不用安装 Python，不用打包，打开网页就能上课玩！', '开始游戏');
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

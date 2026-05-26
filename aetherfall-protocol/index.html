@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aetherfall Protocol</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <canvas id="game" aria-label="Aetherfall Protocol game canvas"></canvas>
+
+      <section class="hud top">
+        <div class="brand">
+          <span class="mark"></span>
+          <div>
+            <strong>Aetherfall Protocol</strong>
+            <small>高级能量防线模拟</small>
+          </div>
+        </div>
+        <div class="stat-line">
+          <span id="score">0</span>
+          <span id="wave">Wave 1</span>
+          <span id="timer">00:00</span>
+        </div>
+      </section>
+
+      <section class="hud bottom">
+        <div class="meters">
+          <label>
+            <span>Core</span>
+            <b><i id="healthBar"></i></b>
+          </label>
+          <label>
+            <span>Shield</span>
+            <b><i id="shieldBar"></i></b>
+          </label>
+          <label>
+            <span>Pulse</span>
+            <b><i id="pulseBar"></i></b>
+          </label>
+        </div>
+        <div class="skills">
+          <kbd>WASD</kbd><span>移动</span>
+          <kbd>鼠标</kbd><span>瞄准</span>
+          <kbd>Space</kbd><span>冲刺</span>
+          <kbd>E</kbd><span>脉冲</span>
+          <kbd>ESC</kbd><span>暂停</span>
+        </div>
+      </section>
+
+      <section id="overlay" class="overlay show">
+        <div class="panel">
+          <p class="eyebrow">vanguard arena / procedural waves</p>
+          <h1>Aetherfall Protocol</h1>
+          <p class="copy">
+            操控一台光轨核心，在坠落的以太裂隙中坚持到第 12 波。收集碎片升级武器、护盾和技能，击败最终监察者。
+          </p>
+          <div class="actions">
+            <button id="startButton" type="button">开始行动</button>
+            <button id="muteButton" class="secondary" type="button">音效开启</button>
+          </div>
+          <div class="records">
+            <span>最高分 <strong id="bestScore">0</strong></span>
+            <span>生存 <strong id="bestTime">00:00</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section id="pauseOverlay" class="pause-overlay" aria-live="polite">
+        <div class="pause-panel">
+          <p class="eyebrow">protocol suspended</p>
+          <h2>Paused</h2>
+          <div class="actions">
+            <button id="resumeButton" type="button">继续游戏</button>
+            <button id="restartButton" class="secondary" type="button">重新开始</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="upgradeOverlay" class="upgrade-overlay" aria-live="polite">
+        <div class="upgrade-head">
+          <span>核心同步完成</span>
+          <strong>选择一项升级</strong>
+        </div>
+        <div id="upgradeCards" class="upgrade-cards"></div>
+      </section>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
