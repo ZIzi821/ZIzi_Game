@@ -1,0 +1,31 @@
+﻿# Python caches
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Dependencies and generated web output
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# Packaging output
+build_temp/
+*.spec
+*.exe
+exe/
+
+# Temporary files
+.tmp/
+tmp/
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Local runtime state
+highscore.json
