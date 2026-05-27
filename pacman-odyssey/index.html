@@ -501,8 +501,8 @@
         return null;
       }
       gateOpen() {
-        if (game.level.win === 'crystal') return this.crystals.size === 0;
-        if (game.level.win === 'cores') return this.cores.size === 0;
+        if (this.level.win === 'crystal') return this.crystals.size === 0;
+        if (this.level.win === 'cores') return this.cores.size === 0;
         return true;
       }
       dotProgress() {
@@ -620,7 +620,8 @@
       message: '',
       messageTime: 0,
       time: 0,
-      last: 0
+      last: 0,
+      returnState: 'menu'
     };
 
     function start(levelIndex = game.levelIndex, resetScore = true) {
@@ -657,7 +658,7 @@
       playTone(160, 0.18, 'sawtooth', 0.055);
       if (game.lives <= 0) {
         game.state = 'gameover';
-        showOverlay('远征失败', `最终分数：${game.score}。点击重新开始。`, '重新开始');
+        showOverlay('挑战失败', `最终分数：${game.score}。点击重新开始。`, '重新开始', true);
         return;
       }
       game.player = new Player(game.level.start);
@@ -751,7 +752,7 @@
         start(game.levelIndex + 1, false);
       } else {
         game.state = 'win';
-        showOverlay('远征完成', `最终分数：${game.score}。你把浏览器版也打通了。`, '再来一局');
+        showOverlay('大口吃通关', `最终分数：${game.score}。你完成了全部迷宫挑战。`, '再来一局', true);
       }
     }
 
@@ -762,10 +763,11 @@
       objectiveEl.textContent = game.level ? game.level.objective : 'Objective';
     }
 
-    function showOverlay(title, text, button = '开始游戏') {
+    function showOverlay(title, text, button = '开始游戏', allowLevelSwitch = true) {
       overlayTitle.textContent = title;
       overlayText.textContent = text;
       document.getElementById('startBtn').textContent = button;
+      document.getElementById('levelBtn').classList.toggle('hidden', !allowLevelSwitch);
       overlay.classList.remove('hidden');
     }
 
@@ -955,7 +957,7 @@
     function togglePause() {
       if (game.state === 'playing') {
         game.state = 'paused';
-        showOverlay('已暂停', '点击继续，或重新开始。', '继续');
+        showOverlay('已暂停', '点击继续回到当前迷宫，或使用上方按钮重新开始。', '继续', false);
       } else if (game.state === 'paused') {
         game.state = 'playing';
         overlay.classList.add('hidden');
@@ -966,23 +968,28 @@
       if (game.state === 'paused') {
         game.state = 'playing';
         overlay.classList.add('hidden');
+      } else if (game.state === 'guide') {
+        game.state = game.returnState === 'playing' ? 'playing' : 'menu';
+        overlay.classList.toggle('hidden', game.state === 'playing');
       } else {
         start(game.levelIndex, true);
       }
     });
 
     document.getElementById('levelBtn').addEventListener('click', () => {
+      if (game.state === 'playing' || game.state === 'paused') return;
       game.levelIndex = (game.levelIndex + 1) % LEVELS.length;
       game.level = LEVELS[game.levelIndex];
-      showOverlay(game.level.name, game.level.objective, '开始这一关');
+      showOverlay(game.level.name, game.level.objective, '开始这一关', true);
       updateHud();
     });
 
     document.getElementById('restartBtn').addEventListener('click', () => start(game.levelIndex, true));
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('guideBtn').addEventListener('click', () => {
+      game.returnState = game.state;
       game.state = 'guide';
-      showOverlay('玩法说明', '方向键/WASD 移动，Space 冲刺。吃能量豆可反击幽灵；护盾抵挡一次伤害；水晶和核心用于打开出口。', '开始游戏');
+      showOverlay('玩法说明', '方向键/WASD 移动，Space 冲刺。吃能量豆可反击幽灵；护盾抵挡一次伤害；水晶和核心用于打开出口。', game.returnState === 'playing' ? '继续游戏' : '开始游戏', false);
     });
     soundBtn.addEventListener('click', () => {
       soundOn = !soundOn;
@@ -1000,7 +1007,14 @@
       if (game.state === 'playing' && map[e.key]) game.player.queue(map[e.key]);
       if (game.state === 'playing' && (e.key === ' ' || e.key === 'Spacebar')) game.player.triggerDash();
       if (e.key === 'Escape') togglePause();
-      if (game.state !== 'playing' && e.key === 'Enter') start(game.levelIndex, true);
+      if (e.key === 'Enter') {
+        if (game.state === 'paused') {
+          game.state = 'playing';
+          overlay.classList.add('hidden');
+        } else if (game.state !== 'playing') {
+          start(game.levelIndex, true);
+        }
+      }
     });
 
     document.querySelectorAll('[data-dir]').forEach(btn => {
@@ -1013,7 +1027,7 @@
     });
 
     updateHud();
-    showOverlay('Chomp / 大口吃', '不用安装 Python，不用打包，打开网页就能开始大口吃。', '开始游戏');
+    showOverlay('Chomp / 大口吃', '不用安装 Python，不用打包，打开网页就能开始大口吃。', '开始游戏', true);
     requestAnimationFrame(loop);
   </script>
 </body>
