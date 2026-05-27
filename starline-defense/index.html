@@ -107,7 +107,21 @@
     .tool-button {
       cursor: pointer;
       min-width: 92px;
+      text-decoration: none;
       transition: transform 0.12s ease, border-color 0.12s ease, filter 0.12s ease;
+    }
+
+    .back-select {
+      min-width: 230px;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    .back-select span {
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 800;
     }
 
     .tool-button:hover,
@@ -319,6 +333,10 @@
         flex: 1 1 128px;
       }
 
+      .back-select {
+        flex-basis: 100%;
+      }
+
       .cards {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
@@ -355,6 +373,7 @@
         <div class="meter">波次 <b id="waveText">0/14</b></div>
         <div class="meter">敌人 <b id="enemyText">0</b></div>
         <div class="meter">核心 <b id="coreText">3</b></div>
+        <a class="tool-button back-select" href="../">Back to Game Selection <span>返回“选择一个游戏开始”</span></a>
       </section>
     </header>
 
@@ -393,6 +412,7 @@
       const ROWS = 5;
       const COLS = 9;
       const TOTAL_WAVES = 14;
+      const MAX_PARTICLES = 360;
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -800,6 +820,10 @@
           born: state.time,
           flash: 0
         };
+        if (def.kind === "mine") {
+          unit.armedAt = state.time + 0.18;
+          unit.triggered = false;
+        }
         state.units[row][col] = unit;
         state.unitList.push(unit);
         burst(row, col + 0.5, def.color, 22, 46);
@@ -809,11 +833,11 @@
         updateCards();
       }
 
-      function removeUnit(unit, refund) {
+      function removeUnit(unit, refund, quiet = false) {
         state.units[unit.row][unit.col] = null;
         state.unitList = state.unitList.filter((u) => u !== unit);
         if (refund) state.energy += Math.floor(units[unit.type].cost * 0.45);
-        burst(unit.row, unit.col + 0.5, "#cfd7d4", 16, 36);
+        if (!quiet) burst(unit.row, unit.col + 0.5, "#cfd7d4", 16, 36);
       }
 
       function startWave() {
@@ -917,10 +941,14 @@
             }
           }
           if (def.kind === "mine") {
-            const target = state.enemyList.find((e) => e.row === u.row && Math.abs(e.x - (u.col + 0.5)) < 0.55);
+            if (u.triggered || state.time < (u.armedAt || 0)) return;
+            const centerX = u.col + 0.5;
+            const target = state.enemyList.find((e) => e.row === u.row && e.hp > 0 && Math.abs(e.x - centerX) < 0.55);
             if (target) {
-              explode(u.row, u.col + 0.5, def.damage, def.radius, "#ef695f");
-              removeUnit(u, false);
+              u.triggered = true;
+              popText("磁爆", u.row, u.col, "#ef695f");
+              explode(u.row, centerX, def.damage, def.radius, "#ef695f", { effectScale: 0.55 });
+              removeUnit(u, false, true);
             }
             return;
           }
@@ -1015,7 +1043,7 @@
         state.beams.forEach((b) => { b.life -= dt; });
       }
 
-      function damageEnemy(enemy, amount, color) {
+      function damageEnemy(enemy, amount, color, effectScale = 1) {
         const def = enemies[enemy.type];
         let actual = amount * (def.armor || 1);
         if (enemy.shield > 0) {
@@ -1026,17 +1054,23 @@
         enemy.hp -= actual;
         enemy.flash = 1;
         enemy.hit = 1;
-        burst(enemy.row, enemy.x, color, 11, 32);
+        burst(enemy.row, enemy.x, color, Math.max(3, Math.round(11 * effectScale)), Math.max(18, 32 * effectScale));
         if (actual > 45) state.shake = Math.max(state.shake, 4);
       }
 
-      function explode(row, x, damage, radius, color) {
+      function explode(row, x, damage, radius, color, options = {}) {
+        const effectScale = options.effectScale || 1;
+        let hits = 0;
         state.enemyList.forEach((e) => {
           const dist = Math.abs(e.row - row) * 0.75 + Math.abs(e.x - x);
-          if (dist <= radius) damageEnemy(e, damage * (1 - dist / (radius + 0.2)), color);
+          if (dist <= radius) {
+            hits += 1;
+            damageEnemy(e, damage * (1 - dist / (radius + 0.2)), color, Math.min(0.7, effectScale));
+          }
         });
-        burst(row, x, color, 34, 90);
-        state.shake = Math.max(state.shake, 10);
+        burst(row, x, color, Math.max(12, Math.round(34 * effectScale)), Math.max(42, 90 * effectScale));
+        if (hits > 1) popText(`x${hits}`, row, Math.max(0, Math.min(COLS - 1, Math.floor(x))), color);
+        state.shake = Math.max(state.shake, 6 + hits);
         sound("boom", 0.12);
       }
 
@@ -1131,8 +1165,11 @@
       }
 
       function burst(row, x, color, count, spread) {
+        const available = MAX_PARTICLES - state.particles.length;
+        if (available <= 0) return;
+        const particleCount = Math.min(count, available);
         const p = pos(row, x);
-        for (let i = 0; i < count; i += 1) {
+        for (let i = 0; i < particleCount; i += 1) {
           const a = rand(0, Math.PI * 2);
           const s = rand(spread * 0.25, spread);
           state.particles.push({

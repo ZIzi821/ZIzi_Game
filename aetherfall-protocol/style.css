@@ -41,6 +41,8 @@ kbd {
   width: 100vw;
   height: 100vh;
   min-width: 320px;
+  display: grid;
+  place-items: center;
   background: #080a0d;
 }
 
@@ -70,6 +72,8 @@ kbd {
 
 .brand,
 .stat-line,
+.selection-link,
+.menu-link,
 .meters,
 .skills,
 .panel,
@@ -129,6 +133,36 @@ kbd {
   color: var(--amber);
   font-weight: 800;
   text-align: right;
+}
+
+.selection-link,
+.menu-link {
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.selection-link {
+  padding: 10px 12px;
+  pointer-events: auto;
+  text-align: center;
+}
+
+.menu-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+}
+
+.selection-link span,
+.menu-link span {
+  color: var(--teal);
 }
 
 .bottom {

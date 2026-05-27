@@ -92,6 +92,7 @@
 
     .tool {
       cursor: pointer;
+      text-decoration: none;
       transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
     }
 
@@ -104,6 +105,8 @@
     .stage {
       position: relative;
       min-height: 560px;
+      display: grid;
+      place-items: center;
       border: 1px solid rgba(116, 224, 255, 0.24);
       border-radius: 10px;
       background:
@@ -116,11 +119,23 @@
     }
 
     canvas {
-      width: 100%;
-      height: min(72vh, 680px);
-      min-height: 540px;
+      width: min(960px, 100%);
+      height: auto;
+      aspect-ratio: 3 / 2;
+      max-height: min(72vh, 640px);
       display: block;
       touch-action: none;
+    }
+
+    .back-select {
+      color: var(--text);
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .back-select span {
+      color: var(--cyan);
+      font-size: 12px;
     }
 
     .overlay {
@@ -247,8 +262,8 @@
         justify-content: flex-start;
       }
       canvas {
-        min-height: 500px;
-        height: 68vh;
+        width: min(100%, 960px);
+        max-height: 68vh;
       }
       .touch {
         display: flex;
@@ -276,6 +291,7 @@
       <button class="tool" id="pauseBtn">暂停</button>
       <button class="tool" id="soundBtn">声音：开</button>
       <button class="tool" id="guideBtn">说明</button>
+      <a class="tool back-select" href="../">Back to Game Selection <span>返回“选择一个游戏开始”</span></a>
     </nav>
 
     <section class="stage">
@@ -382,13 +398,13 @@
         name: '01 Bite Circuit',
         objective: '吃完所有光豆',
         start: [12, 13],
-        ghosts: [[12, 7, 'chase'], [11, 7, 'ambush'], [13, 7, 'wander']],
+        ghosts: [[11, 8, 'chase'], [12, 8, 'ambush'], [13, 8, 'wander']],
         blocks: [
           ...rectCells(3, 3, 6, 3), ...rectCells(18, 3, 21, 3),
           ...rectCells(3, 13, 6, 13), ...rectCells(18, 13, 21, 13),
           ...rectCells(5, 5, 5, 11), ...rectCells(19, 5, 19, 11),
           ...rectCells(9, 5, 15, 5), ...rectCells(9, 11, 15, 11),
-          ...rectCells(11, 7, 13, 9), '12,6', '12,10'
+          '11,7', '13,7', '11,9', '13,9', '12,6', '12,10'
         ],
         pellets: ['2,2', '22,2', '2,14', '22,14'],
         shields: ['12,2'],
@@ -398,7 +414,7 @@
         name: '02 Crystal Gate',
         objective: '收集3个水晶后进入绿门',
         start: [2, 14],
-        ghosts: [[12, 8, 'chase'], [20, 2, 'sentinel'], [21, 13, 'ambush'], [4, 3, 'wander']],
+        ghosts: [[12, 8, 'chase'], [20, 2, 'sentinel'], [21, 13, 'ambush'], [5, 3, 'wander']],
         blocks: [
           ...rectCells(4, 2, 4, 8), ...rectCells(20, 8, 20, 14),
           ...rectCells(7, 4, 17, 4), ...rectCells(7, 12, 17, 12),
@@ -522,6 +538,7 @@
         this.cooldown = 0;
         this.power = 0;
         this.shield = 0;
+        this.invuln = 0.75;
         this.mouth = 0;
       }
       queue(d) { this.next = { ...d }; }
@@ -536,10 +553,12 @@
         this.power = Math.max(0, this.power - dt);
         this.dash = Math.max(0, this.dash - dt);
         this.cooldown = Math.max(0, this.cooldown - dt);
+        this.invuln = Math.max(0, this.invuln - dt);
         const cell = worldToCell(this.pos);
         const c = center(cell);
         const near = dist(this.pos, c) < 5;
-        if (near && (this.next.x || this.next.y)) {
+        const wantsTurn = (this.next.x || this.next.y) && (this.next.x !== this.dir.x || this.next.y !== this.dir.y);
+        if (near && wantsTurn) {
           const test = { x: this.pos.x + this.next.x * 8, y: this.pos.y + this.next.y * 8 };
           if (maze.canMove(test, this.radius)) {
             this.dir = { ...this.next };
@@ -608,7 +627,7 @@
     }
 
     const game = {
-      state: 'menu',
+      state: 'intro',
       levelIndex: 0,
       level: LEVELS[0],
       maze: null,
@@ -645,9 +664,11 @@
     }
 
     function loseLife() {
+      if (game.player.invuln > 0) return;
       if (game.player.shield > 0) {
         game.player.shield = 0;
         game.player.dash = 0.25;
+        game.player.invuln = 1.1;
         game.message = '护盾挡下一次伤害';
         game.messageTime = 1.5;
         playTone(720, 0.09, 'triangle');
@@ -763,12 +784,24 @@
       objectiveEl.textContent = game.level ? game.level.objective : 'Objective';
     }
 
-    function showOverlay(title, text, button = '开始游戏', allowLevelSwitch = true) {
+    function showOverlay(title, text, button = '开始游戏', allowLevelSwitch = false) {
       overlayTitle.textContent = title;
       overlayText.textContent = text;
       document.getElementById('startBtn').textContent = button;
       document.getElementById('levelBtn').classList.toggle('hidden', !allowLevelSwitch);
       overlay.classList.remove('hidden');
+    }
+
+    function showIntro() {
+      game.state = 'intro';
+      showOverlay('Chomp / 大口吃', '枫叶学子课堂摸鱼专用', 'Enter Game / 进入游戏', false);
+    }
+
+    function showLevelSelect() {
+      game.state = 'levelSelect';
+      game.level = LEVELS[game.levelIndex];
+      showOverlay('Level Selection / 选择关卡', `${game.level.name}：${game.level.objective}`, 'Start Level / 开始这一关', true);
+      updateHud();
     }
 
     function drawRoundedRect(x, y, w, h, r, fill, stroke) {
@@ -969,27 +1002,40 @@
         game.state = 'playing';
         overlay.classList.add('hidden');
       } else if (game.state === 'guide') {
-        game.state = game.returnState === 'playing' ? 'playing' : 'menu';
-        overlay.classList.toggle('hidden', game.state === 'playing');
+        if (game.returnState === 'playing') {
+          game.state = 'playing';
+          overlay.classList.add('hidden');
+        } else if (game.returnState === 'levelSelect') {
+          showLevelSelect();
+        } else {
+          showIntro();
+        }
+      } else if (game.state === 'intro') {
+        showLevelSelect();
+      } else if (game.state === 'levelSelect') {
+        start(game.levelIndex, true);
       } else {
         start(game.levelIndex, true);
       }
     });
 
     document.getElementById('levelBtn').addEventListener('click', () => {
-      if (game.state === 'playing' || game.state === 'paused') return;
+      if (game.state === 'playing' || game.state === 'paused' || game.state === 'intro') return;
+      game.state = 'levelSelect';
       game.levelIndex = (game.levelIndex + 1) % LEVELS.length;
       game.level = LEVELS[game.levelIndex];
-      showOverlay(game.level.name, game.level.objective, '开始这一关', true);
-      updateHud();
+      showLevelSelect();
     });
 
-    document.getElementById('restartBtn').addEventListener('click', () => start(game.levelIndex, true));
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      if (game.state === 'intro' || game.state === 'levelSelect') showLevelSelect();
+      else start(game.levelIndex, true);
+    });
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('guideBtn').addEventListener('click', () => {
       game.returnState = game.state;
       game.state = 'guide';
-      showOverlay('玩法说明', '方向键/WASD 移动，Space 冲刺。吃能量豆可反击幽灵；护盾抵挡一次伤害；水晶和核心用于打开出口。', game.returnState === 'playing' ? '继续游戏' : '开始游戏', false);
+      showOverlay('玩法说明', '方向键/WASD 移动，Space 冲刺。吃能量豆可反击幽灵；护盾抵挡一次伤害；水晶和核心用于打开出口。', game.returnState === 'playing' ? '继续游戏' : '返回', false);
     });
     soundBtn.addEventListener('click', () => {
       soundOn = !soundOn;
@@ -1012,7 +1058,8 @@
           game.state = 'playing';
           overlay.classList.add('hidden');
         } else if (game.state !== 'playing') {
-          start(game.levelIndex, true);
+          if (game.state === 'intro') showLevelSelect();
+          else if (game.state === 'levelSelect') start(game.levelIndex, true);
         }
       }
     });
@@ -1027,7 +1074,7 @@
     });
 
     updateHud();
-    showOverlay('Chomp / 大口吃', '不用安装 Python，不用打包，打开网页就能开始大口吃。', '开始游戏', true);
+    showIntro();
     requestAnimationFrame(loop);
   </script>
 </body>
