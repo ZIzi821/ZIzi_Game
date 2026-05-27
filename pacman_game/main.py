@@ -269,9 +269,9 @@ def rect_cells(x1, y1, x2, y2):
 
 LEVELS = [
     LevelDefinition(
-        name="01  Neon Pantry",
-        subtitle="Classic pressure, modern rhythm",
-        objective="Collect every light pellet. Power pellets let you hunt back.",
+        name="01  Bite Circuit",
+        subtitle="Clean bites, quick turns",
+        objective="Eat every light pellet. Power pellets let you bite back.",
         theme=(YELLOW, CYAN),
         player_start=(12, 13),
         ghost_spawns=[(12, 7), (11, 7), (13, 7)],
@@ -310,9 +310,9 @@ LEVELS = [
         dot_quota=0.65,
     ),
     LevelDefinition(
-        name="03  Reactor Heist",
-        subtitle="Steal cores from a collapsing grid",
-        objective="Collect 4 reactor cores. Traps punish lazy routes.",
+        name="03  Core Run",
+        subtitle="Grab the cores and escape",
+        objective="Collect 4 cores and escape. Traps punish lazy routes.",
         theme=(ORANGE, GREEN),
         player_start=(12, 15),
         ghost_spawns=[(12, 2), (3, 8), (21, 8), (12, 8)],
@@ -711,7 +711,7 @@ class Particle:
 class Game:
     def __init__(self):
         pygame.init()
-        pygame.display.set_caption("Pacman Odyssey - Neon Expedition")
+        pygame.display.set_caption("Chomp / 大口吃")
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.fonts = Fonts()
@@ -1083,10 +1083,10 @@ class Game:
 
     def draw_title(self):
         self.draw_background()
-        draw_text(self.screen, self.fonts.hero, "PACMAN ODYSSEY", YELLOW, center=(SCREEN_WIDTH // 2, 128))
-        draw_text(self.screen, self.fonts.medium, "NEON EXPEDITION", CYAN, center=(SCREEN_WIDTH // 2, 188))
-        draw_text(self.screen, self.fonts.cn, "吃豆只是起点：水晶、核心、传送门、Boss、冲刺和动态目标。", MUTED, center=(SCREEN_WIDTH // 2, 232))
-        labels = [("play", "开始远征"), ("guide", "游戏说明"), ("settings", "设置"), ("quit", "退出")]
+        draw_text(self.screen, self.fonts.hero, "CHOMP", YELLOW, center=(SCREEN_WIDTH // 2, 128))
+        draw_text(self.screen, self.fonts.medium, "大口吃", CYAN, center=(SCREEN_WIDTH // 2, 188))
+        draw_text(self.screen, self.fonts.cn, "大口吃不只是吃豆：水晶、核心、传送门、Boss、冲刺和动态目标都会出现。", MUTED, center=(SCREEN_WIDTH // 2, 232))
+        labels = [("play", "开始游戏"), ("guide", "游戏说明"), ("settings", "设置"), ("quit", "退出")]
         for key, label in labels:
             self.button(label, self.title_buttons()[key], CYAN)
         draw_text(self.screen, self.fonts.tiny, "Windows / Mac: python main.py    Windows package: build_windows.bat", MUTED, center=(SCREEN_WIDTH // 2, 660))
@@ -1094,7 +1094,7 @@ class Game:
     def draw_level_select(self):
         self.draw_background()
         self.button("返回", pygame.Rect(40, 34, 120, 42), CYAN)
-        draw_text(self.screen, self.fonts.big, "Choose A Circuit", YELLOW, center=(SCREEN_WIDTH // 2, 78))
+        draw_text(self.screen, self.fonts.big, "选择关卡", YELLOW, center=(SCREEN_WIDTH // 2, 78))
         for i, (definition, rect) in enumerate(zip(LEVELS, self.level_cards())):
             accent, second = definition.theme
             hover = rect.collidepoint(pygame.mouse.get_pos())
@@ -1198,7 +1198,7 @@ class Game:
 
     def draw_end(self, victory=False):
         self.draw_background()
-        title = "EXPEDITION COMPLETE" if victory else "RUN ENDED"
+        title = "CHOMP COMPLETE" if victory else "CHOMP ENDED"
         color = GREEN if victory else RED
         draw_text(self.screen, self.fonts.big, title, color, center=(SCREEN_WIDTH // 2, 190))
         draw_text(self.screen, self.fonts.medium, f"Score: {self.score}", WHITE, center=(SCREEN_WIDTH // 2, 280))

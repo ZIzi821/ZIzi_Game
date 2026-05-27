@@ -6,7 +6,7 @@ python3 -m PyInstaller \
   --noconfirm \
   --clean \
   --windowed \
-  --name "PacmanGame_For_Friends" \
+  --name "Chomp_For_Friends" \
   --add-data "image:image" \
   --add-data "assets:assets" \
   --add-data "PLAYER_MUSIC.wav:." \

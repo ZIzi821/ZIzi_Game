@@ -38,7 +38,7 @@ const fmtTime = (seconds) => {
 class AudioEngine {
   constructor() {
     this.ctx = null;
-    this.muted = localStorage.getItem("aetherfall-muted") === "1";
+    this.muted = localStorage.getItem("starfall-muted") === "1";
   }
 
   ensure() {
@@ -495,7 +495,7 @@ class Game {
     this.input = { keys: new Set(), mouse: { x: 0, y: 0 }, mouseDown: false };
     this.stars = [];
     this.state = "menu";
-    this.high = JSON.parse(localStorage.getItem("aetherfall-record") || '{"score":0,"time":0}');
+    this.high = JSON.parse(localStorage.getItem("starfall-record") || '{"score":0,"time":0}');
     this.updateRecordUI();
     this.bind();
     this.resize();
@@ -527,7 +527,7 @@ class Game {
     ui.restart.addEventListener("click", () => this.start());
     ui.mute.addEventListener("click", () => {
       this.audio.muted = !this.audio.muted;
-      localStorage.setItem("aetherfall-muted", this.audio.muted ? "1" : "0");
+      localStorage.setItem("starfall-muted", this.audio.muted ? "1" : "0");
       this.updateMute();
     });
     this.updateMute();
@@ -611,12 +611,12 @@ class Game {
     this.state = "gameover";
     this.high.score = Math.max(this.high.score, Math.floor(this.score));
     this.high.time = Math.max(this.high.time, Math.floor(this.time));
-    localStorage.setItem("aetherfall-record", JSON.stringify(this.high));
+    localStorage.setItem("starfall-record", JSON.stringify(this.high));
     this.updateRecordUI();
     ui.pauseOverlay.classList.remove("show");
     ui.overlay.classList.add("show");
     ui.start.textContent = won ? "再次进入" : "重新部署";
-    document.querySelector(".panel h1").textContent = won ? "Protocol Complete" : "Core Offline";
+    document.querySelector(".panel h1").textContent = won ? "Starfall Clear" : "Signal Lost";
     document.querySelector(".copy").textContent = won
       ? `最终监察者已被击溃。本次得分 ${Math.floor(this.score)}，生存 ${fmtTime(this.time)}。`
       : `核心信号中断。本次得分 ${Math.floor(this.score)}，生存 ${fmtTime(this.time)}。`;

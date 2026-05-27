@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aetherfall Protocol</title>
+    <title>Starfall / 星陨</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="shell">
-      <canvas id="game" aria-label="Aetherfall Protocol game canvas"></canvas>
+      <canvas id="game" aria-label="Starfall 星陨 game canvas"></canvas>
 
       <section class="hud top">
         <div class="brand">
           <span class="mark"></span>
           <div>
-            <strong>Aetherfall Protocol</strong>
-            <small>高级能量防线模拟</small>
+            <strong>Starfall / 星陨</strong>
+            <small>能量核心生存模拟</small>
           </div>
         </div>
         <div class="stat-line">
@@ -27,18 +27,9 @@
 
       <section class="hud bottom">
         <div class="meters">
-          <label>
-            <span>Core</span>
-            <b><i id="healthBar"></i></b>
-          </label>
-          <label>
-            <span>Shield</span>
-            <b><i id="shieldBar"></i></b>
-          </label>
-          <label>
-            <span>Pulse</span>
-            <b><i id="pulseBar"></i></b>
-          </label>
+          <label><span>Core</span><b><i id="healthBar"></i></b></label>
+          <label><span>Shield</span><b><i id="shieldBar"></i></b></label>
+          <label><span>Pulse</span><b><i id="pulseBar"></i></b></label>
         </div>
         <div class="skills">
           <kbd>WASD</kbd><span>移动</span>
@@ -51,11 +42,9 @@
 
       <section id="overlay" class="overlay show">
         <div class="panel">
-          <p class="eyebrow">vanguard arena / procedural waves</p>
-          <h1>Aetherfall Protocol</h1>
-          <p class="copy">
-            操控一台光轨核心，在坠落的以太裂隙中坚持到第 12 波。收集碎片升级武器、护盾和技能，击败最终监察者。
-          </p>
+          <p class="eyebrow">starfall arena / procedural waves</p>
+          <h1>Starfall / 星陨</h1>
+          <p class="copy">控制一枚能量核心，在星陨裂隙中坚持到第 12 波。收集碎片升级武器、护盾和技能，击败最终监察者。</p>
           <div class="actions">
             <button id="startButton" type="button">开始行动</button>
             <button id="muteButton" class="secondary" type="button">音效开启</button>
@@ -69,7 +58,7 @@
 
       <section id="pauseOverlay" class="pause-overlay" aria-live="polite">
         <div class="pause-panel">
-          <p class="eyebrow">protocol suspended</p>
+          <p class="eyebrow">starfall paused</p>
           <h2>Paused</h2>
           <div class="actions">
             <button id="resumeButton" type="button">继续游戏</button>

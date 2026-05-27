@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>星港多路线防线：立体战场版</title>
+  <title>Sentinel / 哨兵防线</title>
   <style>
     :root {
       --bg: #101214;
@@ -347,8 +347,8 @@
   <main class="app">
     <header class="topbar">
       <div class="brand">
-        <h1>星港多路线防线</h1>
-        <p>原创 2.5D 横向防守：部署星港装置，挡住一波波入侵机械。</p>
+        <h1>Sentinel / 哨兵防线</h1>
+        <p>部署哨兵装置，守住核心防线，挡下每一波入侵。</p>
       </div>
       <section class="hud" aria-label="游戏状态">
         <div class="meter">能量 <b id="energyText">180</b></div>
@@ -364,8 +364,8 @@
       <canvas id="gameCanvas"></canvas>
       <div class="overlay" id="overlay">
         <div class="dialog">
-          <h2 id="overlayTitle">星港待命</h2>
-          <p id="overlayText">这是一个更完整的立体战场版本：点击卡牌选单位，再点击 5 行 x 9 列航道部署。敌人从右侧进入，核心闸门最多只能漏过 3 个敌人。</p>
+          <h2 id="overlayTitle">哨兵防线待命</h2>
+          <p id="overlayText">点击卡牌选择单位，再点击 5 行 x 9 列航道部署。敌人从右侧进入，核心闸门最多只能漏过 3 个敌人。</p>
           <p>新增铲除、暂停、倍速、过载、轨道震荡、更多单位和更多敌人。所有图形和音效都由代码生成，不使用任何外部素材。</p>
           <button class="primary-button" id="startButton" type="button">开始游戏</button>
         </div>
@@ -418,7 +418,7 @@
 
       const units = {
         pulse: {
-          name: "星芒炮", cost: 80, hp: 250, cooldown: 1.05, damage: 32,
+          name: "哨兵炮", cost: 80, hp: 250, cooldown: 1.05, damage: 32,
           desc: "直线单体火力", color: "#67d48d", kind: "shoot"
         },
         solar: {
@@ -736,12 +736,12 @@
         if (start) {
           initAudio();
           els.overlay.classList.add("hidden");
-          status("防线启动。优先部署日冕炉建立经济。");
+          status("哨兵防线启动。优先部署日冕炉建立经济。");
           sound("wave", 0);
         } else {
           els.overlay.classList.remove("hidden");
-          els.overlayTitle.textContent = "星港待命";
-          els.overlayText.textContent = "点击卡牌选单位，再点击 5 行 x 9 列航道部署。敌人从右侧入侵，核心闸门最多只能漏过 3 个敌人。";
+          els.overlayTitle.textContent = "哨兵防线待命";
+          els.overlayText.textContent = "点击卡牌选择单位，再点击 5 行 x 9 列航道部署。敌人从右侧入侵，核心闸门最多只能漏过 3 个敌人。";
           els.start.textContent = "开始游戏";
           status("选择卡牌，然后点击战场格子部署。");
         }
@@ -1185,8 +1185,8 @@
         state.paused = false;
         if (win) {
           els.overlayTitle.textContent = "胜利";
-          els.overlayText.textContent = "星港核心守住了。你撑过了所有入侵波次，可以尝试更少漏怪或更少铲除的打法。";
-          status("胜利：星港防线稳定。");
+          els.overlayText.textContent = "哨兵核心守住了。你撑过了所有入侵波次，可以尝试更少漏怪或更少铲除的打法。";
+          status("胜利：哨兵防线稳定。");
           sound("win", 0);
         } else {
           els.overlayTitle.textContent = "失败";
