@@ -413,6 +413,7 @@
       const COLS = 9;
       const TOTAL_WAVES = 14;
       const MAX_PARTICLES = 360;
+      const MAX_PROJECTILES = 120;
 
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
@@ -622,9 +623,9 @@
         if (name === "shoot") tone(820, 0.05, "square", 0.02, 430);
         if (name === "ice") tone(1120, 0.12, "triangle", 0.03, 620);
         if (name === "beam") tone(680, 0.16, "sawtooth", 0.026, 1040);
-        if (name === "boom") { noise(0.22, 0.055, 760); tone(120, 0.18, "sawtooth", 0.035, 70); }
+        if (name === "boom") tone(120, 0.18, "sawtooth", 0.035, 70);
         if (name === "energy") { tone(620, 0.08, "sine", 0.032, 920); tone(960, 0.08, "triangle", 0.022, 1180); }
-        if (name === "hit") noise(0.06, 0.035, 1000);
+        if (name === "hit") tone(170, 0.045, "triangle", 0.018, 90);
         if (name === "wave") { tone(180, 0.18, "sawtooth", 0.035, 260); setTimeout(() => tone(430, 0.14, "triangle", 0.028, 620), 100); }
         if (name === "loss") { tone(220, 0.16, "sawtooth", 0.04, 130); setTimeout(() => tone(130, 0.28, "sawtooth", 0.04, 62), 140); }
         if (name === "win") { tone(420, 0.14, "triangle", 0.035, 640); setTimeout(() => tone(640, 0.14, "triangle", 0.035, 860), 110); setTimeout(() => tone(860, 0.26, "sine", 0.038, 1290), 220); }
@@ -975,6 +976,7 @@
       }
 
       function fireBolt(unit, def, ice) {
+        if (state.projectiles.length >= MAX_PROJECTILES) return;
         state.projectiles.push({
           type: ice ? "ice" : "bolt",
           row: unit.row,
@@ -991,6 +993,7 @@
       }
 
       function fireShell(unit, target, def) {
+        if (state.projectiles.length >= MAX_PROJECTILES) return;
         state.projectiles.push({
           type: "shell",
           row: unit.row,
@@ -1029,9 +1032,16 @@
             return;
           }
           p.x += p.speed * dt;
-          const hit = state.enemyList
-            .filter((e) => e.row === p.row && e.hp > 0 && Math.abs(e.x - p.x) < 0.18)
-            .sort((a, b) => a.x - b.x)[0];
+          let hit = null;
+          let bestX = Infinity;
+          for (const enemy of state.enemyList) {
+            if (enemy.row !== p.row || enemy.hp <= 0) continue;
+            if (Math.abs(enemy.x - p.x) >= 0.18) continue;
+            if (enemy.x < bestX) {
+              bestX = enemy.x;
+              hit = enemy;
+            }
+          }
           if (hit) {
             damageEnemy(hit, p.damage, p.color);
             if (p.slow) hit.slowUntil = Math.max(hit.slowUntil, state.time + p.slow);
@@ -1054,7 +1064,11 @@
         enemy.hp -= actual;
         enemy.flash = 1;
         enemy.hit = 1;
-        burst(enemy.row, enemy.x, color, Math.max(3, Math.round(11 * effectScale)), Math.max(18, 32 * effectScale));
+        const canShowHit = !enemy.lastHitFx || state.time - enemy.lastHitFx > 0.08 || actual > 45;
+        if (canShowHit) {
+          enemy.lastHitFx = state.time;
+          burst(enemy.row, enemy.x, color, Math.max(2, Math.round(7 * effectScale)), Math.max(14, 24 * effectScale));
+        }
         if (actual > 45) state.shake = Math.max(state.shake, 4);
       }
 
@@ -1864,6 +1878,10 @@
       }
 
       function hex(str) {
+        if (str.startsWith("rgb")) {
+          const values = str.match(/\d+(\.\d+)?/g);
+          if (values && values.length >= 3) return values.slice(0, 3).map(Number);
+        }
         const s = str.replace("#", "");
         return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
       }

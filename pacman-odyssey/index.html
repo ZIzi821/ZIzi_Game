@@ -337,11 +337,11 @@
     const objectiveEl = document.getElementById('objective');
     const soundBtn = document.getElementById('soundBtn');
 
-    const TILE = 28;
-    const GRID_W = 25;
-    const GRID_H = 17;
-    const BOARD_X = 40;
-    const BOARD_Y = 82;
+    const TILE = 26;
+    const GRID_W = 29;
+    const GRID_H = 19;
+    const BOARD_X = 36;
+    const BOARD_Y = 76;
     const BOARD_W = GRID_W * TILE;
     const BOARD_H = GRID_H * TILE;
 
@@ -397,54 +397,54 @@
       {
         name: '01 Bite Circuit',
         objective: '吃完所有光豆',
-        start: [12, 13],
-        ghosts: [[11, 8, 'chase'], [12, 8, 'ambush'], [13, 8, 'wander']],
+        start: [14, 15],
+        ghosts: [[13, 9, 'chase'], [15, 9, 'wander']],
         blocks: [
-          ...rectCells(3, 3, 6, 3), ...rectCells(18, 3, 21, 3),
-          ...rectCells(3, 13, 6, 13), ...rectCells(18, 13, 21, 13),
-          ...rectCells(5, 5, 5, 11), ...rectCells(19, 5, 19, 11),
-          ...rectCells(9, 5, 15, 5), ...rectCells(9, 11, 15, 11),
-          '11,7', '13,7', '11,9', '13,9', '12,6', '12,10'
+          ...rectCells(3, 3, 7, 3), ...rectCells(21, 3, 25, 3),
+          ...rectCells(3, 15, 7, 15), ...rectCells(21, 15, 25, 15),
+          ...rectCells(5, 5, 5, 13), ...rectCells(23, 5, 23, 13),
+          ...rectCells(10, 5, 18, 5), ...rectCells(10, 13, 18, 13),
+          '13,8', '15,8', '13,10', '15,10', '14,7', '14,11'
         ],
-        pellets: ['2,2', '22,2', '2,14', '22,14'],
-        shields: ['12,2'],
+        pellets: ['2,2', '26,2', '2,16', '26,16'],
+        shields: ['14,2'],
         win: 'dots'
       },
       {
         name: '02 Crystal Gate',
         objective: '收集3个水晶后进入绿门',
-        start: [2, 14],
-        ghosts: [[12, 8, 'chase'], [20, 2, 'sentinel'], [21, 13, 'ambush'], [5, 3, 'wander']],
+        start: [2, 16],
+        ghosts: [[14, 9, 'chase'], [24, 3, 'sentinel']],
         blocks: [
-          ...rectCells(4, 2, 4, 8), ...rectCells(20, 8, 20, 14),
-          ...rectCells(7, 4, 17, 4), ...rectCells(7, 12, 17, 12),
-          ...rectCells(8, 7, 10, 9), ...rectCells(14, 7, 16, 9),
-          ...rectCells(12, 2, 12, 6), ...rectCells(12, 10, 12, 14)
+          ...rectCells(4, 2, 4, 9), ...rectCells(24, 9, 24, 16),
+          ...rectCells(8, 4, 20, 4), ...rectCells(8, 14, 20, 14),
+          ...rectCells(9, 8, 11, 10), ...rectCells(17, 8, 19, 10),
+          ...rectCells(14, 2, 14, 7), ...rectCells(14, 11, 14, 16)
         ],
-        pellets: ['2,2', '22,14'],
-        crystals: ['22,2', '12,8', '3,12'],
-        shields: ['7,14'],
-        portals: [['1,8', '23,8'], ['12,1', '12,15']],
-        gate: '22,8',
+        pellets: ['2,2', '26,16'],
+        crystals: ['26,2', '14,9', '3,14'],
+        shields: ['7,16'],
+        portals: [['1,9', '27,9'], ['14,1', '14,17']],
+        gate: '26,9',
         win: 'crystal'
       },
       {
         name: '03 Core Run',
         objective: '偷走4个核心并撤离',
-        start: [12, 15],
-        ghosts: [[12, 2, 'warden'], [3, 8, 'chase'], [21, 8, 'ambush'], [12, 8, 'sentinel']],
+        start: [14, 17],
+        ghosts: [[14, 2, 'warden'], [24, 9, 'chase']],
         blocks: [
-          ...rectCells(2, 4, 8, 4), ...rectCells(16, 4, 22, 4),
-          ...rectCells(2, 12, 8, 12), ...rectCells(16, 12, 22, 12),
-          ...rectCells(6, 6, 6, 10), ...rectCells(18, 6, 18, 10),
-          ...rectCells(10, 6, 14, 6), ...rectCells(10, 10, 14, 10), '12,7', '12,9'
+          ...rectCells(2, 4, 9, 4), ...rectCells(19, 4, 26, 4),
+          ...rectCells(2, 14, 9, 14), ...rectCells(19, 14, 26, 14),
+          ...rectCells(7, 6, 7, 12), ...rectCells(21, 6, 21, 12),
+          ...rectCells(11, 7, 17, 7), ...rectCells(11, 11, 17, 11), '14,8', '14,10'
         ],
-        pellets: ['1,1', '23,1', '1,15', '23,15'],
-        cores: ['3,2', '21,2', '3,14', '21,14'],
-        shields: ['12,8', '12,1'],
-        traps: ['8,8', '9,8', '15,8', '16,8', '12,4', '12,12'],
-        portals: [['1,8', '23,8']],
-        gate: '12,1',
+        pellets: ['1,1', '27,1', '1,17', '27,17'],
+        cores: ['3,2', '25,2', '3,16', '25,16'],
+        shields: ['14,9', '14,1'],
+        traps: ['9,9', '10,9', '18,9', '19,9', '14,5', '14,13'],
+        portals: [['1,9', '27,9']],
+        gate: '14,1',
         win: 'cores'
       }
     ];
@@ -539,6 +539,7 @@
         this.power = 0;
         this.shield = 0;
         this.invuln = 0.75;
+        this.portalCooldown = 0;
         this.mouth = 0;
       }
       queue(d) { this.next = { ...d }; }
@@ -554,6 +555,7 @@
         this.dash = Math.max(0, this.dash - dt);
         this.cooldown = Math.max(0, this.cooldown - dt);
         this.invuln = Math.max(0, this.invuln - dt);
+        this.portalCooldown = Math.max(0, this.portalCooldown - dt);
         const cell = worldToCell(this.pos);
         const c = center(cell);
         const near = dist(this.pos, c) < 5;
@@ -594,8 +596,8 @@
       target(player) {
         const p = worldToCell(player.pos);
         if (this.type === 'ambush') return { x: p.x + player.dir.x * 4, y: p.y + player.dir.y * 4 };
-        if (this.type === 'wander') return [{x:1,y:1},{x:23,y:1},{x:1,y:15},{x:23,y:15}][Math.floor(Math.random()*4)];
-        if (this.type === 'sentinel') return { x: 12, y: 8 };
+        if (this.type === 'wander') return [{x:1,y:1},{x:GRID_W - 2,y:1},{x:1,y:GRID_H - 2},{x:GRID_W - 2,y:GRID_H - 2}][Math.floor(Math.random()*4)];
+        if (this.type === 'sentinel') return { x: Math.floor(GRID_W / 2), y: Math.floor(GRID_H / 2) };
         return p;
       }
       update(dt, maze, player, boost) {
@@ -736,8 +738,22 @@
       if (game.maze.traps.has(k) && game.player.dash <= 0) loseLife();
 
       const dest = game.maze.portalDest(k);
-      if (dest && dist(game.player.pos, center(cell)) < 6) {
-        game.player.pos = center(parseKey(dest));
+      if (dest && game.player.portalCooldown <= 0 && dist(game.player.pos, center(cell)) < 6) {
+        const target = parseKey(dest);
+        const exit = center(target);
+        let exitDir = { ...game.player.dir };
+        if (target.x <= 1) exitDir = { ...DIRS.right };
+        else if (target.x >= GRID_W - 2) exitDir = { ...DIRS.left };
+        else if (target.y <= 1) exitDir = { ...DIRS.down };
+        else if (target.y >= GRID_H - 2) exitDir = { ...DIRS.up };
+        if (!exitDir.x && !exitDir.y) exitDir = { ...DIRS.right };
+        game.player.pos = {
+          x: exit.x + exitDir.x * TILE * 0.55,
+          y: exit.y + exitDir.y * TILE * 0.55
+        };
+        game.player.dir = { ...exitDir };
+        game.player.next = { ...exitDir };
+        game.player.portalCooldown = 0.65;
         game.player.dash = Math.max(game.player.dash, 0.12);
         playTone(1180, 0.08, 'sine', 0.035);
       }
