@@ -16,13 +16,13 @@ https://zizi821.github.io/ZIzi_Game/developer.html
 
 ## Games
 
-- [Starfall / 星陨](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)：能量核心生存射击，程序化波次与升级选择。
-- [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)：多路线塔防，部署单位守住核心防线。
-- [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)：浏览器版霓虹迷宫吃豆游戏。
+- [Starfall / 星陨](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)：能量核心生存射击；尝试面对不同的波次，与不同的升级选择 坚持到最后。
+- [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)：路线塔防，部署单位守住核心。
+- [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)：吃豆游戏。
 
 ## Source Projects
 
-- `pacman_game/`：Chomp / 大口吃 的 Pygame 源码版本，包含图片、音效、音乐和运行脚本。
+- `pacman_game/`：Chomp / 大口吃 的 Pygame 源代码，包含图片、音效、音乐和运行脚本。
 
 ## Folder Layout
 
