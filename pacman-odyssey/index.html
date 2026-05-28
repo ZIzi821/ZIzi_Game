@@ -102,6 +102,17 @@
       background: rgba(27, 39, 72, 0.96);
     }
 
+    .music-select {
+      max-width: 190px;
+      cursor: pointer;
+    }
+
+    .music-volume {
+      width: 128px;
+      accent-color: var(--yellow);
+      cursor: pointer;
+    }
+
     .stage {
       position: relative;
       min-height: 560px;
@@ -290,6 +301,13 @@
       <button class="tool" id="restartBtn">重新开始</button>
       <button class="tool" id="pauseBtn">暂停</button>
       <button class="tool" id="soundBtn">声音：开</button>
+      <select class="tool music-select" id="musicSelect" aria-label="选择背景音乐">
+        <option value="../pacman_game/MapleLeaf_Music.MP3">枫叶人枫叶魂音乐</option>
+        <option value="../pacman_game/MUSIC.wav">游戏音乐1</option>
+        <option value="../pacman_game/PLAYER_MUSIC.wav">游戏音乐2</option>
+      </select>
+      <button class="tool" id="musicToggle">播放音乐</button>
+      <input class="tool music-volume" id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.45" aria-label="音乐音量">
       <button class="tool" id="guideBtn">说明</button>
       <a class="tool back-select" href="../">Back to Game Selection <span>返回“选择一个游戏开始”</span></a>
     </nav>
@@ -336,6 +354,9 @@
     const levelEl = document.getElementById('level');
     const objectiveEl = document.getElementById('objective');
     const soundBtn = document.getElementById('soundBtn');
+    const musicSelect = document.getElementById('musicSelect');
+    const musicToggle = document.getElementById('musicToggle');
+    const musicVolume = document.getElementById('musicVolume');
 
     const TILE = 26;
     const GRID_W = 29;
@@ -370,6 +391,11 @@
 
     let audioCtx = null;
     let soundOn = true;
+    const bgm = new Audio(musicSelect.value);
+    bgm.loop = true;
+    bgm.preload = 'metadata';
+    bgm.volume = Number(musicVolume.value);
+    let musicWanted = false;
 
     function playTone(freq, duration = 0.06, type = 'sine', gain = 0.05) {
       if (!soundOn) return;
@@ -385,6 +411,31 @@
         g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
         osc.stop(audioCtx.currentTime + duration);
       } catch (_) {}
+    }
+
+    async function playMusic() {
+      musicWanted = true;
+      try {
+        await bgm.play();
+        musicToggle.textContent = '暂停音乐';
+      } catch (_) {
+        musicToggle.textContent = '点击播放音乐';
+      }
+    }
+
+    function pauseMusic() {
+      musicWanted = false;
+      bgm.pause();
+      musicToggle.textContent = '播放音乐';
+    }
+
+    function switchMusic(src) {
+      const shouldResume = musicWanted && !bgm.paused;
+      bgm.pause();
+      bgm.src = src;
+      bgm.load();
+      if (shouldResume) playMusic();
+      else musicToggle.textContent = '播放音乐';
     }
 
     function rectCells(x1, y1, x2, y2) {
@@ -1056,6 +1107,14 @@
     soundBtn.addEventListener('click', () => {
       soundOn = !soundOn;
       soundBtn.textContent = `声音：${soundOn ? '开' : '关'}`;
+    });
+    musicToggle.addEventListener('click', () => {
+      if (bgm.paused) playMusic();
+      else pauseMusic();
+    });
+    musicSelect.addEventListener('change', () => switchMusic(musicSelect.value));
+    musicVolume.addEventListener('input', () => {
+      bgm.volume = Number(musicVolume.value);
     });
 
     window.addEventListener('keydown', e => {

@@ -8,6 +8,9 @@ https://zizi821.github.io/ZIzi_Game/
 更新日志：
 https://zizi821.github.io/ZIzi_Game/updates.html
 
+社区留言板：
+https://zizi821.github.io/ZIzi_Game/forum.html
+
 ## Games
 
 - [Starfall / 星陨](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)：能量核心生存射击，程序化波次与升级选择。
@@ -25,6 +28,8 @@ https://zizi821.github.io/ZIzi_Game/updates.html
   index.html
   README.md
   updates.html
+  forum.html
+  firestore.rules
   aetherfall-protocol/
   starline-defense/
   pacman-odyssey/
