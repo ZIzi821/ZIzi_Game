@@ -2,6 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function validLeaderboardGame(gameId) {
+      return gameId == 'starfall' || gameId == 'sentinel' || gameId == 'chomp';
+    }
+
     match /messages/{messageId} {
       allow read: if true;
 
@@ -13,6 +17,24 @@ service cloud.firestore {
         request.resource.data.message is string &&
         request.resource.data.message.size() >= 1 &&
         request.resource.data.message.size() <= 500 &&
+        request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /leaderboards/{gameId}/scores/{scoreId} {
+      allow read: if validLeaderboardGame(gameId);
+
+      allow create: if
+        validLeaderboardGame(gameId) &&
+        request.resource.data.keys().hasOnly(['nickname', 'score', 'gameId', 'createdAt']) &&
+        request.resource.data.nickname is string &&
+        request.resource.data.nickname.size() >= 1 &&
+        request.resource.data.nickname.size() <= 20 &&
+        request.resource.data.score is number &&
+        request.resource.data.score >= 0 &&
+        request.resource.data.score <= 999999999 &&
+        request.resource.data.gameId == gameId &&
         request.resource.data.createdAt == request.time;
 
       allow update, delete: if false;

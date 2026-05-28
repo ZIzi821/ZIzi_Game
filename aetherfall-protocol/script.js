@@ -617,6 +617,7 @@ class Game {
     ui.overlay.classList.add("show");
     ui.start.textContent = won ? "再次进入" : "重新部署";
     document.querySelector(".panel h1").textContent = won ? "Starfall Clear" : "Signal Lost";
+    window.ZIziLeaderboards?.starfall?.openSubmit(Math.floor(this.score));
     document.querySelector(".copy").textContent = won
       ? `最终监察者已被击溃。本次得分 ${Math.floor(this.score)}，生存 ${fmtTime(this.time)}。`
       : `核心信号中断。本次得分 ${Math.floor(this.score)}，生存 ${fmtTime(this.time)}。`;

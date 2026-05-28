@@ -405,6 +405,15 @@
     </footer>
   </main>
 
+  <script type="module">
+    import { setupLeaderboard } from "../assets/leaderboard.js";
+
+    window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+    window.ZIziLeaderboards.sentinel = setupLeaderboard({
+      gameId: "sentinel",
+      gameName: "Sentinel / 哨兵防线"
+    });
+  </script>
   <script>
     (() => {
       "use strict";
@@ -1250,10 +1259,19 @@
         sound("boom", 0);
       }
 
+      function finalScore(win) {
+        const waveScore = Math.max(0, state.waveIndex + 1) * 1000;
+        const coreScore = Math.max(0, state.core) * 1500;
+        const energyScore = Math.floor(Math.max(0, state.energy));
+        const pressurePenalty = state.enemyList.length * 50 + state.spawnQueue.length * 20;
+        return Math.max(0, waveScore + coreScore + energyScore - pressurePenalty + (win ? 5000 : 0));
+      }
+
       function finish(win) {
         if (state.mode !== "running") return;
         state.mode = win ? "won" : "lost";
         state.paused = false;
+        const score = finalScore(win);
         if (win) {
           els.overlayTitle.textContent = "胜利";
           els.overlayText.textContent = "哨兵核心守住了。你撑过了所有入侵波次，可以尝试更少漏怪或更少铲除的打法。";
@@ -1266,7 +1284,11 @@
           sound("loss", 0);
         }
         els.start.textContent = "再玩一次";
+        const scoreLine = document.createElement("strong");
+        scoreLine.textContent = ` Leaderboard Score: ${score.toLocaleString("zh-CN")}`;
+        els.overlayText.appendChild(scoreLine);
         els.overlay.classList.remove("hidden");
+        window.ZIziLeaderboards?.sentinel?.openSubmit(score);
       }
 
       function draw() {

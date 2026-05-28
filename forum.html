@@ -230,6 +230,7 @@
     </main>
 
     <script type="module">
+      import { firebaseConfig } from "./assets/firebase-config.js";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
       import {
         addDoc,
@@ -241,17 +242,6 @@
         query,
         serverTimestamp
       } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-      // Firebase config location:
-      // Paste the config from Firebase Console > Project settings > Your apps > Web app here.
-      const firebaseConfig = {
-        apiKey: "AIzaSyB7TuF2iGKAf12ACZ_gesmTLttGDl8BP_8",
-        authDomain: "zizicommunity.firebaseapp.com",
-        projectId: "zizicommunity",
-        storageBucket: "zizicommunity.firebasestorage.app",
-        messagingSenderId: "231547443450",
-        appId: "1:231547443450:web:3ce24e3b5cf3dde3759143"
-      };
 
       const MAX_NAME = 20;
       const MAX_MESSAGE = 500;

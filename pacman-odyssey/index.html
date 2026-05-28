@@ -343,6 +343,15 @@
     </footer>
   </main>
 
+  <script type="module">
+    import { setupLeaderboard } from "../assets/leaderboard.js";
+
+    window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+    window.ZIziLeaderboards.chomp = setupLeaderboard({
+      gameId: "chomp",
+      gameName: "Chomp / 大口吃"
+    });
+  </script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -732,6 +741,7 @@
       playTone(160, 0.18, 'sawtooth', 0.055);
       if (game.lives <= 0) {
         game.state = 'gameover';
+        window.ZIziLeaderboards?.chomp?.openSubmit(game.score);
         showOverlay('挑战失败', `最终分数：${game.score}。点击重新开始。`, '重新开始', true);
         return;
       }
@@ -840,6 +850,7 @@
         start(game.levelIndex + 1, false);
       } else {
         game.state = 'win';
+        window.ZIziLeaderboards?.chomp?.openSubmit(game.score);
         showOverlay('大口吃通关', `最终分数：${game.score}。你完成了全部迷宫挑战。`, '再来一局', true);
       }
     }

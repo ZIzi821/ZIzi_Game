@@ -78,6 +78,15 @@
         <div id="upgradeCards" class="upgrade-cards"></div>
       </section>
     </main>
+    <script type="module">
+      import { setupLeaderboard } from "../assets/leaderboard.js";
+
+      window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+      window.ZIziLeaderboards.starfall = setupLeaderboard({
+        gameId: "starfall",
+        gameName: "Starfall / 星陨"
+      });
+    </script>
     <script src="script.js"></script>
   </body>
 </html>
