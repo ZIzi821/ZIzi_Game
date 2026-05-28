@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>开发者简介 / Developer - ZIzi Game</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --bg: #07090c;
+        --panel: rgba(255, 255, 255, 0.075);
+        --line: rgba(255, 255, 255, 0.16);
+        --text: #f3f7fb;
+        --muted: #a5b0bd;
+        --cyan: #42f5d4;
+        --gold: #ffc857;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(66, 245, 212, 0.18), transparent 30%),
+          radial-gradient(circle at 82% 74%, rgba(255, 200, 87, 0.14), transparent 32%),
+          linear-gradient(135deg, #07090c, #101621 58%, #08090d);
+        color: var(--text);
+      }
+
+      main {
+        width: min(1080px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: clamp(28px, 6vw, 72px) 0;
+      }
+
+      nav { margin-bottom: 30px; }
+
+      .back {
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        padding: 9px 13px;
+        border: 1px solid rgba(66, 245, 212, 0.34);
+        border-radius: 8px;
+        background: rgba(66, 245, 212, 0.09);
+        color: var(--cyan);
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: clamp(42px, 8vw, 76px);
+        line-height: 0.96;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: clamp(24px, 4vw, 36px);
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: clamp(18px, 3vw, 28px);
+        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.24);
+      }
+
+      .profile {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.72fr) 1fr;
+        gap: clamp(18px, 4vw, 34px);
+        align-items: center;
+      }
+
+      .portrait,
+      .qr,
+      .fun-photo {
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        object-fit: cover;
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+      }
+
+      .portrait {
+        aspect-ratio: 4 / 5;
+      }
+
+      .meta {
+        display: grid;
+        gap: 10px;
+      }
+
+      .name {
+        color: var(--gold);
+        font-weight: 900;
+      }
+
+      .mail {
+        color: var(--cyan);
+        overflow-wrap: anywhere;
+      }
+
+      .charging {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .qr-card {
+        display: grid;
+        gap: 9px;
+      }
+
+      .qr {
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        padding: 8px;
+      }
+
+      .caption {
+        color: var(--gold);
+        font-size: 14px;
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .friends {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .friend {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .fun-photo {
+        max-height: 260px;
+        object-fit: contain;
+      }
+
+      .safe-note {
+        color: #d4e4e8;
+        font-size: 14px;
+      }
+
+      @media (max-width: 760px) {
+        .profile,
+        .charging,
+        .friends {
+          grid-template-columns: 1fr;
+        }
+
+        .fun-photo {
+          max-height: 220px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav><a class="back" href="./">返回“选择一个游戏开始” / Back to Game Selection</a></nav>
+      <p class="eyebrow">Developer Profile</p>
+      <h1>开发者简介</h1>
+
+      <div class="stack">
+        <section class="panel profile" aria-label="ZIzi 个人资料">
+          <img class="portrait" src="assets/developer/zizi-photo.jpg" alt="ZIzi 的照片" />
+          <div class="meta">
+            <h2>ZIzi</h2>
+            <p class="name">我是 ZIzi</p>
+            <p>邮箱：<span class="mail">3191261513@QQ.com</span></p>
+            <p>这里先预留个人简介文字，之后可以继续编辑。</p>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="主要开发者介绍">
+          <h2>主要开发者介绍</h2>
+          <p>本项目完全开源，有任何的想法都可以通过邮箱或社区留言板发表。项目也会一直更新。欢迎大家给我充电。</p>
+        </section>
+
+        <section class="panel" aria-label="充电站">
+          <h2>充电站</h2>
+          <p class="safe-note">收款码仅作为静态图片展示，本页面不会收集付款信息。扫码前请自行确认账号与金额。</p>
+          <div class="charging">
+            <div class="qr-card">
+              <img class="qr" src="assets/developer/wechat.png" alt="微信收款码" />
+              <div class="caption">微信</div>
+            </div>
+            <div class="qr-card">
+              <img class="qr" src="assets/developer/alipay.jpg" alt="支付宝收款码" />
+              <div class="caption">支付宝</div>
+            </div>
+            <div class="qr-card">
+              <img class="qr" src="assets/developer/tng.jpg" alt="TNG 收款码" />
+              <div class="caption">TNG</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="朋友搞怪照片">
+          <h2>搞怪照片</h2>
+          <div class="friends">
+            <article class="friend">
+              <img class="fun-photo" src="assets/developer/barry-fun.png" alt="Barry 的搞怪照片" />
+              <p><span class="name">Barry</span>：我是 Barry 我要做世界上最辣的 Nasi lemak 给 Strong man，不辣的给 week man。</p>
+            </article>
+            <article class="friend">
+              <img class="fun-photo" src="assets/developer/lay-image.jpg" alt="Lay 的照片" />
+              <p><span class="name">Lay</span>：Sperm Bank</p>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
