@@ -97,6 +97,10 @@
         align-items: center;
       }
 
+      .profile.compact {
+        grid-template-columns: minmax(160px, 0.38fr) 1fr;
+      }
+
       .portrait,
       .qr,
       .fun-photo {
@@ -153,7 +157,7 @@
 
       .friends {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 14px;
       }
 
@@ -199,13 +203,21 @@
             <h2>ZIzi</h2>
             <p class="name">我是 ZIzi</p>
             <p>邮箱：<span class="mail">3191261513@QQ.com</span></p>
-            <p>这里先预留个人简介文字，之后可以继续编辑。</p>
+            <p>这个项目起初是由一个糖豆人游戏开始的，后来再打包发给朋友玩之后，感觉创建一个独立的网站会很有趣。</p>
           </div>
         </section>
 
         <section class="panel" aria-label="主要开发者介绍">
           <h2>主要开发者介绍</h2>
           <p>本项目完全开源，有任何的想法都可以通过邮箱或社区留言板发表。项目也会一直更新。欢迎大家给我充电。</p>
+        </section>
+
+        <section class="panel profile compact" aria-label="Mark 主要开发者介绍">
+          <img class="portrait" src="assets/developer/dr-mark.jpg" alt="Mark 的照片" />
+          <div class="meta">
+            <h2>Mark</h2>
+            <p>Code may crash, but the vibe must stay online.</p>
+          </div>
         </section>
 
         <section class="panel" aria-label="充电站">
@@ -228,7 +240,7 @@
         </section>
 
         <section class="panel" aria-label="朋友搞怪照片">
-          <h2>搞怪照片</h2>
+          <h2>技术支持/Support</h2>
           <div class="friends">
             <article class="friend">
               <img class="fun-photo" src="assets/developer/barry-fun.png" alt="Barry 的搞怪照片" />
@@ -237,6 +249,10 @@
             <article class="friend">
               <img class="fun-photo" src="assets/developer/lay-image.jpg" alt="Lay 的照片" />
               <p><span class="name">Lay</span>：Sperm Bank</p>
+            </article>
+            <article class="friend">
+              <img class="fun-photo" src="assets/developer/junqi-chen.jpg" alt="Junqi Chen 的照片" />
+              <p><span class="name">Junqi Chen</span>：何意味</p>
             </article>
           </div>
         </section>
