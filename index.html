@@ -10,13 +10,18 @@
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         --bg: #07090c;
         --panel: rgba(255, 255, 255, 0.07);
+        --panel-strong: rgba(10, 18, 28, 0.92);
         --line: rgba(255, 255, 255, 0.16);
         --text: #f3f7fb;
         --muted: #a5b0bd;
         --cyan: #42f5d4;
         --gold: #ffc857;
+        --pink: #ff6f91;
+        --blue: #72a7ff;
       }
+
       * { box-sizing: border-box; }
+
       body {
         min-height: 100vh;
         margin: 0;
@@ -26,16 +31,62 @@
           linear-gradient(135deg, #07090c, #101621 58%, #08090d);
         color: var(--text);
       }
-      main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: clamp(28px, 6vw, 72px) 0; }
-      header { display: grid; gap: 14px; margin-bottom: clamp(28px, 5vw, 52px); }
-      .eyebrow { margin: 0; color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
-      h1 { max-width: 760px; margin: 0; font-size: clamp(42px, 8vw, 92px); line-height: 0.95; letter-spacing: 0; }
-      .intro { max-width: 62ch; margin: 0; color: var(--muted); font-size: clamp(16px, 2vw, 19px); line-height: 1.7; }
-      .actions { display: flex; flex-wrap: wrap; gap: 10px; }
-      .log-link {
+
+      main {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: clamp(28px, 6vw, 72px) 0;
+      }
+
+      header {
+        display: grid;
+        gap: 14px;
+        margin-bottom: clamp(28px, 5vw, 52px);
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: clamp(42px, 8vw, 92px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(28px, 5vw, 46px);
+        line-height: 1;
+      }
+
+      .intro {
+        max-width: 66ch;
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(16px, 2vw, 19px);
+        line-height: 1.7;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .log-link,
+      .leaderboard-link {
         width: max-content;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         min-height: 42px;
         padding: 9px 13px;
         border: 1px solid rgba(66, 245, 212, 0.34);
@@ -45,8 +96,19 @@
         text-decoration: none;
         font-weight: 800;
       }
-      .log-link:hover { border-color: rgba(255, 200, 87, 0.58); color: var(--gold); }
-      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+      .log-link:hover,
+      .leaderboard-link:hover {
+        border-color: rgba(255, 200, 87, 0.58);
+        color: var(--gold);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
       .game {
         min-height: 260px;
         display: grid;
@@ -61,9 +123,22 @@
         box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
         transition: transform 150ms ease, border-color 150ms ease;
       }
-      .game:hover { transform: translateY(-3px); border-color: rgba(66, 245, 212, 0.52); }
-      .game strong { font-size: 24px; line-height: 1.1; }
-      .game span { color: #d2dbe3; line-height: 1.55; }
+
+      .game:hover {
+        transform: translateY(-3px);
+        border-color: rgba(66, 245, 212, 0.52);
+      }
+
+      .game strong {
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      .game span {
+        color: #d2dbe3;
+        line-height: 1.55;
+      }
+
       .game b {
         width: max-content;
         padding: 8px 11px;
@@ -73,9 +148,118 @@
         color: var(--gold);
         font-size: 13px;
       }
-      @media (max-width: 820px) {
-        .grid { grid-template-columns: 1fr; }
-        .game { min-height: 210px; }
+
+      .leaderboards {
+        margin-top: clamp(34px, 7vw, 76px);
+        display: grid;
+        gap: 18px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .section-head p {
+        max-width: 56ch;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .leaderboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .leaderboard-card {
+        min-height: 360px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 14px;
+        padding: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.035)),
+          var(--panel-strong);
+        box-shadow: 0 20px 52px rgba(0, 0, 0, 0.3);
+      }
+
+      .leaderboard-card h3 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .leaderboard-card small {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .level-filter {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        padding: 8px 10px;
+        font: inherit;
+        font-weight: 800;
+      }
+
+      .lb-preview {
+        display: grid;
+        gap: 8px;
+        align-content: start;
+      }
+
+      .lb-row {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 86px;
+        gap: 8px;
+        align-items: center;
+        min-height: 38px;
+        padding: 8px 9px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .lb-row.is-head {
+        min-height: 28px;
+        color: rgba(230, 242, 250, 0.64);
+        background: transparent;
+        border-color: transparent;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .lb-rank { color: var(--cyan); font-weight: 900; }
+      .lb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+      .lb-score { color: var(--gold); text-align: right; font-weight: 900; }
+      .lb-empty { color: var(--muted); line-height: 1.55; }
+      .lb-actions { display: grid; }
+
+      @media (max-width: 900px) {
+        .grid,
+        .leaderboard-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .game {
+          min-height: 210px;
+        }
+
+        .section-head {
+          align-items: start;
+          flex-direction: column;
+        }
       }
     </style>
   </head>
@@ -84,9 +268,9 @@
       <header>
         <p class="eyebrow">ZIzi Game Collection</p>
         <h1>选择一个游戏开始</h1>
-        <p class="intro">这里收纳我们团队的游戏项目，Windows和Mac都可以直接打开的摸鱼好助手！一定要收藏我们的网址噢（https://zizi821.github.io/ZIzi_Game/），我们一直都在更新！</p>
+        <p class="intro">这里收纳团队的游戏项目，Windows 和 Mac 都可以直接打开。收藏我们的网址，排行榜和更新会持续上线。</p>
         <div class="actions">
-          <a class="log-link" href="updates.html">查看更新日志/ Check Updates</a>
+          <a class="log-link" href="updates.html">查看更新日志 / Check Updates</a>
           <a class="log-link" href="forum.html">社区留言板 / Community</a>
           <a class="log-link" href="developer.html">开发者简介 / Developer</a>
         </div>
@@ -95,7 +279,7 @@
       <section class="grid" aria-label="游戏列表">
         <a class="game" href="aetherfall-protocol/" style="--accent: linear-gradient(135deg, #102c2f, #2c1f45)">
           <strong>Starfall / 星陨</strong>
-          <span>驾驶能量核心，在星陨裂隙中生存、升级，并击退一波波追猎者。</span>
+          <span>驾驭能量核心，在星陨裂隙中生存、升级，并击退一波波追猎者。</span>
           <b>开始游戏</b>
         </a>
 
@@ -111,6 +295,130 @@
           <b>开始游戏</b>
         </a>
       </section>
+
+      <section class="leaderboards" aria-label="排行榜总览">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Leaderboards</p>
+            <h2>排行榜总览</h2>
+          </div>
+          <p>查看每个游戏的前五名成绩。Chomp / 大口吃 可以切换关卡，只比较同一关的表现。</p>
+        </div>
+
+        <div class="leaderboard-grid">
+          <article class="leaderboard-card" data-preview-game="starfall">
+            <div>
+              <h3>Starfall / 星陨</h3>
+              <small>Top 5 players</small>
+            </div>
+            <div class="lb-preview" data-preview-list></div>
+            <div class="lb-actions" data-leaderboard-action></div>
+          </article>
+
+          <article class="leaderboard-card" data-preview-game="sentinel">
+            <div>
+              <h3>Sentinel / 哨兵防线</h3>
+              <small>Top 5 players</small>
+            </div>
+            <div class="lb-preview" data-preview-list></div>
+            <div class="lb-actions" data-leaderboard-action></div>
+          </article>
+
+          <article class="leaderboard-card" data-preview-game="chomp">
+            <div>
+              <h3>Chomp / 大口吃</h3>
+              <small>Top 5 players by level</small>
+            </div>
+            <select class="level-filter" data-chomp-level aria-label="选择 Chomp 关卡">
+              <option value="level1">Level 1 / Beginner Maze</option>
+              <option value="level2">Level 2 / Ghost Rush</option>
+              <option value="level3">Level 3 / Nightmare Maze</option>
+            </select>
+            <div class="lb-preview" data-preview-list></div>
+            <div class="lb-actions" data-leaderboard-action></div>
+          </article>
+        </div>
+      </section>
     </main>
+
+    <script type="module">
+      import { fetchLeaderboardRows, setupLeaderboard } from "./assets/leaderboard.js";
+
+      const scoreFormatter = (score) => Number(score || 0).toLocaleString("zh-CN");
+      const chompLevelSelect = document.querySelector("[data-chomp-level]");
+      const leaderboardApis = {
+        starfall: setupLeaderboard({
+          gameId: "starfall",
+          gameName: "Starfall / 星陨",
+          buttonContainer: document.querySelector('[data-preview-game="starfall"] [data-leaderboard-action]'),
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
+        }),
+        sentinel: setupLeaderboard({
+          gameId: "sentinel",
+          gameName: "Sentinel / 哨兵防线",
+          buttonContainer: document.querySelector('[data-preview-game="sentinel"] [data-leaderboard-action]'),
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
+        }),
+        chomp: setupLeaderboard({
+          gameId: "chomp",
+          gameName: "Chomp / 大口吃",
+          levels: [
+            { id: "level1", name: "Level 1 / Beginner Maze" },
+            { id: "level2", name: "Level 2 / Ghost Rush" },
+            { id: "level3", name: "Level 3 / Nightmare Maze" }
+          ],
+          getLevelId: () => chompLevelSelect.value,
+          buttonContainer: document.querySelector('[data-preview-game="chomp"] [data-leaderboard-action]'),
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
+        })
+      };
+
+      function renderPreview(container, rows) {
+        container.replaceChildren();
+        const head = document.createElement("div");
+        head.className = "lb-row is-head";
+        head.innerHTML = "<span>Rank</span><span>Nickname</span><span>Score</span>";
+        container.appendChild(head);
+
+        if (!rows.length) {
+          const empty = document.createElement("p");
+          empty.className = "lb-empty";
+          empty.textContent = "暂无云端成绩。";
+          container.appendChild(empty);
+          return;
+        }
+
+        rows.forEach((row, index) => {
+          const item = document.createElement("div");
+          item.className = "lb-row";
+          item.innerHTML = `
+            <span class="lb-rank">#${index + 1}</span>
+            <span class="lb-name"></span>
+            <span class="lb-score">${scoreFormatter(row.score)}</span>
+          `;
+          item.querySelector(".lb-name").textContent = row.nickname || "Anonymous";
+          container.appendChild(item);
+        });
+      }
+
+      async function loadPreview(card) {
+        const gameId = card.dataset.previewGame;
+        const levelId = gameId === "chomp" ? chompLevelSelect.value : "";
+        const list = card.querySelector("[data-preview-list]");
+        list.innerHTML = '<p class="lb-empty">正在读取云端排行榜...</p>';
+        try {
+          const rows = await fetchLeaderboardRows({ gameId, levelId, limit: 5 });
+          renderPreview(list, rows);
+        } catch (_) {
+          list.innerHTML = '<p class="lb-empty">云端排行榜暂时无法读取。</p>';
+        }
+      }
+
+      const cards = [...document.querySelectorAll("[data-preview-game]")];
+      cards.forEach(loadPreview);
+      chompLevelSelect.addEventListener("change", () => {
+        loadPreview(document.querySelector('[data-preview-game="chomp"]'));
+      });
+    </script>
   </body>
 </html>

@@ -2,13 +2,21 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function validLeaderboardGame(gameId) {
-      return gameId == 'starfall' ||
-        gameId == 'sentinel' ||
-        gameId == 'chomp' ||
-        gameId == 'chomp_bite-circuit' ||
-        gameId == 'chomp_crystal-gate' ||
-        gameId == 'chomp_core-run';
+      return gameId in [
+        'starfall',
+        'sentinel',
+        'chomp'
+      ];
+    }
+
+    function validChompLevel(levelId) {
+      return levelId in [
+        'level1',
+        'level2',
+        'level3'
+      ];
     }
 
     match /messages/{messageId} {
@@ -40,6 +48,25 @@ service cloud.firestore {
         request.resource.data.score >= 0 &&
         request.resource.data.score <= 999999999 &&
         request.resource.data.gameId == gameId &&
+        request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /leaderboards/chomp/levels/{levelId}/scores/{scoreId} {
+      allow read: if validChompLevel(levelId);
+
+      allow create: if
+        validChompLevel(levelId) &&
+        request.resource.data.keys().hasOnly(['nickname', 'score', 'gameId', 'levelId', 'createdAt']) &&
+        request.resource.data.nickname is string &&
+        request.resource.data.nickname.size() >= 1 &&
+        request.resource.data.nickname.size() <= 20 &&
+        request.resource.data.score is number &&
+        request.resource.data.score >= 0 &&
+        request.resource.data.score <= 999999999 &&
+        request.resource.data.gameId == 'chomp' &&
+        request.resource.data.levelId == levelId &&
         request.resource.data.createdAt == request.time;
 
       allow update, delete: if false;

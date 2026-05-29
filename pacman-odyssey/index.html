@@ -159,7 +159,7 @@
     }
 
     .modal {
-      width: min(720px, 100%);
+      width: min(920px, 100%);
       padding: 24px;
       border: 1px solid rgba(68, 231, 255, 0.38);
       border-radius: 10px;
@@ -178,6 +178,59 @@
       margin: 8px 0;
       color: var(--muted);
       line-height: 1.65;
+    }
+
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .level-card {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(68, 231, 255, 0.28);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(20, 31, 58, 0.95), rgba(8, 12, 25, 0.96));
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    .level-card img {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: #070914;
+    }
+
+    .level-card h3 {
+      margin: 0;
+      color: var(--yellow);
+      font-size: 19px;
+      line-height: 1.15;
+    }
+
+    .level-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .level-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .level-actions button {
+      min-width: 0;
+      min-height: 40px;
+      border-radius: 8px;
+      font-size: 13px;
     }
 
     .actions {
@@ -279,6 +332,11 @@
       .touch {
         display: flex;
       }
+      .level-grid {
+        grid-template-columns: 1fr;
+        max-height: 62vh;
+        overflow: auto;
+      }
     }
   </style>
 </head>
@@ -318,9 +376,10 @@
         <div class="modal">
           <h2 id="overlayTitle">Chomp / 大口吃</h2>
           <p id="overlayText">方向键或 WASD 移动，Space 冲刺。每关目标不同，不只是吃完豆豆。</p>
+          <div class="level-grid hidden" id="levelGrid"></div>
           <div class="actions">
             <button class="primary" id="startBtn">开始游戏</button>
-            <button class="secondary" id="levelBtn">切换关卡</button>
+            <button class="secondary" id="levelBtn">选择关卡</button>
           </div>
         </div>
       </div>
@@ -349,6 +408,7 @@
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlayTitle');
     const overlayText = document.getElementById('overlayText');
+    const levelGrid = document.getElementById('levelGrid');
     const scoreEl = document.getElementById('score');
     const livesEl = document.getElementById('lives');
     const levelEl = document.getElementById('level');
@@ -446,8 +506,11 @@
 
     const LEVELS = [
       {
-        leaderboardId: 'bite-circuit',
-        name: '01 Bite Circuit',
+        leaderboardId: 'level1',
+        number: 'Level 1',
+        title: 'Beginner Maze',
+        name: 'Level 1 / Beginner Maze',
+        description: 'Easy introduction stage. Learn movement, pellets, shields, and the first ghost routes.',
         objective: '吃完所有光豆',
         start: [14, 15],
         ghosts: [[13, 9, 'chase'], [15, 9, 'wander']],
@@ -463,8 +526,11 @@
         win: 'dots'
       },
       {
-        leaderboardId: 'crystal-gate',
-        name: '02 Crystal Gate',
+        leaderboardId: 'level2',
+        number: 'Level 2',
+        title: 'Ghost Rush',
+        name: 'Level 2 / Ghost Rush',
+        description: 'More enemies, portal jumps, and faster routing around crystal gates.',
         objective: '收集3个水晶后进入绿门',
         start: [2, 16],
         ghosts: [[14, 9, 'chase'], [24, 3, 'sentinel']],
@@ -482,8 +548,11 @@
         win: 'crystal'
       },
       {
-        leaderboardId: 'core-run',
-        name: '03 Core Run',
+        leaderboardId: 'level3',
+        number: 'Level 3',
+        title: 'Nightmare Maze',
+        name: 'Level 3 / Nightmare Maze',
+        description: 'Hard mode. Recover every core, avoid traps, and escape under pressure.',
         objective: '偷走4个核心并撤离',
         start: [14, 17],
         ghosts: [[14, 2, 'warden'], [24, 9, 'chase']],
@@ -871,24 +940,110 @@
     }
 
     function showOverlay(title, text, button = '开始游戏', allowLevelSwitch = false) {
+      levelGrid.classList.add('hidden');
       overlayTitle.textContent = title;
       overlayText.textContent = text;
+      document.getElementById('startBtn').classList.remove('hidden');
       document.getElementById('startBtn').textContent = button;
       document.getElementById('levelBtn').classList.toggle('hidden', !allowLevelSwitch);
       overlay.classList.remove('hidden');
     }
 
     function showIntro() {
-      game.state = 'intro';
-      showOverlay('Chomp / 大口吃', '枫叶学子课堂摸鱼专用', 'Enter Game / 进入游戏', false);
+      showLevelSelect();
     }
 
     function showLevelSelect() {
       game.state = 'levelSelect';
       game.level = LEVELS[game.levelIndex];
       syncLeaderboardLevel();
-      showOverlay('Level Selection / 选择关卡', `${game.level.name}：${game.level.objective}`, 'Start Level / 开始这一关', true);
+      overlayTitle.textContent = 'Level Selection / 选择关卡';
+      overlayText.textContent = '选择一个迷宫开始挑战，或查看这一关的独立排行榜。';
+      document.getElementById('startBtn').classList.add('hidden');
+      document.getElementById('levelBtn').classList.add('hidden');
+      renderLevelCards();
+      levelGrid.classList.remove('hidden');
+      overlay.classList.remove('hidden');
       updateHud();
+    }
+
+    function levelPreview(level) {
+      const preview = document.createElement('canvas');
+      preview.width = 480;
+      preview.height = 300;
+      const pctx = preview.getContext('2d');
+      const sx = preview.width / GRID_W;
+      const sy = preview.height / GRID_H;
+      pctx.fillStyle = '#070914';
+      pctx.fillRect(0, 0, preview.width, preview.height);
+      pctx.strokeStyle = 'rgba(68,231,255,0.1)';
+      for (let x = 0; x < preview.width; x += sx * 2) {
+        pctx.beginPath();
+        pctx.moveTo(x, 0);
+        pctx.lineTo(x, preview.height);
+        pctx.stroke();
+      }
+      const walls = new Set(level.blocks);
+      for (let x = 0; x < GRID_W; x++) {
+        walls.add(`${x},0`);
+        walls.add(`${x},${GRID_H - 1}`);
+      }
+      for (let y = 0; y < GRID_H; y++) {
+        walls.add(`0,${y}`);
+        walls.add(`${GRID_W - 1},${y}`);
+      }
+      walls.forEach(k => {
+        const c = parseKey(k);
+        pctx.fillStyle = '#2365d6';
+        pctx.fillRect(c.x * sx + 1, c.y * sy + 1, sx - 2, sy - 2);
+      });
+      [...(level.pellets || []), ...(level.crystals || []), ...(level.cores || [])].forEach((k, index) => {
+        const c = parseKey(k);
+        pctx.fillStyle = index % 2 ? '#44e7ff' : '#ffe15a';
+        pctx.beginPath();
+        pctx.arc(c.x * sx + sx / 2, c.y * sy + sy / 2, Math.max(4, sx * 0.24), 0, Math.PI * 2);
+        pctx.fill();
+      });
+      level.ghosts.forEach(g => {
+        pctx.fillStyle = g[2] === 'warden' ? '#76a8ff' : '#ff596f';
+        pctx.beginPath();
+        pctx.arc(g[0] * sx + sx / 2, g[1] * sy + sy / 2, Math.max(5, sx * 0.32), 0, Math.PI * 2);
+        pctx.fill();
+      });
+      pctx.fillStyle = '#ffe15a';
+      pctx.beginPath();
+      pctx.arc(level.start[0] * sx + sx / 2, level.start[1] * sy + sy / 2, Math.max(6, sx * 0.36), 0, Math.PI * 2);
+      pctx.fill();
+      return preview.toDataURL('image/png');
+    }
+
+    function renderLevelCards() {
+      levelGrid.innerHTML = '';
+      LEVELS.forEach((level, index) => {
+        const card = document.createElement('article');
+        card.className = 'level-card';
+        card.innerHTML = `
+          <img alt="${level.name} preview">
+          <div>
+            <h3>${level.number}<br>${level.title}</h3>
+            <p>${level.description}</p>
+          </div>
+          <p>Objective: ${level.objective}</p>
+          <div class="level-actions">
+            <button class="primary" type="button">Start</button>
+            <button class="secondary" type="button">Leaderboard</button>
+          </div>
+        `;
+        card.querySelector('img').src = levelPreview(level);
+        card.querySelector('.primary').addEventListener('click', () => start(index, true));
+        card.querySelector('.secondary').addEventListener('click', () => {
+          game.levelIndex = index;
+          game.level = LEVELS[index];
+          syncLeaderboardLevel();
+          window.ZIziLeaderboards?.chomp?.open(false);
+        });
+        levelGrid.appendChild(card);
+      });
     }
 
     function drawRoundedRect(x, y, w, h, r, fill, stroke) {
@@ -1108,9 +1263,6 @@
 
     document.getElementById('levelBtn').addEventListener('click', () => {
       if (game.state === 'playing' || game.state === 'paused' || game.state === 'intro') return;
-      game.state = 'levelSelect';
-      game.levelIndex = (game.levelIndex + 1) % LEVELS.length;
-      game.level = LEVELS[game.levelIndex];
       showLevelSelect();
     });
 
@@ -1177,11 +1329,11 @@
           gameId: "chomp",
           gameName: "Chomp / 大口吃",
           levels: [
-            { id: "bite-circuit", name: "01 Bite Circuit" },
-            { id: "crystal-gate", name: "02 Crystal Gate" },
-            { id: "core-run", name: "03 Core Run" }
+            { id: "level1", name: "Level 1 / Beginner Maze" },
+            { id: "level2", name: "Level 2 / Ghost Rush" },
+            { id: "level3", name: "Level 3 / Nightmare Maze" }
           ],
-          getLevelId: () => window.ZIziChompCurrentLevelId || "bite-circuit"
+          getLevelId: () => window.ZIziChompCurrentLevelId || "level1"
         });
       })
       .catch(() => {
