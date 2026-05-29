@@ -3,23 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>社区留言板 / Community - ZIzi Game</title>
+    <title>社区留言板区域选择 / Community Region - ZIzi Game</title>
     <style>
       :root {
         color-scheme: dark;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        --bg: #07090c;
-        --panel: rgba(255, 255, 255, 0.075);
         --line: rgba(255, 255, 255, 0.16);
         --text: #f3f7fb;
         --muted: #a5b0bd;
         --cyan: #42f5d4;
         --gold: #ffc857;
-        --red: #ff6574;
       }
-
       * { box-sizing: border-box; }
-
       body {
         min-height: 100vh;
         margin: 0;
@@ -29,23 +24,10 @@
           linear-gradient(135deg, #07090c, #101621 58%, #08090d);
         color: var(--text);
       }
-
-      button,
-      input,
-      textarea {
-        font: inherit;
-      }
-
-      main {
-        width: min(920px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: clamp(28px, 6vw, 72px) 0;
-      }
-
-      nav {
-        margin-bottom: 30px;
-      }
-
+      main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: clamp(28px, 6vw, 72px) 0; }
+      nav { margin-bottom: 30px; }
+      .back,
+      .region { color: inherit; text-decoration: none; }
       .back {
         display: inline-flex;
         min-height: 40px;
@@ -55,307 +37,79 @@
         border-radius: 8px;
         background: rgba(66, 245, 212, 0.09);
         color: var(--cyan);
-        text-decoration: none;
         font-weight: 800;
       }
-
-      .eyebrow {
-        margin: 0 0 12px;
-        color: var(--cyan);
-        font-size: 12px;
-        font-weight: 900;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(42px, 8vw, 76px);
-        line-height: 0.96;
-        letter-spacing: 0;
-      }
-
-      .intro {
-        max-width: 68ch;
-        margin: 18px 0 28px;
-        color: var(--muted);
-        line-height: 1.75;
-        font-size: 17px;
-      }
-
-      .panel,
-      .message {
+      .eyebrow { margin: 0 0 12px; color: var(--cyan); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+      h1 { margin: 0; font-size: clamp(38px, 7vw, 76px); line-height: 0.98; letter-spacing: 0; }
+      .intro { max-width: 70ch; margin: 18px 0 28px; color: var(--muted); line-height: 1.75; font-size: 17px; }
+      .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .region {
+        min-height: 260px;
+        display: grid;
+        align-content: space-between;
+        gap: 18px;
+        padding: clamp(20px, 4vw, 30px);
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: var(--panel);
-        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.24);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035)),
+          linear-gradient(135deg, var(--accent-a), var(--accent-b));
+        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
+        transition: transform 150ms ease, border-color 150ms ease;
       }
-
-      .panel {
-        padding: 20px;
-        margin-bottom: 18px;
-      }
-
-      form {
-        display: grid;
-        gap: 12px;
-      }
-
-      label {
-        display: grid;
-        gap: 7px;
-        color: var(--muted);
-        font-size: 13px;
-        font-weight: 800;
-      }
-
-      input,
-      textarea {
-        width: 100%;
-        border: 1px solid rgba(66, 245, 212, 0.24);
-        border-radius: 8px;
-        background: rgba(5, 10, 17, 0.86);
-        color: var(--text);
+      .region:hover,
+      .region:focus-visible {
+        transform: translateY(-3px);
+        border-color: rgba(255, 255, 255, 0.36);
         outline: none;
       }
-
-      input {
-        min-height: 44px;
-        padding: 10px 12px;
-      }
-
-      textarea {
-        min-height: 132px;
-        resize: vertical;
-        padding: 12px;
-        line-height: 1.6;
-      }
-
-      input:focus,
-      textarea:focus {
-        border-color: rgba(255, 200, 87, 0.72);
-      }
-
-      .form-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .submit {
-        min-height: 44px;
-        padding: 9px 16px;
-        border: 1px solid rgba(255, 200, 87, 0.72);
-        border-radius: 8px;
-        background: linear-gradient(180deg, rgba(255, 200, 87, 0.28), rgba(66, 245, 212, 0.13));
-        color: var(--text);
-        font-weight: 900;
-        cursor: pointer;
-      }
-
-      .submit:disabled {
-        cursor: not-allowed;
-        filter: grayscale(0.75) brightness(0.72);
-      }
-
-      .hint {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .error {
-        color: var(--red);
-      }
-
-      .messages {
-        display: grid;
-        gap: 12px;
-      }
-
-      .message {
-        padding: 16px;
-      }
-
-      .message header {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-
-      .name {
+      .badge {
+        width: max-content;
+        max-width: 100%;
+        padding: 8px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.1);
         color: var(--gold);
+        font-size: 13px;
         font-weight: 900;
       }
-
-      .time {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
-      .body {
-        margin: 0;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-        line-height: 1.68;
+      .region h2 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 42px); line-height: 1.02; letter-spacing: 0; }
+      .region p { margin: 0; color: #dce7ef; line-height: 1.6; }
+      .mainland { --accent-a: rgba(105, 12, 26, 0.95); --accent-b: rgba(42, 19, 26, 0.95); }
+      .international { --accent-a: rgba(10, 55, 76, 0.95); --accent-b: rgba(36, 31, 82, 0.95); }
+      @media (max-width: 760px) {
+        .choices { grid-template-columns: 1fr; }
+        .region { min-height: 220px; }
       }
     </style>
   </head>
   <body>
     <main>
-      <nav><a class="back" href="./">返回“选择一个游戏开始” / Back to Game Selection</a></nav>
-      <p class="eyebrow">Community Board</p>
-      <h1>社区留言板</h1>
-      <p class="intro">这里是 ZIzi Game Collection 的文字留言板。现在只支持文本消息，不需要登录，不支持图片上传。</p>
-
-      <section class="panel" aria-label="发布留言">
-        <form id="messageForm">
-          <label>
-            昵称 / Name
-            <input id="nickname" name="nickname" maxlength="20" autocomplete="name" placeholder="最多 20 个字符" required />
-          </label>
-          <label>
-            留言 / Message
-            <textarea id="message" name="message" maxlength="500" placeholder="最多 500 个字符" required></textarea>
-          </label>
-          <div class="form-row">
-            <button class="submit" id="submitButton" type="submit">发布留言</button>
-            <span class="hint" id="statusText">正在连接留言板...</span>
-          </div>
-        </form>
+      <nav><a class="back" href="./">返回“选择一个游戏开始” / Back</a></nav>
+      <p class="eyebrow">Community Region</p>
+      <h1>选择社区留言板</h1>
+      <p class="intro">
+        为了让不同地区的玩家都能稳定留言，ZIzi Game Collection 将社区分为两个入口：国际版继续使用 Firebase；中国大陆版将使用更适合大陆访问的后端。
+      </p>
+      <section class="choices" aria-label="社区留言板区域选择">
+        <a class="region mainland" href="forum-mainland.html">
+          <span class="badge">中国大陆 / Mainland China</span>
+          <span>
+            <h2>中国大陆留言板</h2>
+            <p>Mainland China Community</p>
+            <p>不使用 Firebase 或 Google 服务，准备接入 Tencent CloudBase。</p>
+          </span>
+        </a>
+        <a class="region international" href="forum-international.html">
+          <span class="badge">港澳台与海外 / Global</span>
+          <span>
+            <h2>国际留言板（包含港澳台）</h2>
+            <p>International Community (including Hong Kong, Macau, and Taiwan)</p>
+            <p>继续使用当前 Firebase Firestore 留言板。</p>
+          </span>
+        </a>
       </section>
-
-      <section class="messages" id="messages" aria-live="polite" aria-label="留言列表"></section>
     </main>
-
-    <script type="module">
-      import { firebaseConfig } from "./assets/firebase-config.js";
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-      import {
-        addDoc,
-        collection,
-        getFirestore,
-        limit,
-        onSnapshot,
-        orderBy,
-        query,
-        serverTimestamp
-      } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-      const MAX_NAME = 20;
-      const MAX_MESSAGE = 500;
-      const form = document.getElementById("messageForm");
-      const nicknameInput = document.getElementById("nickname");
-      const messageInput = document.getElementById("message");
-      const submitButton = document.getElementById("submitButton");
-      const statusText = document.getElementById("statusText");
-      const messagesEl = document.getElementById("messages");
-
-      function setStatus(text, error = false) {
-        statusText.textContent = text;
-        statusText.classList.toggle("error", error);
-      }
-
-      function clean(value, max) {
-        return value.replace(/\s+/g, " ").trim().slice(0, max);
-      }
-
-      function cleanMessage(value) {
-        return value.replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim().slice(0, MAX_MESSAGE);
-      }
-
-      function formatTime(value) {
-        if (!value || !value.toDate) return "刚刚";
-        return value.toDate().toLocaleString("zh-CN", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-      }
-
-      function renderMessage(data) {
-        const article = document.createElement("article");
-        article.className = "message";
-
-        const header = document.createElement("header");
-        const name = document.createElement("span");
-        name.className = "name";
-        name.textContent = data.nickname || "匿名";
-
-        const time = document.createElement("time");
-        time.className = "time";
-        time.textContent = formatTime(data.createdAt);
-
-        const body = document.createElement("p");
-        body.className = "body";
-        body.textContent = data.message || "";
-
-        header.append(name, time);
-        article.append(header, body);
-        return article;
-      }
-
-      function hasFirebaseConfig(config) {
-        return Boolean(config.apiKey && !config.apiKey.startsWith("PASTE_") && config.projectId && !config.projectId.startsWith("PASTE_"));
-      }
-
-      if (!hasFirebaseConfig(firebaseConfig)) {
-        submitButton.disabled = true;
-        setStatus("请先在 forum.html 中粘贴 Firebase config。", true);
-      } else {
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const messagesRef = collection(db, "messages");
-        const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(50));
-
-        onSnapshot(messagesQuery, (snapshot) => {
-          messagesEl.replaceChildren();
-          if (snapshot.empty) {
-            const empty = document.createElement("p");
-            empty.className = "hint";
-            empty.textContent = "还没有留言。";
-            messagesEl.append(empty);
-          } else {
-            snapshot.forEach((doc) => messagesEl.append(renderMessage(doc.data())));
-          }
-          setStatus("留言板已连接。");
-        }, () => {
-          setStatus("无法读取留言板，请检查 Firebase config 和 Firestore rules。", true);
-        });
-
-        form.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          const nickname = clean(nicknameInput.value, MAX_NAME);
-          const message = cleanMessage(messageInput.value);
-          if (!nickname) {
-            setStatus("请输入昵称。", true);
-            return;
-          }
-          if (!message) {
-            setStatus("请输入留言内容。", true);
-            return;
-          }
-
-          submitButton.disabled = true;
-          setStatus("正在发布...");
-          try {
-            await addDoc(messagesRef, {
-              nickname,
-              message,
-              createdAt: serverTimestamp()
-            });
-            messageInput.value = "";
-            setStatus("发布成功。");
-          } catch (_) {
-            setStatus("发布失败，请检查 Firestore rules。", true);
-          } finally {
-            submitButton.disabled = false;
-          }
-        });
-      }
-    </script>
   </body>
 </html>

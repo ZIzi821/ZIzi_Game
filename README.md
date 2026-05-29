@@ -57,6 +57,12 @@ Firebase config lives in:
 assets/firebase-config.js
 ```
 
+Mainland China backend config lives in:
+
+```text
+assets/mainland-config.js
+```
+
 Leaderboard documents are stored at:
 
 ```text
@@ -72,9 +78,56 @@ gameId
 createdAt
 ```
 
-Security rules are stored in `firestore.rules`. Paste those rules into Firebase Console > Firestore Database > Rules before testing submissions.
+Security rules are stored in `firestore.rules`. Paste those rules into Firebase Console > Firestore Database > Rules before testing international submissions.
 
-For mainland China users, the UI already shows a fallback note. A China-compatible backend can later replace or extend the same `gameId`, `nickname`, `score`, and `createdAt` structure.
+For mainland China users, the UI shows a fallback note until Tencent CloudBase is configured. The mainland leaderboard uses the same `nickname`, `score`, `gameId`, and `createdAt` fields.
+
+## Community and Leaderboard Regions
+
+`forum.html` is now a region selection page.
+
+- Mainland China: `forum-mainland.html`
+- International, including Hong Kong, Macau, and Taiwan: `forum-international.html`
+
+The international community and leaderboard keep using Firebase Firestore. The Mainland China community and leaderboard do not load Firebase or Google services; they are prepared for Tencent CloudBase and show a construction fallback until `assets/mainland-config.js` is enabled.
+
+Recommended mainland backend: Tencent CloudBase.
+
+Create:
+
+- Tencent Cloud account
+- CloudBase environment in Mainland China, recommended region `ap-shanghai`
+- CloudBase database collections: `messages` and `leaderboards`
+- Anonymous login enabled
+- Web security domain added for `zizi821.github.io`
+
+Paste these values into `assets/mainland-config.js`:
+
+```js
+enabled: true
+cloudbase.env: "your CloudBase environment ID"
+cloudbase.region: "ap-shanghai"
+cloudbase.accessKey: "optional CloudBase publishable key, if your CloudBase auth setup requires it"
+```
+
+Mainland community documents:
+
+```text
+messages/{id}
+nickname
+message
+createdAt
+```
+
+Mainland leaderboard documents:
+
+```text
+leaderboards/{id}
+nickname
+score
+gameId
+createdAt
+```
 
 ### Local Test
 
