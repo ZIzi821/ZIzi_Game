@@ -120,6 +120,22 @@ function injectStyles() {
       color: rgba(222, 245, 255, 0.74);
       font-size: 13px;
     }
+    
+    .zizi-lb-level-select {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid rgba(126, 226, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(2, 7, 14, 0.76);
+      color: #effcff;
+      font: 700 13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+    .zizi-lb-level-select option {
+      background: #0d1b2d;
+    }
 
     .zizi-lb-close,
     .zizi-lb-submit,
@@ -415,18 +431,42 @@ function makeHeadRow() {
   return row;
 }
 
-export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
+function normalizeLevels(levels) {
+  if (!Array.isArray(levels) || !levels.length) return [];
+  return levels
+    .map((level, index) => {
+      const id = cleanText(level?.id ?? level?.value ?? index + 1, 40).replace(/[^a-zA-Z0-9_-]/g, "-");
+      const name = cleanText(level?.name ?? level?.label ?? id, 80);
+      return id ? { id, name: name || id } : null;
+    })
+    .filter(Boolean);
+}
+
+export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, getLevelId } = {}) {
   if (!VALID_GAMES.has(gameId)) {
     throw new Error(`Unknown leaderboard gameId: ${gameId}`);
   }
 
   injectStyles();
 
+  const levelOptions = normalizeLevels(levels);
+  const hasLevels = levelOptions.length > 0;
   const formatScore = scoreFormatter || ((score) => Number(score || 0).toLocaleString("zh-CN"));
   let pendingScore = null;
+  let pendingLevelId = null;
   let unsubscribe = null;
-  let loaded = false;
+  let loadedBoardId = null;
   let selectedRegion = null;
+  let selectedLevelId = hasLevels ? levelOptions[0].id : "";
+
+  const getCurrentLevelId = () => {
+    const requested = typeof getLevelId === "function" ? getLevelId() : selectedLevelId;
+    const requestedText = cleanText(requested, 40);
+    return levelOptions.some((level) => level.id === requestedText) ? requestedText : selectedLevelId;
+  };
+  const getSelectedLevel = () => levelOptions.find((level) => level.id === selectedLevelId);
+  const getBoardId = () => (hasLevels ? `${gameId}_${selectedLevelId}` : gameId);
+  const getBoardName = () => (hasLevels ? `${gameName || gameId} - ${getSelectedLevel()?.name || selectedLevelId}` : gameName || gameId);
 
   const button = document.createElement("button");
   button.className = "zizi-lb-button";
@@ -449,8 +489,21 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
   const title = document.createElement("h2");
   title.textContent = "排行榜 / Leaderboard";
   const subtitle = document.createElement("p");
-  subtitle.textContent = gameName || gameId;
+  subtitle.textContent = getBoardName();
   titleWrap.append(title, subtitle);
+
+  const levelSelect = document.createElement("select");
+  levelSelect.className = "zizi-lb-level-select";
+  levelSelect.hidden = !hasLevels;
+  if (hasLevels) {
+    levelOptions.forEach((level) => {
+      const option = document.createElement("option");
+      option.value = level.id;
+      option.textContent = level.name;
+      levelSelect.appendChild(option);
+    });
+    titleWrap.appendChild(levelSelect);
+  }
 
   const close = document.createElement("button");
   close.className = "zizi-lb-close";
@@ -549,6 +602,24 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
     });
   }
 
+  function resetLoadedBoard() {
+    if (typeof unsubscribe === "function") unsubscribe();
+    unsubscribe = null;
+    loadedBoardId = null;
+    renderRows([]);
+  }
+
+  function syncLevelFromGame() {
+    if (!hasLevels) return;
+    const currentLevelId = getCurrentLevelId();
+    if (currentLevelId !== selectedLevelId) {
+      selectedLevelId = currentLevelId;
+      levelSelect.value = selectedLevelId;
+      resetLoadedBoard();
+    }
+    subtitle.textContent = getBoardName();
+  }
+
   function hasCloudBaseConfig(config) {
     return Boolean(config.enabled && config.cloudbase?.env && !config.cloudbase.env.startsWith("PASTE_") && config.cloudbase?.sdkUrl);
   }
@@ -608,12 +679,14 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
   }
 
   async function loadScores() {
-    if (loaded) return;
-    loaded = true;
+    const boardId = getBoardId();
+    if (loadedBoardId === boardId) return;
+    resetLoadedBoard();
+    loadedBoardId = boardId;
     setStatus("正在连接排行榜...");
     try {
       const firebase = await getFirebase();
-      const ref = firebase.collection(firebase.db, "leaderboards", gameId, "scores");
+      const ref = firebase.collection(firebase.db, "leaderboards", boardId, "scores");
       const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(READ_LIMIT));
       unsubscribe = firebase.onSnapshot(scoresQuery, (snapshot) => {
         const rows = snapshot.docs
@@ -631,11 +704,11 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
         renderRows(rows);
         setStatus("排行榜已同步。");
       }, () => {
-        loaded = false;
+        loadedBoardId = null;
         setStatus("无法读取排行榜，请检查 Firebase 配置或 Firestore rules。", true);
       });
     } catch (_) {
-      loaded = false;
+      loadedBoardId = null;
       firebasePromise = null;
       setStatus("Firebase 国际版暂时无法连接。中国大陆备用后端还未启用。", true);
       renderRows([]);
@@ -643,11 +716,12 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
   }
 
   async function loadMainlandScores() {
+    const boardId = getBoardId();
     setStatus("正在连接中国大陆排行榜...");
     try {
       const db = await getCloudBaseDb();
       const collectionName = mainlandConfig.cloudbase.collections.leaderboards;
-      const snapshot = await db.collection(collectionName).where({ gameId }).orderBy("score", "desc").limit(READ_LIMIT).get();
+      const snapshot = await db.collection(collectionName).where({ gameId: boardId }).orderBy("score", "desc").limit(READ_LIMIT).get();
       const rows = (snapshot.data || [])
         .map((data) => ({
           nickname: cleanText(data.nickname, MAX_NAME),
@@ -666,6 +740,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
   }
 
   function open(showSubmit = false) {
+    if (showSubmit && hasLevels && pendingLevelId) {
+      selectedLevelId = pendingLevelId;
+      levelSelect.value = selectedLevelId;
+      subtitle.textContent = getBoardName();
+    } else {
+      syncLevelFromGame();
+    }
     modal.hidden = false;
     if (selectedRegion === "international") {
       showInternational(showSubmit);
@@ -685,6 +766,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
   internationalChoice.addEventListener("click", () => showInternational(Boolean(pendingScore)));
   regionBack.addEventListener("click", showRegionSelection);
   close.addEventListener("click", closeModal);
+  levelSelect.addEventListener("change", () => {
+    selectedLevelId = levelSelect.value;
+    subtitle.textContent = getBoardName();
+    resetLoadedBoard();
+    if (selectedRegion === "international") showInternational(Boolean(pendingScore));
+    if (selectedRegion === "mainland") showMainland(Boolean(pendingScore));
+  });
   modal.addEventListener("click", (event) => {
     if (event.target === modal) closeModal();
   });
@@ -696,6 +784,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
     event.preventDefault();
     const nickname = cleanText(nameInput.value, MAX_NAME);
     const score = normalizeScore(pendingScore);
+    const boardId = getBoardId();
     if (!nickname) {
       setStatus("请输入昵称。", true);
       return;
@@ -712,17 +801,17 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
         await db.collection(mainlandConfig.cloudbase.collections.leaderboards).add({
           nickname,
           score,
-          gameId,
+          gameId: boardId,
           createdAt: new Date().toISOString()
         });
         await loadMainlandScores();
       } else {
         const firebase = await getFirebase();
-        const ref = firebase.collection(firebase.db, "leaderboards", gameId, "scores");
+        const ref = firebase.collection(firebase.db, "leaderboards", boardId, "scores");
         await firebase.addDoc(ref, {
           nickname,
           score,
-          gameId,
+          gameId: boardId,
           createdAt: firebase.serverTimestamp()
         });
       }
@@ -739,6 +828,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter } = {}) {
     open,
     openSubmit(score) {
       pendingScore = normalizeScore(score);
+      pendingLevelId = hasLevels ? getCurrentLevelId() : null;
       scoreInput.value = formatScore(pendingScore);
       open(true);
     },

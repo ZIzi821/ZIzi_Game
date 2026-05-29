@@ -343,15 +343,6 @@
     </footer>
   </main>
 
-  <script type="module">
-    import { setupLeaderboard } from "../assets/leaderboard.js";
-
-    window.ZIziLeaderboards = window.ZIziLeaderboards || {};
-    window.ZIziLeaderboards.chomp = setupLeaderboard({
-      gameId: "chomp",
-      gameName: "Chomp / 大口吃"
-    });
-  </script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -455,6 +446,7 @@
 
     const LEVELS = [
       {
+        leaderboardId: 'bite-circuit',
         name: '01 Bite Circuit',
         objective: '吃完所有光豆',
         start: [14, 15],
@@ -471,6 +463,7 @@
         win: 'dots'
       },
       {
+        leaderboardId: 'crystal-gate',
         name: '02 Crystal Gate',
         objective: '收集3个水晶后进入绿门',
         start: [2, 16],
@@ -489,6 +482,7 @@
         win: 'crystal'
       },
       {
+        leaderboardId: 'core-run',
         name: '03 Core Run',
         objective: '偷走4个核心并撤离',
         start: [14, 17],
@@ -698,6 +692,7 @@
       score: 0,
       lives: 3,
       combo: 0,
+      levelScore: 0,
       message: '',
       messageTime: 0,
       time: 0,
@@ -705,15 +700,21 @@
       returnState: 'menu'
     };
 
+    function syncLeaderboardLevel() {
+      window.ZIziChompCurrentLevelId = game.level?.leaderboardId || LEVELS[game.levelIndex]?.leaderboardId || 'bite-circuit';
+    }
+
     function start(levelIndex = game.levelIndex, resetScore = true) {
       game.levelIndex = levelIndex % LEVELS.length;
       game.level = LEVELS[game.levelIndex];
+      syncLeaderboardLevel();
       game.maze = new Maze(game.level);
       game.player = new Player(game.level.start);
       game.ghosts = game.level.ghosts.map(g => new Ghost(g[0], g[1], g[2]));
       game.state = 'playing';
       game.time = 0;
       game.combo = 0;
+      game.levelScore = 0;
       game.message = game.level.objective;
       game.messageTime = 3;
       if (resetScore) {
@@ -741,7 +742,7 @@
       playTone(160, 0.18, 'sawtooth', 0.055);
       if (game.lives <= 0) {
         game.state = 'gameover';
-        window.ZIziLeaderboards?.chomp?.openSubmit(game.score);
+        window.ZIziLeaderboards?.chomp?.openSubmit(game.levelScore);
         showOverlay('挑战失败', `最终分数：${game.score}。点击重新开始。`, '重新开始', true);
         return;
       }
@@ -753,6 +754,7 @@
 
     function addScore(n) {
       game.score += n;
+      game.levelScore += n;
       updateHud();
     }
 
@@ -846,11 +848,17 @@
       if (!won) return;
       addScore(1000 + Math.max(0, Math.floor(2600 - game.time * 8)));
       playTone(1040, 0.16, 'triangle', 0.06);
+      const clearedScore = game.levelScore;
+      const clearedLevel = game.level.name;
+      window.ZIziLeaderboards?.chomp?.openSubmit(clearedScore);
       if (game.levelIndex < LEVELS.length - 1) {
-        start(game.levelIndex + 1, false);
+        game.state = 'win';
+        game.levelIndex += 1;
+        game.level = LEVELS[game.levelIndex];
+        syncLeaderboardLevel();
+        showOverlay('关卡完成', `${clearedLevel} 分数：${clearedScore}。`, '下一关', true);
       } else {
         game.state = 'win';
-        window.ZIziLeaderboards?.chomp?.openSubmit(game.score);
         showOverlay('大口吃通关', `最终分数：${game.score}。你完成了全部迷宫挑战。`, '再来一局', true);
       }
     }
@@ -878,6 +886,7 @@
     function showLevelSelect() {
       game.state = 'levelSelect';
       game.level = LEVELS[game.levelIndex];
+      syncLeaderboardLevel();
       showOverlay('Level Selection / 选择关卡', `${game.level.name}：${game.level.objective}`, 'Start Level / 开始这一关', true);
       updateHud();
     }
@@ -1161,6 +1170,23 @@
 
     updateHud();
     showIntro();
+    import('../assets/leaderboard.js')
+      .then(({ setupLeaderboard }) => {
+        window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+        window.ZIziLeaderboards.chomp = setupLeaderboard({
+          gameId: "chomp",
+          gameName: "Chomp / 大口吃",
+          levels: [
+            { id: "bite-circuit", name: "01 Bite Circuit" },
+            { id: "crystal-gate", name: "02 Crystal Gate" },
+            { id: "core-run", name: "03 Core Run" }
+          ],
+          getLevelId: () => window.ZIziChompCurrentLevelId || "bite-circuit"
+        });
+      })
+      .catch(() => {
+        window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+      });
     requestAnimationFrame(loop);
   </script>
 </body>

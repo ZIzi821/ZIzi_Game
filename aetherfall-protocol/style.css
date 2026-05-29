@@ -167,13 +167,14 @@ kbd {
 
 .bottom {
   bottom: clamp(12px, 2vw, 22px);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr);
   align-items: flex-end;
-  justify-content: space-between;
   gap: 16px;
 }
 
 .meters {
+  justify-self: start;
   width: min(420px, 58vw);
   padding: 11px 12px 12px;
   border-radius: 8px;
@@ -221,9 +222,10 @@ kbd {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
+  justify-self: center;
   gap: 8px;
-  max-width: 46vw;
+  max-width: min(560px, 42vw);
   padding: 9px 10px;
   border-radius: 8px;
   color: var(--muted);
@@ -414,6 +416,10 @@ button:hover {
   .top,
   .bottom {
     align-items: stretch;
+  }
+
+  .bottom {
+    grid-template-columns: 1fr;
   }
 
   .brand small,

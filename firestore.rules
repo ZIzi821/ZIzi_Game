@@ -3,7 +3,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function validLeaderboardGame(gameId) {
-      return gameId == 'starfall' || gameId == 'sentinel' || gameId == 'chomp';
+      return gameId == 'starfall' ||
+        gameId == 'sentinel' ||
+        gameId == 'chomp' ||
+        gameId == 'chomp_bite-circuit' ||
+        gameId == 'chomp_crystal-gate' ||
+        gameId == 'chomp_core-run';
     }
 
     match /messages/{messageId} {
