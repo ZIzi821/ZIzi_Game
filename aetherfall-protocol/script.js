@@ -629,7 +629,7 @@ class Game {
   }
 
   updateMute() {
-    ui.mute.textContent = this.audio.muted ? "音效关闭" : "音效开启";
+    ui.mute.textContent = this.audio.muted ? "音效已关闭" : "音效已开启";
   }
 
   frame(now) {
