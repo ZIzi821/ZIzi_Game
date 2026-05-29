@@ -409,7 +409,12 @@
         try {
           const rows = await fetchLeaderboardRows({ gameId, levelId, limit: 5 });
           renderPreview(list, rows);
-        } catch (_) {
+        } catch (error) {
+          console.error("[ZIzi Leaderboard] Homepage preview failed:", {
+            gameId,
+            levelId: levelId || null,
+            error
+          });
           list.innerHTML = '<p class="lb-empty">云端排行榜暂时无法读取。</p>';
         }
       }

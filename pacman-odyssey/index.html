@@ -1336,7 +1336,8 @@
           getLevelId: () => window.ZIziChompCurrentLevelId || "level1"
         });
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("[ZIzi Leaderboard] Chomp leaderboard module failed to load:", error);
         window.ZIziLeaderboards = window.ZIziLeaderboards || {};
       });
     requestAnimationFrame(loop);

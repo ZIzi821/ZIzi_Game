@@ -2,6 +2,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { mainlandConfig } from "./mainland-config.js";
 
 const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
+const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
 const MAX_NAME = 20;
 const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
@@ -454,9 +455,23 @@ function normalizeLevels(levels) {
     .filter(Boolean);
 }
 
+function normalizeLevelId(gameId, levelId = "") {
+  const cleanLevelId = cleanText(levelId, 40);
+  if (gameId !== "chomp") return "";
+  return VALID_CHOMP_LEVELS.has(cleanLevelId) ? cleanLevelId : "";
+}
+
+function getScorePath(gameId, levelId = "") {
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  return cleanLevelId
+    ? `leaderboards/${gameId}/levels/${cleanLevelId}/scores`
+    : `leaderboards/${gameId}/scores`;
+}
+
 function getScoreCollection(firebase, gameId, levelId = "") {
-  if (levelId) {
-    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", levelId, "scores");
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  if (cleanLevelId) {
+    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", cleanLevelId, "scores");
   }
   return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
 }
@@ -477,7 +492,8 @@ export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5 } =
   }
 
   const firebase = await getFirebase();
-  const ref = getScoreCollection(firebase, gameId, levelId);
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  const ref = getScoreCollection(firebase, gameId, cleanLevelId);
   const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(limit));
   const snapshot = await firebase.getDocs(scoresQuery);
   return snapshot.docs
@@ -731,7 +747,8 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     setStatus("正在连接排行榜...");
     try {
       const firebase = await getFirebase();
-      const ref = getScoreCollection(firebase, gameId, getBoardLevelId());
+      const boardLevelId = getBoardLevelId();
+      const ref = getScoreCollection(firebase, gameId, boardLevelId);
       const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(READ_LIMIT));
       unsubscribe = firebase.onSnapshot(scoresQuery, (snapshot) => {
         const rows = snapshot.docs
@@ -742,7 +759,12 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
         setStatus("排行榜已同步。");
       }, (error) => {
         loadedBoardId = null;
-        console.error("[ZIzi Leaderboard] Firestore read failed:", error);
+        console.error("[ZIzi Leaderboard] Firestore read failed:", {
+          gameId,
+          levelId: boardLevelId || null,
+          path: getScorePath(gameId, boardLevelId),
+          error
+        });
         setStatus("无法读取云端排行榜。请确认 firestore.rules 已部署到 Firebase 项目 zizicommunity。", true);
       });
     } catch (error) {
@@ -862,7 +884,21 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       form.hidden = true;
       setStatus("分数已提交。");
     } catch (error) {
-      console.error("[ZIzi Leaderboard] Firestore submit failed:", error);
+      console.error("[ZIzi Leaderboard] Firebase leaderboard submission failed:", {
+        gameId,
+        levelId: levelId || null,
+        path: selectedRegion === "mainland"
+          ? mainlandConfig.cloudbase.collections.leaderboards
+          : getScorePath(gameId, levelId),
+        payload: {
+          nickname,
+          score,
+          gameId,
+          ...(levelId ? { levelId } : {}),
+          createdAt: selectedRegion === "mainland" ? "client ISO timestamp" : "serverTimestamp()"
+        },
+        error
+      });
       setStatus("提交失败。请确认 firestore.rules 已部署，并且当前榜单路径被允许写入。", true);
     } finally {
       submit.disabled = false;

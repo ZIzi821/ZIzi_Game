@@ -11,6 +11,13 @@ service cloud.firestore {
       ];
     }
 
+    function validStandardLeaderboardGame(gameId) {
+      return gameId in [
+        'starfall',
+        'sentinel'
+      ];
+    }
+
     function validChompLevel(levelId) {
       return levelId in [
         'level1',
@@ -39,7 +46,7 @@ service cloud.firestore {
       allow read: if validLeaderboardGame(gameId);
 
       allow create: if
-        validLeaderboardGame(gameId) &&
+        validStandardLeaderboardGame(gameId) &&
         request.resource.data.keys().hasOnly(['nickname', 'score', 'gameId', 'createdAt']) &&
         request.resource.data.nickname is string &&
         request.resource.data.nickname.size() >= 1 &&
