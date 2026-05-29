@@ -740,14 +740,16 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
           .slice(0, TOP_LIMIT);
         renderRows(rows);
         setStatus("排行榜已同步。");
-      }, () => {
+      }, (error) => {
         loadedBoardId = null;
-        setStatus("无法读取排行榜，请检查 Firebase 配置或 Firestore rules。", true);
+        console.error("[ZIzi Leaderboard] Firestore read failed:", error);
+        setStatus("无法读取云端排行榜。请确认 firestore.rules 已部署到 Firebase 项目 zizicommunity。", true);
       });
-    } catch (_) {
+    } catch (error) {
       loadedBoardId = null;
       firebasePromise = null;
-      setStatus("Firebase 国际版暂时无法连接。中国大陆备用后端还未启用。", true);
+      console.error("[ZIzi Leaderboard] Firebase connection failed:", error);
+      setStatus("Firebase 连接失败。请检查网络、Firebase 配置和浏览器控制台错误。", true);
       renderRows([]);
     }
   }
@@ -859,8 +861,9 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       }
       form.hidden = true;
       setStatus("分数已提交。");
-    } catch (_) {
-      setStatus("提交失败，请检查 Firestore rules。", true);
+    } catch (error) {
+      console.error("[ZIzi Leaderboard] Firestore submit failed:", error);
+      setStatus("提交失败。请确认 firestore.rules 已部署，并且当前榜单路径被允许写入。", true);
     } finally {
       submit.disabled = false;
     }
