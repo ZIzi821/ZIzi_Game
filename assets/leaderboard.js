@@ -1,4 +1,5 @@
-import { ZiZiData } from "./data/zizi-data-service.js";
+import { firebaseConfig } from "./firebase-config.js";
+import { mainlandConfig } from "./mainland-config.js";
 
 const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
 const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
@@ -7,6 +8,8 @@ const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
 const READ_LIMIT = 50;
 
+let firebasePromise;
+let cloudbasePromise;
 
 function cleanText(value, max) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -341,6 +344,67 @@ function injectStyles() {
   document.head.appendChild(style);
 }
 
+async function getFirebase() {
+  if (!firebasePromise) {
+    firebasePromise = Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
+    ]).then(([appModule, firestoreModule]) => {
+      const app = appModule.getApps().length
+        ? appModule.getApp()
+        : appModule.initializeApp(firebaseConfig);
+      return {
+        db: firestoreModule.getFirestore(app),
+        addDoc: firestoreModule.addDoc,
+        collection: firestoreModule.collection,
+        getDocs: firestoreModule.getDocs,
+        limit: firestoreModule.limit,
+        onSnapshot: firestoreModule.onSnapshot,
+        orderBy: firestoreModule.orderBy,
+        query: firestoreModule.query,
+        serverTimestamp: firestoreModule.serverTimestamp
+      };
+    });
+  }
+  return firebasePromise;
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (window.cloudbase) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function getCloudBaseDb() {
+  if (!cloudbasePromise) {
+    cloudbasePromise = loadScript(mainlandConfig.cloudbase.sdkUrl).then(async () => {
+      const initOptions = {
+        env: mainlandConfig.cloudbase.env,
+        region: mainlandConfig.cloudbase.region || "ap-shanghai"
+      };
+      if (mainlandConfig.cloudbase.accessKey) initOptions.accessKey = mainlandConfig.cloudbase.accessKey;
+      const app = window.cloudbase.init(initOptions);
+      const auth = app.auth({ persistence: "local" });
+      if (typeof auth.signInAnonymously === "function") {
+        await auth.signInAnonymously();
+      } else {
+        await auth.anonymousAuthProvider().signIn();
+      }
+      return app.database();
+    });
+  }
+  return cloudbasePromise;
+}
+
 function makeRow({ rank, nickname, score, createdAt }, scoreFormatter) {
   const row = document.createElement("div");
   row.className = "zizi-lb-row";
@@ -404,6 +468,14 @@ function getScorePath(gameId, levelId = "") {
     : `leaderboards/${gameId}/scores`;
 }
 
+function getScoreCollection(firebase, gameId, levelId = "") {
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  if (cleanLevelId) {
+    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", cleanLevelId, "scores");
+  }
+  return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
+}
+
 function mapScoreDoc(doc) {
   const data = doc.data();
   return {
@@ -416,20 +488,16 @@ function mapScoreDoc(doc) {
 
 export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5 } = {}) {
   if (!VALID_GAMES.has(gameId)) {
-    throw new Error("Unknown leaderboard gameId: " + gameId);
+    throw new Error(`Unknown leaderboard gameId: ${gameId}`);
   }
 
-  const response = await ZiZiData.getLeaderboard(gameId, { levelId, limit });
-  if (!response.ok) {
-    throw new Error(response.error || "Leaderboard unavailable");
-  }
-  return response.items
-    .map((row) => ({
-      nickname: cleanText(row.nickname || row.playerName, MAX_NAME),
-      score: normalizeScore(row.score),
-      createdAt: row.createdAt,
-      orderTime: createdAtMs(row.createdAt)
-    }))
+  const firebase = await getFirebase();
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  const ref = getScoreCollection(firebase, gameId, cleanLevelId);
+  const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(limit));
+  const snapshot = await firebase.getDocs(scoresQuery);
+  return snapshot.docs
+    .map(mapScoreDoc)
     .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
     .slice(0, limit);
 }
@@ -534,7 +602,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   const note = document.createElement("p");
   note.className = "zizi-lb-note";
-  note.textContent = "Cloudflare Worker API first; Firebase fallback is kept in ZiZiData.";
+  note.textContent = "国际排行榜（包含港澳台）使用 Firebase Firestore。";
 
   const regionChoice = document.createElement("div");
   regionChoice.className = "zizi-lb-region";
@@ -542,19 +610,19 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const mainlandChoice = document.createElement("button");
   mainlandChoice.className = "zizi-lb-choice mainland";
   mainlandChoice.type = "button";
-  mainlandChoice.innerHTML = "<strong>Mainland China Leaderboard</strong><span>Uses the unified Cloudflare Worker API.</span>";
+  mainlandChoice.innerHTML = "<strong>中国大陆排行榜</strong><span>Mainland China Leaderboard<br>不使用 Firebase 或 Google 服务。</span>";
 
   const internationalChoice = document.createElement("button");
   internationalChoice.className = "zizi-lb-choice international";
   internationalChoice.type = "button";
-  internationalChoice.innerHTML = "<strong>International Leaderboard</strong><span>Uses the unified Cloudflare Worker API.</span>";
+  internationalChoice.innerHTML = "<strong>国际排行榜（包含港澳台）</strong><span>International Leaderboard<br>继续使用当前 Firebase 排行榜。</span>";
 
   regionChoice.append(mainlandChoice, internationalChoice);
 
   const mainlandNote = document.createElement("div");
   mainlandNote.className = "zizi-lb-mainland-note";
   mainlandNote.hidden = true;
-  mainlandNote.innerHTML = "<p>Cloudflare Worker API is the primary leaderboard backend. Firebase remains available through ZiZiData fallback.</p>";
+  mainlandNote.innerHTML = "<p>中国大陆排行榜正在建设中。由于 Firebase 在中国大陆访问不稳定，这里将使用更适合中国大陆访问的排行榜方案。</p>";
 
   const regionBack = document.createElement("button");
   regionBack.className = "zizi-lb-back";
@@ -613,6 +681,10 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     subtitle.textContent = getBoardName();
   }
 
+  function hasCloudBaseConfig(config) {
+    return Boolean(config.enabled && config.cloudbase?.env && !config.cloudbase.env.startsWith("PASTE_") && config.cloudbase?.sdkUrl);
+  }
+
   function showRegionSelection() {
     selectedRegion = null;
     regionChoice.hidden = false;
@@ -636,13 +708,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   }
 
   function showInternational(showSubmit = false) {
-    selectedRegion = "global";
+    selectedRegion = "international";
     regionChoice.hidden = true;
     regionBack.hidden = false;
     mainlandNote.hidden = true;
     form.hidden = !showSubmit;
     note.hidden = false;
-    note.textContent = "Cloudflare Worker API first; Firebase fallback is kept in ZiZiData.";
+    note.textContent = "国际排行榜（包含港澳台）使用 Firebase Firestore。";
     status.hidden = false;
     list.hidden = false;
     loadScores();
@@ -650,49 +722,82 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   }
 
   async function showMainland(showSubmit = false) {
+    if (!hasCloudBaseConfig(mainlandConfig)) {
+      showMainlandFallback();
+      return;
+    }
     selectedRegion = "mainland";
     regionChoice.hidden = true;
     regionBack.hidden = false;
     mainlandNote.hidden = true;
     form.hidden = !showSubmit;
     note.hidden = false;
-    note.textContent = "Cloudflare Worker API first; Firebase fallback is kept in ZiZiData.";
+    note.textContent = "中国大陆排行榜使用 Tencent CloudBase。";
     status.hidden = false;
     list.hidden = false;
-    loadScores();
+    await loadMainlandScores();
     if (showSubmit) nameInput.focus();
   }
 
   async function loadScores() {
-    const boardLevelId = getBoardLevelId();
-    const boardKey = gameId + ":" + boardLevelId;
+    const boardKey = `${gameId}:${getBoardLevelId()}`;
     if (loadedBoardId === boardKey) return;
     resetLoadedBoard();
     loadedBoardId = boardKey;
-    setStatus("Loading leaderboard...");
+    setStatus("正在连接排行榜...");
     try {
-      const response = await ZiZiData.getLeaderboard(gameId, { levelId: boardLevelId, limit: READ_LIMIT });
-      if (!response.ok) throw new Error(response.error || "Leaderboard unavailable");
-      const rows = response.items
-        .map((row) => ({
-          nickname: cleanText(row.nickname || row.playerName, MAX_NAME),
-          score: normalizeScore(row.score),
-          createdAt: row.createdAt,
-          orderTime: createdAtMs(row.createdAt)
+      const firebase = await getFirebase();
+      const boardLevelId = getBoardLevelId();
+      const ref = getScoreCollection(firebase, gameId, boardLevelId);
+      const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(READ_LIMIT));
+      unsubscribe = firebase.onSnapshot(scoresQuery, (snapshot) => {
+        const rows = snapshot.docs
+          .map(mapScoreDoc)
+          .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
+          .slice(0, TOP_LIMIT);
+        renderRows(rows);
+        setStatus("排行榜已同步。");
+      }, (error) => {
+        loadedBoardId = null;
+        console.error("[ZIzi Leaderboard] Firestore read failed:", {
+          gameId,
+          levelId: boardLevelId || null,
+          path: getScorePath(gameId, boardLevelId),
+          error
+        });
+        setStatus("无法读取云端排行榜。请确认 firestore.rules 已部署到 Firebase 项目 zizicommunity。", true);
+      });
+    } catch (error) {
+      loadedBoardId = null;
+      firebasePromise = null;
+      console.error("[ZIzi Leaderboard] Firebase connection failed:", error);
+      setStatus("Firebase 连接失败。请检查网络、Firebase 配置和浏览器控制台错误。", true);
+      renderRows([]);
+    }
+  }
+
+  async function loadMainlandScores() {
+    const levelId = getBoardLevelId();
+    setStatus("正在连接中国大陆排行榜...");
+    try {
+      const db = await getCloudBaseDb();
+      const collectionName = mainlandConfig.cloudbase.collections.leaderboards;
+      const whereClause = levelId ? { gameId, levelId } : { gameId };
+      const snapshot = await db.collection(collectionName).where(whereClause).orderBy("score", "desc").limit(READ_LIMIT).get();
+      const rows = (snapshot.data || [])
+        .map((data) => ({
+          nickname: cleanText(data.nickname, MAX_NAME),
+          score: normalizeScore(data.score),
+          createdAt: data.createdAt,
+          orderTime: createdAtMs(data.createdAt)
         }))
         .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
         .slice(0, TOP_LIMIT);
       renderRows(rows);
-      setStatus("Leaderboard synced.");
-    } catch (error) {
-      loadedBoardId = null;
-      console.error("[ZIzi Leaderboard] Unified leaderboard read failed:", {
-        gameId,
-        levelId: boardLevelId || null,
-        error
-      });
-      setStatus("Leaderboard unavailable.", true);
-      renderRows([]);
+      setStatus("中国大陆排行榜已同步。");
+    } catch (_) {
+      cloudbasePromise = null;
+      showMainlandFallback();
     }
   }
 
@@ -705,7 +810,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       syncLevelFromGame();
     }
     modal.hidden = false;
-    if (selectedRegion === "international" || selectedRegion === "global") {
+    if (selectedRegion === "international") {
       showInternational(showSubmit);
     } else if (selectedRegion === "mainland") {
       showMainland(showSubmit);
@@ -727,7 +832,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     selectedLevelId = levelSelect.value;
     subtitle.textContent = getBoardName();
     resetLoadedBoard();
-    if (selectedRegion === "international" || selectedRegion === "global") showInternational(Boolean(pendingScore));
+    if (selectedRegion === "international") showInternational(Boolean(pendingScore));
     if (selectedRegion === "mainland") showMainland(Boolean(pendingScore));
   });
   modal.addEventListener("click", (event) => {
@@ -753,31 +858,48 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     submit.disabled = true;
     setStatus("正在提交分数...");
     try {
-      const response = await ZiZiData.submitScore(gameId, {
-        playerName: nickname,
-        score,
-        levelId,
-        region: selectedRegion || "global"
-      });
-      if (!response.ok) throw new Error(response.error || "Submit failed");
-      await loadScores();
+      if (selectedRegion === "mainland") {
+        const db = await getCloudBaseDb();
+        const data = {
+          nickname,
+          score,
+          gameId,
+          createdAt: new Date().toISOString()
+        };
+        if (levelId) data.levelId = levelId;
+        await db.collection(mainlandConfig.cloudbase.collections.leaderboards).add(data);
+        await loadMainlandScores();
+      } else {
+        const firebase = await getFirebase();
+        const ref = getScoreCollection(firebase, gameId, levelId);
+        const data = {
+          nickname,
+          score,
+          gameId,
+          createdAt: firebase.serverTimestamp()
+        };
+        if (levelId) data.levelId = levelId;
+        await firebase.addDoc(ref, data);
+      }
       form.hidden = true;
       setStatus("分数已提交。");
     } catch (error) {
-      console.error("[ZIzi Leaderboard] Unified leaderboard submission failed:", {
+      console.error("[ZIzi Leaderboard] Firebase leaderboard submission failed:", {
         gameId,
         levelId: levelId || null,
-        path: getScorePath(gameId, levelId),
+        path: selectedRegion === "mainland"
+          ? mainlandConfig.cloudbase.collections.leaderboards
+          : getScorePath(gameId, levelId),
         payload: {
           nickname,
           score,
           gameId,
           ...(levelId ? { levelId } : {}),
-          createdAt: "server timestamp"
+          createdAt: selectedRegion === "mainland" ? "client ISO timestamp" : "serverTimestamp()"
         },
         error
       });
-      setStatus("Leaderboard unavailable.", true);
+      setStatus("提交失败。请确认 firestore.rules 已部署，并且当前榜单路径被允许写入。", true);
     } finally {
       submit.disabled = false;
     }

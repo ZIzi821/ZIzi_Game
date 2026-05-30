@@ -207,17 +207,17 @@
       <nav><a class="back" href="forum.html">返回区域选择 / Back to Region Selection</a></nav>
       <p class="eyebrow">International Community</p>
       <h1>国际留言板（包含港澳台）</h1>
-      <p class="intro">This community board uses the unified Cloudflare Worker API first. Firebase remains available as fallback.</p>
+      <p class="intro">这里是 ZIzi Game Collection 的国际文字留言板，适合海外、香港、澳门和台湾用户。当前版本使用 Firebase Firestore。</p>
 
       <section class="panel" aria-label="发布留言">
         <form id="messageForm">
           <label>
             昵称 / Name
-            <input id="nickname" name="nickname" maxlength="24" autocomplete="name" placeholder="Max 24 characters" required />
+            <input id="nickname" name="nickname" maxlength="20" autocomplete="name" placeholder="最多 20 个字符" required />
           </label>
           <label>
             留言 / Message
-            <textarea id="message" name="message" maxlength="300" placeholder="Max 300 characters" required></textarea>
+            <textarea id="message" name="message" maxlength="500" placeholder="最多 500 个字符" required></textarea>
           </label>
           <div class="form-row">
             <button class="submit" id="submitButton" type="submit">发布留言</button>
@@ -229,27 +229,28 @@
       <section class="messages" id="messages" aria-live="polite" aria-label="留言列表"></section>
     </main>
 
-    
     <script type="module">
-      import { ZiZiData } from "./assets/data/zizi-data-service.js";
+      import { firebaseConfig } from "./assets/firebase-config.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+      import {
+        addDoc,
+        collection,
+        getFirestore,
+        limit,
+        onSnapshot,
+        orderBy,
+        query,
+        serverTimestamp
+      } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-      const MAX_NAME = 24;
-      const MAX_MESSAGE = 300;
-      const SERVER_ERROR = "\u8bc4\u8bba\u670d\u52a1\u5668\u6682\u65f6\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5 / Comment server is temporarily unavailable.";
+      const MAX_NAME = 20;
+      const MAX_MESSAGE = 500;
       const form = document.getElementById("messageForm");
-      const formPanel = document.getElementById("formPanel");
-      const fallbackPanel = document.getElementById("fallbackPanel");
       const nicknameInput = document.getElementById("nickname");
       const messageInput = document.getElementById("message");
       const submitButton = document.getElementById("submitButton");
       const statusText = document.getElementById("statusText");
       const messagesEl = document.getElementById("messages");
-
-      if (formPanel) formPanel.hidden = false;
-      if (fallbackPanel) fallbackPanel.hidden = true;
-      if (messagesEl) messagesEl.hidden = false;
-      if (nicknameInput) nicknameInput.maxLength = MAX_NAME;
-      if (messageInput) messageInput.maxLength = MAX_MESSAGE;
 
       function setStatus(text, error = false) {
         statusText.textContent = text;
@@ -257,18 +258,16 @@
       }
 
       function clean(value, max) {
-        return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+        return value.replace(/\s+/g, " ").trim().slice(0, max);
       }
 
       function cleanMessage(value) {
-        return String(value || "").replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim().slice(0, MAX_MESSAGE);
+        return value.replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim().slice(0, MAX_MESSAGE);
       }
 
       function formatTime(value) {
-        if (!value) return "Just now";
-        const date = typeof value.toDate === "function" ? value.toDate() : new Date(value);
-        if (Number.isNaN(date.getTime())) return "Just now";
-        return date.toLocaleString("zh-CN", {
+        if (!value || !value.toDate) return "刚刚";
+        return value.toDate().toLocaleString("zh-CN", {
           year: "numeric",
           month: "2-digit",
           day: "2-digit",
@@ -280,76 +279,83 @@
       function renderMessage(data) {
         const article = document.createElement("article");
         article.className = "message";
+
         const header = document.createElement("header");
         const name = document.createElement("span");
         name.className = "name";
-        name.textContent = data.nickname || data.playerName || "Anonymous";
+        name.textContent = data.nickname || "匿名";
+
         const time = document.createElement("time");
         time.className = "time";
         time.textContent = formatTime(data.createdAt);
+
         const body = document.createElement("p");
         body.className = "body";
         body.textContent = data.message || "";
+
         header.append(name, time);
         article.append(header, body);
         return article;
       }
 
-      function renderMessages(items) {
-        messagesEl.replaceChildren();
-        if (!items.length) {
-          const empty = document.createElement("p");
-          empty.className = "hint";
-          empty.textContent = "No comments yet.";
-          messagesEl.append(empty);
-          return;
-        }
-        items.forEach((item) => messagesEl.append(renderMessage(item)));
+      function hasFirebaseConfig(config) {
+        return Boolean(config.apiKey && !config.apiKey.startsWith("PASTE_") && config.projectId && !config.projectId.startsWith("PASTE_"));
       }
 
-      async function loadMessages() {
-        setStatus("Loading comments...");
-        try {
-          const result = await ZiZiData.getComments({ limit: 50 });
-          if (!result.ok) throw new Error(result.error || "Comment server unavailable");
-          renderMessages(result.items || []);
-          setStatus("Comments connected.");
-        } catch (error) {
-          console.error("[ZIzi Forum] Comment load failed:", error);
-          renderMessages([]);
-          setStatus(SERVER_ERROR, true);
-        }
-      }
-
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const playerName = clean(nicknameInput.value, MAX_NAME);
-        const message = cleanMessage(messageInput.value);
-        if (!playerName) {
-          setStatus("Please enter a name.", true);
-          return;
-        }
-        if (!message) {
-          setStatus("Please enter a message.", true);
-          return;
-        }
+      if (!hasFirebaseConfig(firebaseConfig)) {
         submitButton.disabled = true;
-        setStatus("Publishing...");
-        try {
-          const result = await ZiZiData.addComment({ playerName, message, region: "global" });
-          if (!result.ok) throw new Error(result.error || "Comment submission failed");
-          messageInput.value = "";
-          await loadMessages();
-          setStatus("Comment published.");
-        } catch (error) {
-          console.error("[ZIzi Forum] Comment submission failed:", error);
-          setStatus(SERVER_ERROR, true);
-        } finally {
-          submitButton.disabled = false;
-        }
-      });
+        setStatus("请先在 assets/firebase-config.js 中粘贴 Firebase config。", true);
+      } else {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const messagesRef = collection(db, "messages");
+        const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"), limit(50));
 
-      loadMessages();
+        onSnapshot(messagesQuery, (snapshot) => {
+          messagesEl.replaceChildren();
+          if (snapshot.empty) {
+            const empty = document.createElement("p");
+            empty.className = "hint";
+            empty.textContent = "还没有留言。";
+            messagesEl.append(empty);
+          } else {
+            snapshot.forEach((doc) => messagesEl.append(renderMessage(doc.data())));
+          }
+          setStatus("留言板已连接。");
+        }, () => {
+          setStatus("无法读取留言板，请检查 Firebase config 和 Firestore rules。", true);
+        });
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const nickname = clean(nicknameInput.value, MAX_NAME);
+          const message = cleanMessage(messageInput.value);
+          if (!nickname) {
+            setStatus("请输入昵称。", true);
+            return;
+          }
+          if (!message) {
+            setStatus("请输入留言内容。", true);
+            return;
+          }
+
+          submitButton.disabled = true;
+          setStatus("正在发布...");
+          try {
+            await addDoc(messagesRef, {
+              nickname,
+              message,
+              createdAt: serverTimestamp()
+            });
+            messageInput.value = "";
+            setStatus("发布成功。");
+          } catch (_) {
+            setStatus("发布失败，请检查 Firestore rules。", true);
+          } finally {
+            submitButton.disabled = false;
+          }
+        });
+      }
     </script>
   </body>
 </html>

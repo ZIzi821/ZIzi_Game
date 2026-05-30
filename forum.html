@@ -89,14 +89,16 @@
       <nav><a class="back" href="./">返回“选择一个游戏开始” / Back</a></nav>
       <p class="eyebrow">Community Region</p>
       <h1>选择社区留言板</h1>
-      <p class="intro">Choose a community entry. Both entries now use the unified Cloudflare Worker API first, with Firebase kept as fallback.</p>
+      <p class="intro">
+        为了让不同地区的玩家都能稳定留言，ZIzi Game Collection 将社区分为两个入口：国际版继续使用 Firebase；中国大陆版将使用更适合大陆访问的后端。
+      </p>
       <section class="choices" aria-label="社区留言板区域选择">
         <a class="region mainland" href="forum-mainland.html">
           <span class="badge">中国大陆 / Mainland China</span>
           <span>
             <h2>中国大陆留言板</h2>
             <p>Mainland China Community</p>
-            <p>Uses the unified Cloudflare Worker API first.</p>
+            <p>不使用 Firebase 或 Google 服务，准备接入 Tencent CloudBase。</p>
           </span>
         </a>
         <a class="region international" href="forum-international.html">
@@ -104,7 +106,7 @@
           <span>
             <h2>国际留言板（包含港澳台）</h2>
             <p>International Community (including Hong Kong, Macau, and Taiwan)</p>
-            <p>继续使用当前 Cloudflare Worker API 留言板。</p>
+            <p>继续使用当前 Firebase Firestore 留言板。</p>
           </span>
         </a>
       </section>

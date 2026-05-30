@@ -342,27 +342,26 @@
     </main>
 
     <script type="module">
-      import { setupLeaderboard } from "./assets/leaderboard.js";
-      import { ZiZiData } from "./assets/data/zizi-data-service.js";
+      import { fetchLeaderboardRows, setupLeaderboard } from "./assets/leaderboard.js";
 
       const scoreFormatter = (score) => Number(score || 0).toLocaleString("zh-CN");
       const chompLevelSelect = document.querySelector("[data-chomp-level]");
       const leaderboardApis = {
         starfall: setupLeaderboard({
           gameId: "starfall",
-          gameName: "Starfall / ??",
+          gameName: "Starfall / 星陨",
           buttonContainer: document.querySelector('[data-preview-game="starfall"] [data-leaderboard-action]'),
-          buttonLabel: "View Full Leaderboard"
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
         }),
         sentinel: setupLeaderboard({
           gameId: "sentinel",
-          gameName: "Sentinel / ????",
+          gameName: "Sentinel / 哨兵防线",
           buttonContainer: document.querySelector('[data-preview-game="sentinel"] [data-leaderboard-action]'),
-          buttonLabel: "View Full Leaderboard"
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
         }),
         chomp: setupLeaderboard({
           gameId: "chomp",
-          gameName: "Chomp / ???",
+          gameName: "Chomp / 大口吃",
           levels: [
             { id: "level1", name: "Level 1 / Beginner Maze" },
             { id: "level2", name: "Level 2 / Ghost Rush" },
@@ -370,7 +369,7 @@
           ],
           getLevelId: () => chompLevelSelect.value,
           buttonContainer: document.querySelector('[data-preview-game="chomp"] [data-leaderboard-action]'),
-          buttonLabel: "View Full Leaderboard"
+          buttonLabel: "查看完整排行榜 / View Full Leaderboard"
         })
       };
 
@@ -384,7 +383,7 @@
         if (!rows.length) {
           const empty = document.createElement("p");
           empty.className = "lb-empty";
-          empty.textContent = "\u6682\u65e0\u8bb0\u5f55 / No records yet";
+          empty.textContent = "暂无云端成绩。";
           container.appendChild(empty);
           return;
         }
@@ -392,57 +391,36 @@
         rows.forEach((row, index) => {
           const item = document.createElement("div");
           item.className = "lb-row";
-          item.innerHTML = '<span class="lb-rank">#' + (index + 1) + '</span><span class="lb-name"></span><span class="lb-score">' + scoreFormatter(row.score) + '</span>';
-          item.querySelector(".lb-name").textContent = row.nickname || row.playerName || "Anonymous";
+          item.innerHTML = `
+            <span class="lb-rank">#${index + 1}</span>
+            <span class="lb-name"></span>
+            <span class="lb-score">${scoreFormatter(row.score)}</span>
+          `;
+          item.querySelector(".lb-name").textContent = row.nickname || "Anonymous";
           container.appendChild(item);
         });
-      }
-
-      function setLoading(card) {
-        const list = card.querySelector("[data-preview-list]");
-        list.innerHTML = '<p class="lb-empty">Loading leaderboard...</p>';
-      }
-
-      function setUnavailable(card) {
-        const list = card.querySelector("[data-preview-list]");
-        list.innerHTML = '<p class="lb-empty">Leaderboard unavailable.</p>';
-      }
-
-      async function loadOverview() {
-        const cards = [...document.querySelectorAll("[data-preview-game]")];
-        cards.forEach(setLoading);
-        try {
-          const result = await ZiZiData.getLeaderboardOverview({ limit: 5 });
-          if (!result.ok) throw new Error(result.error || "Leaderboard overview unavailable");
-          cards.forEach((card) => {
-            const gameId = card.dataset.previewGame;
-            renderPreview(card.querySelector("[data-preview-list]"), result.items?.[gameId] || []);
-          });
-        } catch (error) {
-          console.error("[ZIzi Leaderboard] Homepage overview failed:", error);
-          cards.forEach(setUnavailable);
-        }
       }
 
       async function loadPreview(card) {
         const gameId = card.dataset.previewGame;
         const levelId = gameId === "chomp" ? chompLevelSelect.value : "";
-        setLoading(card);
+        const list = card.querySelector("[data-preview-list]");
+        list.innerHTML = '<p class="lb-empty">正在读取云端排行榜...</p>';
         try {
-          const result = await ZiZiData.getLeaderboard(gameId, { levelId, limit: 5 });
-          if (!result.ok) throw new Error(result.error || "Leaderboard unavailable");
-          renderPreview(card.querySelector("[data-preview-list]"), result.items || []);
+          const rows = await fetchLeaderboardRows({ gameId, levelId, limit: 5 });
+          renderPreview(list, rows);
         } catch (error) {
           console.error("[ZIzi Leaderboard] Homepage preview failed:", {
             gameId,
             levelId: levelId || null,
             error
           });
-          setUnavailable(card);
+          list.innerHTML = '<p class="lb-empty">云端排行榜暂时无法读取。</p>';
         }
       }
 
-      loadOverview();
+      const cards = [...document.querySelectorAll("[data-preview-game]")];
+      cards.forEach(loadPreview);
       chompLevelSelect.addEventListener("change", () => {
         loadPreview(document.querySelector('[data-preview-game="chomp"]'));
       });
