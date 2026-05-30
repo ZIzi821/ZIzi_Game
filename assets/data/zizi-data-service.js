@@ -1,6 +1,6 @@
 ﻿import { firebaseConfig } from "../firebase-config.js";
 
-const API_BASE = "https://zizi-game-api.ehsshshhs526272828272828.workers.dev";
+const API_BASE = "https://zizi-game-api.ehsshshshhs526272828272828.workers.dev";
 const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
 const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
 const MAX_SCORE = 999999999;
