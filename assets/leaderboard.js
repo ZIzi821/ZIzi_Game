@@ -1,5 +1,11 @@
 import { firebaseConfig } from "./firebase-config.js";
-import { mainlandConfig } from "./mainland-config.js";
+import {
+  addPendingSyncItem,
+  cleanText,
+  createIssueUrlFromItems,
+  makeSyncId,
+  openIssueForItems
+} from "./sync-code.js";
 
 const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
 const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
@@ -7,13 +13,10 @@ const MAX_NAME = 20;
 const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
 const READ_LIMIT = 50;
+const FIREBASE_TIMEOUT_MS = 3500;
+const CACHE_URL = new URL("../data/leaderboards.json", import.meta.url);
 
 let firebasePromise;
-let cloudbasePromise;
-
-function cleanText(value, max) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
-}
 
 function normalizeScore(score) {
   const value = Number(score);
@@ -22,9 +25,9 @@ function normalizeScore(score) {
 }
 
 function formatTime(value) {
-  if (!value) return "刚刚";
+  if (!value) return "Just now";
   const date = typeof value.toDate === "function" ? value.toDate() : new Date(value);
-  if (Number.isNaN(date.getTime())) return "刚刚";
+  if (Number.isNaN(date.getTime())) return "Just now";
   return date.toLocaleString("zh-CN", {
     month: "2-digit",
     day: "2-digit",
@@ -40,308 +43,53 @@ function createdAtMs(value) {
   return Number.isNaN(date.getTime()) ? Date.now() : date.getTime();
 }
 
-function injectStyles() {
-  if (document.getElementById("zizi-leaderboard-style")) return;
-  const style = document.createElement("style");
-  style.id = "zizi-leaderboard-style";
-  style.textContent = `
-    .zizi-lb-button {
-      position: fixed;
-      right: clamp(14px, 3vw, 28px);
-      bottom: clamp(14px, 3vw, 28px);
-      z-index: 80;
-      border: 1px solid rgba(124, 229, 255, 0.45);
-      border-radius: 999px;
-      padding: 12px 18px;
-      color: #eafaff;
-      background: linear-gradient(135deg, rgba(13, 27, 45, 0.92), rgba(37, 31, 64, 0.92));
-      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), inset 0 0 22px rgba(104, 213, 255, 0.14);
-      font: 700 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      cursor: pointer;
-      letter-spacing: 0;
-    }
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    })
+  ]);
+}
 
-    .zizi-lb-button:hover,
-    .zizi-lb-button:focus-visible {
-      transform: translateY(-1px);
-      box-shadow: 0 22px 52px rgba(0, 0, 0, 0.48), 0 0 26px rgba(97, 214, 255, 0.24);
-    }
+function normalizeLevelId(gameId, levelId = "") {
+  const cleanLevelId = cleanText(levelId, 40);
+  if (gameId !== "chomp") return "";
+  return VALID_CHOMP_LEVELS.has(cleanLevelId) ? cleanLevelId : "level1";
+}
 
-    .zizi-lb-button.is-inline {
-      position: static;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      min-height: 42px;
-      padding: 10px 13px;
-      font-size: 13px;
-    }
+function getScoreCollection(firebase, gameId, levelId = "") {
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  if (gameId === "chomp") {
+    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", cleanLevelId, "scores");
+  }
+  return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
+}
 
-    .zizi-lb-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 120;
-      display: grid;
-      place-items: center;
-      padding: 18px;
-      background: radial-gradient(circle at 50% 20%, rgba(84, 180, 255, 0.18), transparent 42%),
-        rgba(4, 8, 15, 0.74);
-      backdrop-filter: blur(12px);
-    }
+function getScorePath(gameId, levelId = "") {
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  return gameId === "chomp"
+    ? `leaderboards/${gameId}/levels/${cleanLevelId}/scores`
+    : `leaderboards/${gameId}/scores`;
+}
 
-    .zizi-lb-modal[hidden] {
-      display: none;
-    }
+function mapScoreDoc(doc) {
+  const data = typeof doc.data === "function" ? doc.data() : doc;
+  return {
+    id: doc.id || data.id || "",
+    nickname: cleanText(data.nickname, MAX_NAME) || "Anonymous",
+    score: normalizeScore(data.score),
+    createdAt: data.createdAt,
+    sourceRegion: data.sourceRegion || "",
+    orderTime: createdAtMs(data.createdAt)
+  };
+}
 
-    .zizi-lb-panel {
-      width: min(720px, 100%);
-      max-height: min(760px, 92vh);
-      overflow: auto;
-      border: 1px solid rgba(126, 226, 255, 0.32);
-      border-radius: 18px;
-      color: #eefbff;
-      background: linear-gradient(180deg, rgba(13, 27, 45, 0.96), rgba(7, 12, 22, 0.97));
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-
-    .zizi-lb-head,
-    .zizi-lb-actions,
-    .zizi-lb-form {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .zizi-lb-head {
-      justify-content: space-between;
-      padding: 22px 22px 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .zizi-lb-head h2 {
-      margin: 0;
-      font-size: clamp(22px, 4vw, 34px);
-      letter-spacing: 0;
-    }
-
-    .zizi-lb-head p,
-    .zizi-lb-note,
-    .zizi-lb-status {
-      margin: 6px 0 0;
-      color: rgba(222, 245, 255, 0.74);
-      font-size: 13px;
-    }
-    
-    .zizi-lb-level-select {
-      margin-top: 10px;
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid rgba(126, 226, 255, 0.3);
-      border-radius: 8px;
-      background: rgba(2, 7, 14, 0.76);
-      color: #effcff;
-      font: 700 13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      outline: none;
-      cursor: pointer;
-    }
-    .zizi-lb-level-select option {
-      background: #0d1b2d;
-    }
-
-    .zizi-lb-close,
-    .zizi-lb-submit,
-    .zizi-lb-back {
-      border: 1px solid rgba(126, 226, 255, 0.34);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: #effcff;
-      background: rgba(255, 255, 255, 0.08);
-      cursor: pointer;
-      font: 700 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    .zizi-lb-submit {
-      background: linear-gradient(135deg, #52d9d0, #7c74ff);
-      border-color: transparent;
-      color: #07111c;
-    }
-
-    .zizi-lb-back {
-      margin-bottom: 14px;
-    }
-
-    .zizi-lb-body {
-      padding: 18px 22px 22px;
-    }
-
-    .zizi-lb-region {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .zizi-lb-region[hidden],
-    .zizi-lb-mainland-note[hidden],
-    .zizi-lb-list[hidden],
-    .zizi-lb-note[hidden],
-    .zizi-lb-status[hidden] {
-      display: none;
-    }
-
-    .zizi-lb-choice {
-      min-height: 154px;
-      display: grid;
-      align-content: space-between;
-      gap: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 14px;
-      padding: 16px;
-      color: #eefbff;
-      text-align: left;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .zizi-lb-choice strong {
-      display: block;
-      font-size: 20px;
-      line-height: 1.15;
-    }
-
-    .zizi-lb-choice span,
-    .zizi-lb-mainland-note p {
-      color: rgba(230, 244, 255, 0.78);
-      line-height: 1.55;
-    }
-
-    .zizi-lb-choice.mainland {
-      background: linear-gradient(135deg, rgba(110, 16, 30, 0.9), rgba(54, 22, 30, 0.9));
-    }
-
-    .zizi-lb-choice.international {
-      background: linear-gradient(135deg, rgba(10, 55, 76, 0.9), rgba(39, 33, 92, 0.9));
-    }
-
-    .zizi-lb-mainland-note {
-      padding: 16px;
-      border: 1px solid rgba(255, 200, 87, 0.28);
-      border-radius: 14px;
-      background: rgba(255, 200, 87, 0.08);
-    }
-
-    .zizi-lb-mainland-note p {
-      margin: 0;
-    }
-
-    .zizi-lb-form {
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.045);
-    }
-
-    .zizi-lb-form[hidden] {
-      display: none;
-    }
-
-    .zizi-lb-form label {
-      display: grid;
-      gap: 7px;
-      flex: 1 1 190px;
-      color: rgba(235, 250, 255, 0.76);
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-
-    .zizi-lb-form input {
-      width: 100%;
-      box-sizing: border-box;
-      border: 1px solid rgba(126, 226, 255, 0.3);
-      border-radius: 10px;
-      padding: 11px 12px;
-      color: #effcff;
-      background: rgba(2, 7, 14, 0.76);
-      outline: none;
-      font: 700 15px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    .zizi-lb-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .zizi-lb-row {
-      display: grid;
-      grid-template-columns: 54px minmax(0, 1fr) 120px 126px;
-      gap: 10px;
-      align-items: center;
-      min-height: 44px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.045);
-    }
-
-    .zizi-lb-row.is-head {
-      min-height: 28px;
-      color: rgba(220, 241, 255, 0.62);
-      background: transparent;
-      border-color: transparent;
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-
-    .zizi-lb-rank {
-      color: #83f2e9;
-      font-weight: 900;
-    }
-
-    .zizi-lb-name {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 800;
-    }
-
-    .zizi-lb-score {
-      color: #ffe08a;
-      font-weight: 900;
-      text-align: right;
-    }
-
-    .zizi-lb-time {
-      color: rgba(220, 241, 255, 0.68);
-      font-size: 12px;
-      text-align: right;
-    }
-
-    .zizi-lb-empty {
-      padding: 18px;
-      border: 1px dashed rgba(126, 226, 255, 0.28);
-      border-radius: 14px;
-      color: rgba(229, 246, 255, 0.72);
-      text-align: center;
-    }
-
-    @media (max-width: 620px) {
-      .zizi-lb-panel { border-radius: 14px; }
-      .zizi-lb-head { align-items: flex-start; }
-      .zizi-lb-region { grid-template-columns: 1fr; }
-      .zizi-lb-row {
-        grid-template-columns: 40px minmax(0, 1fr) 86px;
-      }
-      .zizi-lb-time,
-      .zizi-lb-row.is-head .zizi-lb-time {
-        display: none;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+function sortRows(rows, limit = TOP_LIMIT) {
+  return rows
+    .map(mapScoreDoc)
+    .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
+    .slice(0, limit);
 }
 
 async function getFirebase() {
@@ -359,7 +107,6 @@ async function getFirebase() {
         collection: firestoreModule.collection,
         getDocs: firestoreModule.getDocs,
         limit: firestoreModule.limit,
-        onSnapshot: firestoreModule.onSnapshot,
         orderBy: firestoreModule.orderBy,
         query: firestoreModule.query,
         serverTimestamp: firestoreModule.serverTimestamp
@@ -369,64 +116,80 @@ async function getFirebase() {
   return firebasePromise;
 }
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (window.cloudbase) {
-      resolve();
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
+async function fetchFirebaseRows(gameId, levelId, limitCount) {
+  const firebase = await getFirebase();
+  const ref = getScoreCollection(firebase, gameId, levelId);
+  const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(limitCount));
+  const snapshot = await firebase.getDocs(scoresQuery);
+  return sortRows(snapshot.docs, limitCount);
 }
 
-async function getCloudBaseDb() {
-  if (!cloudbasePromise) {
-    cloudbasePromise = loadScript(mainlandConfig.cloudbase.sdkUrl).then(async () => {
-      const initOptions = {
-        env: mainlandConfig.cloudbase.env,
-        region: mainlandConfig.cloudbase.region || "ap-shanghai"
-      };
-      if (mainlandConfig.cloudbase.accessKey) initOptions.accessKey = mainlandConfig.cloudbase.accessKey;
-      const app = window.cloudbase.init(initOptions);
-      const auth = app.auth({ persistence: "local" });
-      if (typeof auth.signInAnonymously === "function") {
-        await auth.signInAnonymously();
-      } else {
-        await auth.anonymousAuthProvider().signIn();
-      }
-      return app.database();
-    });
+async function fetchCachedRows(gameId, levelId, limitCount) {
+  const response = await fetch(CACHE_URL, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Cache request failed: ${response.status}`);
+  const payload = await response.json();
+  const source = gameId === "chomp"
+    ? payload?.leaderboards?.chomp?.[normalizeLevelId(gameId, levelId)]
+    : payload?.leaderboards?.[gameId];
+  return sortRows(Array.isArray(source) ? source : [], limitCount);
+}
+
+export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5, preferCache = false } = {}) {
+  if (!VALID_GAMES.has(gameId)) throw new Error(`Unknown leaderboard gameId: ${gameId}`);
+  const cleanLevelId = normalizeLevelId(gameId, levelId);
+  if (preferCache) return fetchCachedRows(gameId, cleanLevelId, limit);
+  try {
+    return await withTimeout(fetchFirebaseRows(gameId, cleanLevelId, limit), FIREBASE_TIMEOUT_MS, "Firebase leaderboard");
+  } catch (error) {
+    console.warn("[ZIzi Leaderboard] Firebase read fell back to cache:", error);
+    return fetchCachedRows(gameId, cleanLevelId, limit);
   }
-  return cloudbasePromise;
 }
 
-function makeRow({ rank, nickname, score, createdAt }, scoreFormatter) {
-  const row = document.createElement("div");
-  row.className = "zizi-lb-row";
+function normalizeLevels(levels) {
+  if (!Array.isArray(levels) || !levels.length) return [];
+  return levels
+    .map((level, index) => {
+      const id = cleanText(level?.id ?? level?.value ?? index + 1, 40).replace(/[^a-zA-Z0-9_-]/g, "-");
+      const name = cleanText(level?.name ?? level?.label ?? id, 80);
+      return id ? { id, name: name || id } : null;
+    })
+    .filter(Boolean);
+}
 
-  const rankEl = document.createElement("span");
-  rankEl.className = "zizi-lb-rank";
-  rankEl.textContent = `#${rank}`;
-
-  const nameEl = document.createElement("span");
-  nameEl.className = "zizi-lb-name";
-  nameEl.textContent = nickname || "Anonymous";
-
-  const scoreEl = document.createElement("span");
-  scoreEl.className = "zizi-lb-score";
-  scoreEl.textContent = scoreFormatter(score);
-
-  const timeEl = document.createElement("span");
-  timeEl.className = "zizi-lb-time";
-  timeEl.textContent = formatTime(createdAt);
-
-  row.append(rankEl, nameEl, scoreEl, timeEl);
-  return row;
+function injectStyles() {
+  if (document.getElementById("zizi-leaderboard-style")) return;
+  const style = document.createElement("style");
+  style.id = "zizi-leaderboard-style";
+  style.textContent = `
+    .zizi-lb-button { position: fixed; right: clamp(14px, 3vw, 28px); bottom: clamp(14px, 3vw, 28px); z-index: 80; border: 1px solid rgba(124, 229, 255, 0.45); border-radius: 999px; padding: 12px 18px; color: #eafaff; background: linear-gradient(135deg, rgba(13, 27, 45, 0.94), rgba(38, 36, 54, 0.94)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42); font: 800 14px/1.2 system-ui, sans-serif; cursor: pointer; letter-spacing: 0; }
+    .zizi-lb-button.is-inline { position: static; display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; padding: 10px 13px; font-size: 13px; }
+    .zizi-lb-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(4, 8, 15, 0.78); backdrop-filter: blur(12px); }
+    .zizi-lb-modal[hidden], .zizi-lb-form[hidden], .zizi-lb-note[hidden], .zizi-lb-pending[hidden] { display: none; }
+    .zizi-lb-panel { width: min(720px, 100%); max-height: min(760px, 92vh); overflow: auto; border: 1px solid rgba(126, 226, 255, 0.32); border-radius: 8px; color: #eefbff; background: linear-gradient(180deg, rgba(13, 27, 45, 0.98), rgba(7, 12, 22, 0.98)); box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58); }
+    .zizi-lb-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; padding: 22px 22px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    .zizi-lb-head h2 { margin: 0; font-size: clamp(22px, 4vw, 34px); letter-spacing: 0; }
+    .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: rgba(222, 245, 255, 0.74); font-size: 13px; line-height: 1.45; }
+    .zizi-lb-body { padding: 18px 22px 22px; }
+    .zizi-lb-close, .zizi-lb-submit, .zizi-lb-region, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(126, 226, 255, 0.34); border-radius: 8px; padding: 10px 14px; color: #effcff; background: rgba(255, 255, 255, 0.08); cursor: pointer; font: 800 13px/1 system-ui, sans-serif; }
+    .zizi-lb-actions, .zizi-lb-form, .zizi-lb-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .zizi-lb-submit, .zizi-lb-sync { background: linear-gradient(135deg, #52d9d0, #ffc857); border-color: transparent; color: #07111c; }
+    .zizi-lb-form { padding: 14px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; background: rgba(255, 255, 255, 0.045); }
+    .zizi-lb-form label { display: grid; gap: 7px; flex: 1 1 190px; color: rgba(235, 250, 255, 0.76); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+    .zizi-lb-form input, .zizi-lb-level-select, .zizi-lb-pending textarea { width: 100%; box-sizing: border-box; border: 1px solid rgba(126, 226, 255, 0.3); border-radius: 8px; padding: 11px 12px; color: #effcff; background: rgba(2, 7, 14, 0.76); outline: none; font: 700 14px/1.2 system-ui, sans-serif; }
+    .zizi-lb-level-select { margin-top: 10px; }
+    .zizi-lb-list { display: grid; gap: 8px; margin-top: 12px; }
+    .zizi-lb-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 120px 126px; gap: 10px; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; background: rgba(255, 255, 255, 0.045); }
+    .zizi-lb-row.is-head { min-height: 28px; color: rgba(220, 241, 255, 0.62); background: transparent; border-color: transparent; font-size: 12px; text-transform: uppercase; }
+    .zizi-lb-rank { color: #83f2e9; font-weight: 900; }
+    .zizi-lb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+    .zizi-lb-score { color: #ffe08a; font-weight: 900; text-align: right; }
+    .zizi-lb-time { color: rgba(220, 241, 255, 0.68); font-size: 12px; text-align: right; }
+    .zizi-lb-empty, .zizi-lb-pending { padding: 14px; border: 1px dashed rgba(126, 226, 255, 0.28); border-radius: 8px; color: rgba(229, 246, 255, 0.72); }
+    .zizi-lb-pending textarea { min-height: 96px; margin: 10px 0; resize: vertical; }
+    @media (max-width: 620px) { .zizi-lb-row { grid-template-columns: 40px minmax(0, 1fr) 86px; } .zizi-lb-time, .zizi-lb-row.is-head .zizi-lb-time { display: none; } }
+  `;
+  document.head.appendChild(style);
 }
 
 function makeHeadRow() {
@@ -444,69 +207,27 @@ function makeHeadRow() {
   return row;
 }
 
-function normalizeLevels(levels) {
-  if (!Array.isArray(levels) || !levels.length) return [];
-  return levels
-    .map((level, index) => {
-      const id = cleanText(level?.id ?? level?.value ?? index + 1, 40).replace(/[^a-zA-Z0-9_-]/g, "-");
-      const name = cleanText(level?.name ?? level?.label ?? id, 80);
-      return id ? { id, name: name || id } : null;
-    })
-    .filter(Boolean);
-}
-
-function normalizeLevelId(gameId, levelId = "") {
-  const cleanLevelId = cleanText(levelId, 40);
-  if (gameId !== "chomp") return "";
-  return VALID_CHOMP_LEVELS.has(cleanLevelId) ? cleanLevelId : "";
-}
-
-function getScorePath(gameId, levelId = "") {
-  const cleanLevelId = normalizeLevelId(gameId, levelId);
-  return cleanLevelId
-    ? `leaderboards/${gameId}/levels/${cleanLevelId}/scores`
-    : `leaderboards/${gameId}/scores`;
-}
-
-function getScoreCollection(firebase, gameId, levelId = "") {
-  const cleanLevelId = normalizeLevelId(gameId, levelId);
-  if (cleanLevelId) {
-    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", cleanLevelId, "scores");
-  }
-  return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
-}
-
-function mapScoreDoc(doc) {
-  const data = doc.data();
-  return {
-    nickname: cleanText(data.nickname, MAX_NAME),
-    score: normalizeScore(data.score),
-    createdAt: data.createdAt,
-    orderTime: createdAtMs(data.createdAt)
-  };
-}
-
-export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5 } = {}) {
-  if (!VALID_GAMES.has(gameId)) {
-    throw new Error(`Unknown leaderboard gameId: ${gameId}`);
-  }
-
-  const firebase = await getFirebase();
-  const cleanLevelId = normalizeLevelId(gameId, levelId);
-  const ref = getScoreCollection(firebase, gameId, cleanLevelId);
-  const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(limit));
-  const snapshot = await firebase.getDocs(scoresQuery);
-  return snapshot.docs
-    .map(mapScoreDoc)
-    .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
-    .slice(0, limit);
+function makeRow({ rank, nickname, score, createdAt }, scoreFormatter) {
+  const row = document.createElement("div");
+  row.className = "zizi-lb-row";
+  const rankEl = document.createElement("span");
+  rankEl.className = "zizi-lb-rank";
+  rankEl.textContent = `#${rank}`;
+  const nameEl = document.createElement("span");
+  nameEl.className = "zizi-lb-name";
+  nameEl.textContent = nickname || "Anonymous";
+  const scoreEl = document.createElement("span");
+  scoreEl.className = "zizi-lb-score";
+  scoreEl.textContent = scoreFormatter(score);
+  const timeEl = document.createElement("span");
+  timeEl.className = "zizi-lb-time";
+  timeEl.textContent = formatTime(createdAt);
+  row.append(rankEl, nameEl, scoreEl, timeEl);
+  return row;
 }
 
 export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, getLevelId, buttonContainer, buttonLabel } = {}) {
-  if (!VALID_GAMES.has(gameId)) {
-    throw new Error(`Unknown leaderboard gameId: ${gameId}`);
-  }
-
+  if (!VALID_GAMES.has(gameId)) throw new Error(`Unknown leaderboard gameId: ${gameId}`);
   injectStyles();
 
   const levelOptions = normalizeLevels(levels);
@@ -514,24 +235,25 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const formatScore = scoreFormatter || ((score) => Number(score || 0).toLocaleString("zh-CN"));
   let pendingScore = null;
   let pendingLevelId = null;
-  let unsubscribe = null;
-  let loadedBoardId = null;
-  let selectedRegion = null;
+  let selectedRegion = "international";
   let selectedLevelId = hasLevels ? levelOptions[0].id : "";
+  let lastPendingItem = null;
 
   const getCurrentLevelId = () => {
     const requested = typeof getLevelId === "function" ? getLevelId() : selectedLevelId;
     const requestedText = cleanText(requested, 40);
-    return levelOptions.some((level) => level.id === requestedText) ? requestedText : selectedLevelId;
+    return hasLevels && levelOptions.some((level) => level.id === requestedText) ? requestedText : selectedLevelId;
   };
-  const getSelectedLevel = () => levelOptions.find((level) => level.id === selectedLevelId);
   const getBoardLevelId = () => (hasLevels ? selectedLevelId : "");
-  const getBoardName = () => (hasLevels ? `${gameName || gameId} - ${getSelectedLevel()?.name || selectedLevelId}` : gameName || gameId);
+  const getBoardName = () => {
+    const level = levelOptions.find((option) => option.id === selectedLevelId);
+    return hasLevels ? `${gameName || gameId} - ${level?.name || selectedLevelId}` : gameName || gameId;
+  };
 
   const button = document.createElement("button");
   button.className = buttonContainer ? "zizi-lb-button is-inline" : "zizi-lb-button";
   button.type = "button";
-  button.textContent = buttonLabel || "排行榜 / Leaderboard";
+  button.textContent = buttonLabel || "Leaderboard";
 
   const modal = document.createElement("section");
   modal.className = "zizi-lb-modal";
@@ -541,104 +263,95 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   const panel = document.createElement("div");
   panel.className = "zizi-lb-panel";
-
   const head = document.createElement("div");
   head.className = "zizi-lb-head";
-
   const titleWrap = document.createElement("div");
   const title = document.createElement("h2");
-  title.textContent = "排行榜 / Leaderboard";
+  title.textContent = "Leaderboard";
   const subtitle = document.createElement("p");
   subtitle.textContent = getBoardName();
   titleWrap.append(title, subtitle);
-
   const levelSelect = document.createElement("select");
   levelSelect.className = "zizi-lb-level-select";
   levelSelect.hidden = !hasLevels;
-  if (hasLevels) {
-    levelOptions.forEach((level) => {
-      const option = document.createElement("option");
-      option.value = level.id;
-      option.textContent = level.name;
-      levelSelect.appendChild(option);
-    });
-    titleWrap.appendChild(levelSelect);
-  }
-
+  levelOptions.forEach((level) => {
+    const option = document.createElement("option");
+    option.value = level.id;
+    option.textContent = level.name;
+    levelSelect.appendChild(option);
+  });
+  titleWrap.appendChild(levelSelect);
   const close = document.createElement("button");
   close.className = "zizi-lb-close";
   close.type = "button";
-  close.textContent = "返回游戏";
+  close.textContent = "Back";
   head.append(titleWrap, close);
 
   const body = document.createElement("div");
   body.className = "zizi-lb-body";
+  const actions = document.createElement("div");
+  actions.className = "zizi-lb-actions";
+  const internationalButton = document.createElement("button");
+  internationalButton.className = "zizi-lb-region";
+  internationalButton.type = "button";
+  internationalButton.textContent = "International / Firebase";
+  const mainlandButton = document.createElement("button");
+  mainlandButton.className = "zizi-lb-region";
+  mainlandButton.type = "button";
+  mainlandButton.textContent = "Mainland / Cache";
+  actions.append(internationalButton, mainlandButton);
 
   const form = document.createElement("form");
   form.className = "zizi-lb-form";
   form.hidden = true;
-
   const nameLabel = document.createElement("label");
-  nameLabel.textContent = "Nickname / 昵称";
+  nameLabel.textContent = "Nickname";
   const nameInput = document.createElement("input");
   nameInput.name = "nickname";
   nameInput.maxLength = MAX_NAME;
-  nameInput.placeholder = "最多 20 个字符";
+  nameInput.placeholder = "20 characters max";
   nameInput.autocomplete = "nickname";
   nameLabel.appendChild(nameInput);
-
   const scoreLabel = document.createElement("label");
-  scoreLabel.textContent = "Score / 分数";
+  scoreLabel.textContent = "Score";
   const scoreInput = document.createElement("input");
   scoreInput.name = "score";
   scoreInput.readOnly = true;
   scoreLabel.appendChild(scoreInput);
-
   const submit = document.createElement("button");
   submit.className = "zizi-lb-submit";
   submit.type = "submit";
-  submit.textContent = "提交分数";
+  submit.textContent = "Submit score";
   form.append(nameLabel, scoreLabel, submit);
 
   const note = document.createElement("p");
   note.className = "zizi-lb-note";
-  note.textContent = "国际排行榜（包含港澳台）使用 Firebase Firestore。";
-
-  const regionChoice = document.createElement("div");
-  regionChoice.className = "zizi-lb-region";
-
-  const mainlandChoice = document.createElement("button");
-  mainlandChoice.className = "zizi-lb-choice mainland";
-  mainlandChoice.type = "button";
-  mainlandChoice.innerHTML = "<strong>中国大陆排行榜</strong><span>Mainland China Leaderboard<br>不使用 Firebase 或 Google 服务。</span>";
-
-  const internationalChoice = document.createElement("button");
-  internationalChoice.className = "zizi-lb-choice international";
-  internationalChoice.type = "button";
-  internationalChoice.innerHTML = "<strong>国际排行榜（包含港澳台）</strong><span>International Leaderboard<br>继续使用当前 Firebase 排行榜。</span>";
-
-  regionChoice.append(mainlandChoice, internationalChoice);
-
-  const mainlandNote = document.createElement("div");
-  mainlandNote.className = "zizi-lb-mainland-note";
-  mainlandNote.hidden = true;
-  mainlandNote.innerHTML = "<p>中国大陆排行榜正在建设中。由于 Firebase 在中国大陆访问不稳定，这里将使用更适合中国大陆访问的排行榜方案。</p>";
-
-  const regionBack = document.createElement("button");
-  regionBack.className = "zizi-lb-back";
-  regionBack.type = "button";
-  regionBack.textContent = "返回区域选择";
-  regionBack.hidden = true;
-
   const status = document.createElement("p");
   status.className = "zizi-lb-status";
   status.setAttribute("aria-live", "polite");
-
   const list = document.createElement("div");
   list.className = "zizi-lb-list";
   list.appendChild(makeHeadRow());
 
-  body.append(regionChoice, regionBack, mainlandNote, form, note, status, list);
+  const pendingPanel = document.createElement("div");
+  pendingPanel.className = "zizi-lb-pending";
+  pendingPanel.hidden = true;
+  const pendingText = document.createElement("textarea");
+  pendingText.readOnly = true;
+  const pendingActions = document.createElement("div");
+  pendingActions.className = "zizi-lb-pending-actions";
+  const syncButton = document.createElement("button");
+  syncButton.className = "zizi-lb-sync";
+  syncButton.type = "button";
+  syncButton.textContent = "Submit to GitHub Sync Inbox";
+  const copyButton = document.createElement("button");
+  copyButton.className = "zizi-lb-copy";
+  copyButton.type = "button";
+  copyButton.textContent = "Copy GitHub Issue link";
+  pendingActions.append(syncButton, copyButton);
+  pendingPanel.append("Firebase is unavailable. Your score was saved locally and can be submitted through GitHub sync.", pendingText, pendingActions);
+
+  body.append(actions, form, note, status, list, pendingPanel);
   panel.append(head, body);
   modal.appendChild(panel);
   (buttonContainer || document.body).appendChild(button);
@@ -654,7 +367,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     if (!rows.length) {
       const empty = document.createElement("div");
       empty.className = "zizi-lb-empty";
-      empty.textContent = "还没有成绩，成为第一个上榜的人。";
+      empty.textContent = "No scores yet.";
       list.appendChild(empty);
       return;
     }
@@ -663,183 +376,76 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     });
   }
 
-  function resetLoadedBoard() {
-    if (typeof unsubscribe === "function") unsubscribe();
-    unsubscribe = null;
-    loadedBoardId = null;
-    renderRows([]);
-  }
-
-  function syncLevelFromGame() {
-    if (!hasLevels) return;
-    const currentLevelId = getCurrentLevelId();
-    if (currentLevelId !== selectedLevelId) {
-      selectedLevelId = currentLevelId;
-      levelSelect.value = selectedLevelId;
-      resetLoadedBoard();
-    }
-    subtitle.textContent = getBoardName();
-  }
-
-  function hasCloudBaseConfig(config) {
-    return Boolean(config.enabled && config.cloudbase?.env && !config.cloudbase.env.startsWith("PASTE_") && config.cloudbase?.sdkUrl);
-  }
-
-  function showRegionSelection() {
-    selectedRegion = null;
-    regionChoice.hidden = false;
-    regionBack.hidden = true;
-    mainlandNote.hidden = true;
-    form.hidden = true;
-    note.hidden = true;
-    status.hidden = true;
-    list.hidden = true;
-  }
-
-  function showMainlandFallback() {
-    selectedRegion = "mainland";
-    regionChoice.hidden = true;
-    regionBack.hidden = false;
-    mainlandNote.hidden = false;
-    form.hidden = true;
-    note.hidden = true;
-    status.hidden = true;
-    list.hidden = true;
-  }
-
-  function showInternational(showSubmit = false) {
-    selectedRegion = "international";
-    regionChoice.hidden = true;
-    regionBack.hidden = false;
-    mainlandNote.hidden = true;
-    form.hidden = !showSubmit;
-    note.hidden = false;
-    note.textContent = "国际排行榜（包含港澳台）使用 Firebase Firestore。";
-    status.hidden = false;
-    list.hidden = false;
-    loadScores();
-    if (showSubmit) nameInput.focus();
-  }
-
-  async function showMainland(showSubmit = false) {
-    if (!hasCloudBaseConfig(mainlandConfig)) {
-      showMainlandFallback();
-      return;
-    }
-    selectedRegion = "mainland";
-    regionChoice.hidden = true;
-    regionBack.hidden = false;
-    mainlandNote.hidden = true;
-    form.hidden = !showSubmit;
-    note.hidden = false;
-    note.textContent = "中国大陆排行榜使用 Tencent CloudBase。";
-    status.hidden = false;
-    list.hidden = false;
-    await loadMainlandScores();
-    if (showSubmit) nameInput.focus();
-  }
-
   async function loadScores() {
-    const boardKey = `${gameId}:${getBoardLevelId()}`;
-    if (loadedBoardId === boardKey) return;
-    resetLoadedBoard();
-    loadedBoardId = boardKey;
-    setStatus("正在连接排行榜...");
+    pendingPanel.hidden = true;
+    subtitle.textContent = getBoardName();
+    const levelId = getBoardLevelId();
+    const preferCache = selectedRegion === "mainland";
+    note.hidden = false;
+    note.textContent = preferCache
+      ? "Cache leaderboard, may not be latest."
+      : "Firebase first. If Firebase times out, this view falls back to the latest exported cache.";
+    setStatus("Loading leaderboard...");
     try {
-      const firebase = await getFirebase();
-      const boardLevelId = getBoardLevelId();
-      const ref = getScoreCollection(firebase, gameId, boardLevelId);
-      const scoresQuery = firebase.query(ref, firebase.orderBy("score", "desc"), firebase.limit(READ_LIMIT));
-      unsubscribe = firebase.onSnapshot(scoresQuery, (snapshot) => {
-        const rows = snapshot.docs
-          .map(mapScoreDoc)
-          .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
-          .slice(0, TOP_LIMIT);
-        renderRows(rows);
-        setStatus("排行榜已同步。");
-      }, (error) => {
-        loadedBoardId = null;
-        console.error("[ZIzi Leaderboard] Firestore read failed:", {
-          gameId,
-          levelId: boardLevelId || null,
-          path: getScorePath(gameId, boardLevelId),
-          error
-        });
-        setStatus("无法读取云端排行榜。请确认 firestore.rules 已部署到 Firebase 项目 zizicommunity。", true);
-      });
+      const rows = await fetchLeaderboardRows({ gameId, levelId, limit: TOP_LIMIT, preferCache });
+      renderRows(rows);
+      setStatus(preferCache ? "Cache leaderboard loaded." : "Leaderboard loaded.");
     } catch (error) {
-      loadedBoardId = null;
-      firebasePromise = null;
-      console.error("[ZIzi Leaderboard] Firebase connection failed:", error);
-      setStatus("Firebase 连接失败。请检查网络、Firebase 配置和浏览器控制台错误。", true);
+      console.warn("[ZIzi Leaderboard] Read failed:", error);
       renderRows([]);
+      setStatus("Leaderboard unavailable.", true);
     }
   }
 
-  async function loadMainlandScores() {
-    const levelId = getBoardLevelId();
-    setStatus("正在连接中国大陆排行榜...");
-    try {
-      const db = await getCloudBaseDb();
-      const collectionName = mainlandConfig.cloudbase.collections.leaderboards;
-      const whereClause = levelId ? { gameId, levelId } : { gameId };
-      const snapshot = await db.collection(collectionName).where(whereClause).orderBy("score", "desc").limit(READ_LIMIT).get();
-      const rows = (snapshot.data || [])
-        .map((data) => ({
-          nickname: cleanText(data.nickname, MAX_NAME),
-          score: normalizeScore(data.score),
-          createdAt: data.createdAt,
-          orderTime: createdAtMs(data.createdAt)
-        }))
-        .sort((a, b) => b.score - a.score || a.orderTime - b.orderTime)
-        .slice(0, TOP_LIMIT);
-      renderRows(rows);
-      setStatus("中国大陆排行榜已同步。");
-    } catch (_) {
-      cloudbasePromise = null;
-      showMainlandFallback();
-    }
+  function showPendingSync(item) {
+    lastPendingItem = item;
+    pendingText.value = createIssueUrlFromItems([item]);
+    pendingPanel.hidden = false;
   }
 
   function open(showSubmit = false) {
     if (showSubmit && hasLevels && pendingLevelId) {
       selectedLevelId = pendingLevelId;
       levelSelect.value = selectedLevelId;
-      subtitle.textContent = getBoardName();
-    } else {
-      syncLevelFromGame();
+    } else if (hasLevels) {
+      selectedLevelId = getCurrentLevelId();
+      levelSelect.value = selectedLevelId;
     }
     modal.hidden = false;
-    if (selectedRegion === "international") {
-      showInternational(showSubmit);
-    } else if (selectedRegion === "mainland") {
-      showMainland(showSubmit);
-    } else {
-      showRegionSelection();
-    }
-  }
-
-  function closeModal() {
-    modal.hidden = true;
+    form.hidden = !showSubmit;
+    if (showSubmit) nameInput.focus();
+    loadScores();
   }
 
   button.addEventListener("click", () => open(false));
-  mainlandChoice.addEventListener("click", () => showMainland(Boolean(pendingScore)));
-  internationalChoice.addEventListener("click", () => showInternational(Boolean(pendingScore)));
-  regionBack.addEventListener("click", showRegionSelection);
-  close.addEventListener("click", closeModal);
+  close.addEventListener("click", () => {
+    modal.hidden = true;
+  });
+  internationalButton.addEventListener("click", () => {
+    selectedRegion = "international";
+    loadScores();
+  });
+  mainlandButton.addEventListener("click", () => {
+    selectedRegion = "mainland";
+    loadScores();
+  });
   levelSelect.addEventListener("change", () => {
     selectedLevelId = levelSelect.value;
-    subtitle.textContent = getBoardName();
-    resetLoadedBoard();
-    if (selectedRegion === "international") showInternational(Boolean(pendingScore));
-    if (selectedRegion === "mainland") showMainland(Boolean(pendingScore));
+    loadScores();
   });
   modal.addEventListener("click", (event) => {
-    if (event.target === modal) closeModal();
+    if (event.target === modal) modal.hidden = true;
   });
   window.addEventListener("keydown", (event) => {
-    if (!modal.hidden && event.key === "Escape") closeModal();
+    if (!modal.hidden && event.key === "Escape") modal.hidden = true;
+  });
+  syncButton.addEventListener("click", () => {
+    if (lastPendingItem) openIssueForItems([lastPendingItem]);
+  });
+  copyButton.addEventListener("click", async () => {
+    if (!lastPendingItem) return;
+    await navigator.clipboard?.writeText(createIssueUrlFromItems([lastPendingItem]));
+    setStatus("GitHub Issue link copied.");
   });
 
   form.addEventListener("submit", async (event) => {
@@ -848,58 +454,39 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     const score = normalizeScore(pendingScore);
     const levelId = getBoardLevelId();
     if (!nickname) {
-      setStatus("请输入昵称。", true);
-      return;
-    }
-    if (!Number.isFinite(score)) {
-      setStatus("分数无效。", true);
+      setStatus("Please enter a nickname.", true);
       return;
     }
     submit.disabled = true;
-    setStatus("正在提交分数...");
+    setStatus("Submitting score...");
+    const pendingItem = {
+      id: makeSyncId(),
+      type: "score",
+      gameId,
+      levelId,
+      nickname,
+      score,
+      createdAt: new Date().toISOString(),
+      sourceRegion: selectedRegion === "mainland" ? "mainland" : "international"
+    };
     try {
-      if (selectedRegion === "mainland") {
-        const db = await getCloudBaseDb();
-        const data = {
-          nickname,
-          score,
-          gameId,
-          createdAt: new Date().toISOString()
-        };
-        if (levelId) data.levelId = levelId;
-        await db.collection(mainlandConfig.cloudbase.collections.leaderboards).add(data);
-        await loadMainlandScores();
-      } else {
-        const firebase = await getFirebase();
-        const ref = getScoreCollection(firebase, gameId, levelId);
-        const data = {
-          nickname,
-          score,
-          gameId,
-          createdAt: firebase.serverTimestamp()
-        };
-        if (levelId) data.levelId = levelId;
-        await firebase.addDoc(ref, data);
-      }
+      if (selectedRegion === "mainland") throw new Error("Mainland score submissions use GitHub sync.");
+      const firebase = await getFirebase();
+      const ref = getScoreCollection(firebase, gameId, levelId);
+      const data = { nickname, score, gameId, createdAt: firebase.serverTimestamp() };
+      if (gameId === "chomp") data.levelId = levelId;
+      await withTimeout(firebase.addDoc(ref, data), FIREBASE_TIMEOUT_MS, "Firebase score submit");
       form.hidden = true;
-      setStatus("分数已提交。");
+      setStatus("Score submitted to Firebase.");
+      await loadScores();
     } catch (error) {
-      console.error("[ZIzi Leaderboard] Firebase leaderboard submission failed:", {
-        gameId,
-        levelId: levelId || null,
-        path: selectedRegion === "mainland"
-          ? mainlandConfig.cloudbase.collections.leaderboards
-          : getScorePath(gameId, levelId),
-        payload: {
-          nickname,
-          score,
-          gameId,
-          ...(levelId ? { levelId } : {}),
-          createdAt: selectedRegion === "mainland" ? "client ISO timestamp" : "serverTimestamp()"
-        },
+      console.warn("[ZIzi Leaderboard] Score queued for GitHub sync:", {
+        path: getScorePath(gameId, levelId),
         error
       });
-      setStatus("提交失败。请确认 firestore.rules 已部署，并且当前榜单路径被允许写入。", true);
+      const saved = addPendingSyncItem(pendingItem);
+      showPendingSync(saved);
+      setStatus("Firebase is unavailable. Score saved locally for GitHub sync.", true);
     } finally {
       submit.disabled = false;
     }
@@ -909,12 +496,11 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     open,
     openSubmit(score) {
       pendingScore = normalizeScore(score);
-      pendingLevelId = hasLevels ? getCurrentLevelId() : null;
+      pendingLevelId = hasLevels ? getCurrentLevelId() : "";
       scoreInput.value = formatScore(pendingScore);
       open(true);
     },
     destroy() {
-      if (typeof unsubscribe === "function") unsubscribe();
       button.remove();
       modal.remove();
     }

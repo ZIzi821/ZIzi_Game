@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Export ZIzi Cache</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; --text:#f3f7fb; --muted:#a5b0bd; --cyan:#42f5d4; --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.075); }
+      * { box-sizing: border-box; }
+      body { margin:0; min-height:100vh; color:var(--text); background:linear-gradient(135deg,#07090c,#101621 58%,#08090d); }
+      main { width:min(1100px, calc(100% - 32px)); margin:0 auto; padding:clamp(28px,6vw,72px) 0; }
+      a, button { min-height:40px; padding:9px 13px; border:1px solid rgba(66,245,212,.34); border-radius:8px; background:rgba(66,245,212,.09); color:var(--cyan); text-decoration:none; font-weight:800; cursor:pointer; }
+      nav, .actions { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+      h1 { margin:0 0 14px; font-size:clamp(34px,7vw,68px); letter-spacing:0; }
+      p { color:var(--muted); line-height:1.7; }
+      .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      .panel { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px; }
+      textarea { width:100%; min-height:360px; padding:12px; border:1px solid var(--line); border-radius:8px; background:rgba(5,10,17,.86); color:var(--text); line-height:1.45; font-size:12px; }
+      @media (max-width: 800px) { .grid { grid-template-columns:1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav><a href="./">Home</a><a href="developer.html">Developer</a></nav>
+      <h1>Export cache</h1>
+      <p>Normally GitHub Actions updates the cache files automatically. This fallback tool reads Firebase through the public client SDK and generates downloadable JSON. It does not write to GitHub.</p>
+      <div class="actions"><button id="loadButton" type="button">Read Firebase and generate JSON</button><span id="status">Idle</span></div>
+      <section class="grid">
+        <article class="panel">
+          <h2>comments.json</h2>
+          <div class="actions"><button data-copy="comments" type="button">Copy comments.json</button><button data-download="comments" type="button">Download comments.json</button></div>
+          <textarea id="commentsOutput" readonly></textarea>
+        </article>
+        <article class="panel">
+          <h2>leaderboards.json</h2>
+          <div class="actions"><button data-copy="leaderboards" type="button">Copy leaderboards.json</button><button data-download="leaderboards" type="button">Download leaderboards.json</button></div>
+          <textarea id="leaderboardsOutput" readonly></textarea>
+        </article>
+      </section>
+    </main>
+    <script type="module">
+      import { firebaseConfig } from "./assets/firebase-config.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+      import { collection, getDocs, getFirestore, limit, orderBy, query } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+      const status = document.getElementById("status");
+      const commentsOutput = document.getElementById("commentsOutput");
+      const leaderboardsOutput = document.getElementById("leaderboardsOutput");
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const clean = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+      const iso = (value) => value?.toDate ? value.toDate().toISOString() : new Date(value || Date.now()).toISOString();
+      async function readComments() {
+        const snap = await getDocs(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(100)));
+        return snap.docs.map((doc) => ({ id: doc.id, nickname: clean(doc.data().nickname, 20), message: clean(doc.data().message, 300), createdAt: iso(doc.data().createdAt), sourceRegion: clean(doc.data().sourceRegion, 20) }));
+      }
+      async function readScores(path) {
+        const snap = await getDocs(query(collection(db, ...path), orderBy("score", "desc"), limit(50)));
+        return snap.docs.map((doc) => ({ id: doc.id, nickname: clean(doc.data().nickname, 20), score: Number(doc.data().score) || 0, createdAt: iso(doc.data().createdAt), sourceRegion: clean(doc.data().sourceRegion, 20) }));
+      }
+      async function generate() {
+        status.textContent = "Reading Firebase...";
+        const [comments, starfall, sentinel, level1, level2, level3] = await Promise.all([
+          readComments(),
+          readScores(["leaderboards", "starfall", "scores"]),
+          readScores(["leaderboards", "sentinel", "scores"]),
+          readScores(["leaderboards", "chomp", "levels", "level1", "scores"]),
+          readScores(["leaderboards", "chomp", "levels", "level2", "scores"]),
+          readScores(["leaderboards", "chomp", "levels", "level3", "scores"])
+        ]);
+        commentsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), comments }, null, 2);
+        leaderboardsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), leaderboards: { starfall, sentinel, chomp: { level1, level2, level3 } } }, null, 2);
+        status.textContent = "Generated.";
+      }
+      function download(name, text) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      document.getElementById("loadButton").addEventListener("click", () => generate().catch((error) => { status.textContent = error.message; }));
+      document.addEventListener("click", async (event) => {
+        const copy = event.target.closest("[data-copy]");
+        const downloadButton = event.target.closest("[data-download]");
+        if (copy) await navigator.clipboard?.writeText(copy.dataset.copy === "comments" ? commentsOutput.value : leaderboardsOutput.value);
+        if (downloadButton) download(`${downloadButton.dataset.download}.json`, downloadButton.dataset.download === "comments" ? commentsOutput.value : leaderboardsOutput.value);
+      });
+    </script>
+  </body>
+</html>

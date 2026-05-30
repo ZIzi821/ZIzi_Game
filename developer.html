@@ -35,7 +35,7 @@
         padding: clamp(28px, 6vw, 72px) 0;
       }
 
-      nav { margin-bottom: 30px; }
+      nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
 
       .back {
         display: inline-flex;
@@ -48,6 +48,11 @@
         color: var(--cyan);
         text-decoration: none;
         font-weight: 800;
+      }
+
+      .admin-link {
+        opacity: 0.72;
+        font-size: 13px;
       }
 
       .eyebrow {
@@ -192,7 +197,11 @@
   </head>
   <body>
     <main>
-      <nav><a class="back" href="./">返回“选择一个游戏开始” / Back to Game Selection</a></nav>
+      <nav>
+        <a class="back" href="./">返回“选择一个游戏开始” / Back to Game Selection</a>
+        <a class="back admin-link" href="sync.html">Sync tool</a>
+        <a class="back admin-link" href="export-cache.html">Export cache</a>
+      </nav>
       <p class="eyebrow">Developer Profile</p>
       <h1>开发者简介</h1>
 

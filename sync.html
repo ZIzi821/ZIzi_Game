@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZIzi Sync Tool</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; --text:#f3f7fb; --muted:#a5b0bd; --cyan:#42f5d4; --gold:#ffc857; --line:rgba(255,255,255,.16); --panel:rgba(255,255,255,.075); }
+      * { box-sizing: border-box; }
+      body { margin:0; min-height:100vh; color:var(--text); background:linear-gradient(135deg,#07090c,#101621 58%,#08090d); }
+      main { width:min(900px, calc(100% - 32px)); margin:0 auto; padding:clamp(28px,6vw,72px) 0; }
+      a, button { min-height:40px; padding:9px 13px; border:1px solid rgba(66,245,212,.34); border-radius:8px; background:rgba(66,245,212,.09); color:var(--cyan); text-decoration:none; font-weight:800; cursor:pointer; }
+      nav, .actions { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:24px; }
+      h1 { margin:0 0 16px; font-size:clamp(34px,7vw,68px); letter-spacing:0; }
+      p { color:var(--muted); line-height:1.7; }
+      textarea { width:100%; min-height:220px; padding:12px; border:1px solid var(--line); border-radius:8px; background:rgba(5,10,17,.86); color:var(--text); line-height:1.55; }
+      .panel { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:20px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav><a href="./">Home</a><a href="developer.html">Developer</a></nav>
+      <h1>Sync tool</h1>
+      <p>Primary sync is automatic through GitHub Actions. This page is a fallback helper only. It does not contain Firebase Admin credentials or GitHub tokens.</p>
+      <section class="panel">
+        <textarea id="syncCode" placeholder="Paste ZIZI-SYNC code here"></textarea>
+        <div class="actions">
+          <button id="openIssue" type="button">Open GitHub Issue Sync Inbox</button>
+          <button id="copyIssue" type="button">Copy GitHub Issue link</button>
+        </div>
+      </section>
+    </main>
+    <script type="module">
+      import { parseSyncCode, createIssueUrlFromItems } from "./assets/sync-code.js";
+      const syncCode = document.getElementById("syncCode");
+      function makeUrl() {
+        const parsed = parseSyncCode(syncCode.value);
+        return createIssueUrlFromItems(parsed.items);
+      }
+      document.getElementById("openIssue").addEventListener("click", () => window.open(makeUrl(), "_blank", "noopener,noreferrer"));
+      document.getElementById("copyIssue").addEventListener("click", async () => navigator.clipboard?.writeText(makeUrl()));
+    </script>
+  </body>
+</html>

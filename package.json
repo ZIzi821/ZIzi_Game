@@ -1,0 +1,13 @@
+{
+  "name": "zizi-game-sync",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "node --check assets/leaderboard.js && node --check assets/sync-code.js && node --check scripts/zizi-sync-issues.mjs"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
+    "firebase-admin": "^13.0.0"
+  }
+}
