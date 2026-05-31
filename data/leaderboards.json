@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-31T13:55:17.897Z",
+  "updatedAt": "2026-05-31T19:41:41.692Z",
   "leaderboards": {
     "starfall": [
       {
@@ -29,6 +29,13 @@
     "chomp": {
       "level1": [
         {
+          "id": "Dyl1uHLicRY67lDKkR4l",
+          "nickname": "zzz",
+          "score": 4145,
+          "createdAt": "2026-05-31T14:38:39.499Z",
+          "sourceRegion": ""
+        },
+        {
           "id": "gbAuSuJancHbxt6vz51W",
           "nickname": "都是发的",
           "score": 101,
@@ -36,8 +43,31 @@
           "sourceRegion": ""
         }
       ],
-      "level2": [],
-      "level3": [],
+      "level2": [
+        {
+          "id": "x8qIJ5LirQEGFxCA8Pkj",
+          "nickname": "请输入昵称 / Please enter",
+          "score": 738,
+          "createdAt": "2026-05-31T17:13:25.260Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "yyaJGKiEjhr3kOiwnepR",
+          "nickname": "aaaaa",
+          "score": 145,
+          "createdAt": "2026-05-31T17:12:23.735Z",
+          "sourceRegion": ""
+        }
+      ],
+      "level3": [
+        {
+          "id": "Tlah9rScE1dmZUl6pqZl",
+          "nickname": "d",
+          "score": 181,
+          "createdAt": "2026-05-31T17:12:40.904Z",
+          "sourceRegion": ""
+        }
+      ],
       "level4": []
     }
   }
