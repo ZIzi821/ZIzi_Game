@@ -9,7 +9,7 @@ const MAX_NAME = 20;
 const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
 const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
-const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
+const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
 const SYNC_RE = /ZIZI-SYNC:([A-Za-z0-9+/=_-]+)/;
 
 function cleanText(value, max) {
@@ -93,7 +93,8 @@ async function scoreExists(db, syncId) {
     db.collection("leaderboards").doc("sentinel").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores"),
-    db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores")
+    db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores"),
+    db.collection("leaderboards").doc("chomp").collection("levels").doc("level4").collection("scores")
   ];
   for (const ref of refs) {
     const snapshot = await ref.where("syncId", "==", syncId).limit(1).get();
@@ -179,7 +180,8 @@ async function exportLeaderboards(db) {
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),
       level2: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores")),
-      level3: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores"))
+      level3: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores")),
+      level4: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level4").collection("scores"))
     }
   };
   await fs.mkdir("data", { recursive: true });

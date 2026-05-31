@@ -63,16 +63,17 @@
       }
       async function generate() {
         status.textContent = "Reading Firebase...";
-        const [comments, starfall, sentinel, level1, level2, level3] = await Promise.all([
+        const [comments, starfall, sentinel, level1, level2, level3, level4] = await Promise.all([
           readComments(),
           readScores(["leaderboards", "starfall", "scores"]),
           readScores(["leaderboards", "sentinel", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level1", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level2", "scores"]),
-          readScores(["leaderboards", "chomp", "levels", "level3", "scores"])
+          readScores(["leaderboards", "chomp", "levels", "level3", "scores"]),
+          readScores(["leaderboards", "chomp", "levels", "level4", "scores"])
         ]);
         commentsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), comments }, null, 2);
-        leaderboardsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), leaderboards: { starfall, sentinel, chomp: { level1, level2, level3 } } }, null, 2);
+        leaderboardsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), leaderboards: { starfall, sentinel, chomp: { level1, level2, level3, level4 } } }, null, 2);
         status.textContent = "Generated.";
       }
       function download(name, text) {

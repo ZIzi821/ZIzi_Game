@@ -14,7 +14,7 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 
 - [Starfall / 星坠](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)
 - [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)
-- [Chomp / 大口吞](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
+- [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
 
 ## Unified Community
 

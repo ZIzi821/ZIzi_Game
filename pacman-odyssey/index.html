@@ -182,7 +182,7 @@
 
     .level-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
       gap: 12px;
       margin-top: 18px;
     }
@@ -205,6 +205,20 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 8px;
       background: #070914;
+    }
+
+    .level-card.is-cat {
+      border-color: rgba(255, 188, 216, 0.5);
+      background:
+        linear-gradient(180deg, rgba(58, 34, 55, 0.95), rgba(18, 14, 30, 0.96));
+    }
+
+    .level-card.is-cat img {
+      object-fit: contain;
+      padding: 10px;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(255, 188, 216, 0.22), transparent 58%),
+        #111323;
     }
 
     .level-card h3 {
@@ -417,6 +431,8 @@
     const musicSelect = document.getElementById('musicSelect');
     const musicToggle = document.getElementById('musicToggle');
     const musicVolume = document.getElementById('musicVolume');
+    const catImage = new Image();
+    catImage.src = 'maomao.png';
 
     const TILE = 26;
     const GRID_W = 29;
@@ -569,6 +585,35 @@
         portals: [['1,9', '27,9']],
         gate: '14,1',
         win: 'cores'
+      },
+      {
+        leaderboardId: 'level4',
+        number: 'Level 4',
+        title: 'Cat Nap Garden',
+        name: 'Level 4 / Cat Nap Garden',
+        description: 'A larger cat-themed route. Collect dried fish and bells, then open the cat door and return to the cat bed.',
+        objective: '收集小鱼干和猫铃铛，打开猫门回到猫窝',
+        start: [14, 17],
+        ghosts: [[14, 2, 'warden'], [4, 9, 'ambush'], [24, 9, 'chase']],
+        blocks: [
+          ...rectCells(3, 3, 10, 3), ...rectCells(18, 3, 25, 3),
+          ...rectCells(3, 15, 10, 15), ...rectCells(18, 15, 25, 15),
+          ...rectCells(4, 5, 4, 13), ...rectCells(24, 5, 24, 13),
+          ...rectCells(8, 6, 20, 6), ...rectCells(8, 12, 20, 12),
+          ...rectCells(10, 8, 10, 10), ...rectCells(18, 8, 18, 10),
+          ...rectCells(13, 4, 15, 4), ...rectCells(13, 14, 15, 14),
+          '7,9', '21,9', '14,8', '14,10'
+        ],
+        pellets: ['2,2', '26,2', '2,16', '26,16', '14,9'],
+        crystals: ['2,9', '6,2', '22,2', '26,9', '6,16', '22,16'],
+        cores: ['14,2', '3,13', '25,13'],
+        shields: ['14,16', '11,9', '17,9'],
+        traps: ['9,5', '19,5', '9,13', '19,13', '13,9', '15,9'],
+        portals: [['1,9', '27,9'], ['8,1', '20,17']],
+        gate: '14,1',
+        win: 'cat',
+        theme: 'cat',
+        previewImage: 'maomao.png'
       }
     ];
 
@@ -642,6 +687,7 @@
       gateOpen() {
         if (this.level.win === 'crystal') return this.crystals.size === 0;
         if (this.level.win === 'cores') return this.cores.size === 0;
+        if (this.level.win === 'cat') return this.crystals.size === 0 && this.cores.size === 0;
         return true;
       }
       dotProgress() {
@@ -850,13 +896,13 @@
       }
       if (game.maze.crystals.delete(k)) {
         addScore(350);
-        game.message = '水晶到手';
+        game.message = game.level.theme === 'cat' ? '小鱼干到手，猫猫更开心了' : '水晶到手';
         game.messageTime = 1.5;
         playTone(620, 0.1, 'triangle');
       }
       if (game.maze.cores.delete(k)) {
         addScore(450);
-        game.message = '核心回收，追猎升级';
+        game.message = game.level.theme === 'cat' ? '猫铃铛响起来了' : '核心回收，追猎升级';
         game.messageTime = 1.7;
         playTone(460, 0.1, 'square');
       }
@@ -914,6 +960,7 @@
       if (game.level.win === 'dots') won = game.maze.dots.size === 0;
       if (game.level.win === 'crystal') won = game.maze.gate === key(cell) && game.maze.gateOpen();
       if (game.level.win === 'cores') won = game.maze.gate === key(cell) && game.maze.gateOpen();
+      if (game.level.win === 'cat') won = game.maze.gate === key(cell) && game.maze.gateOpen();
       if (!won) return;
       addScore(1000 + Math.max(0, Math.floor(2600 - game.time * 8)));
       playTone(1040, 0.16, 'triangle', 0.06);
@@ -1022,6 +1069,7 @@
       LEVELS.forEach((level, index) => {
         const card = document.createElement('article');
         card.className = 'level-card';
+        if (level.theme === 'cat') card.classList.add('is-cat');
         card.innerHTML = `
           <img alt="${level.name} preview">
           <div>
@@ -1034,7 +1082,7 @@
             <button class="secondary" type="button">Leaderboard</button>
           </div>
         `;
-        card.querySelector('img').src = levelPreview(level);
+        card.querySelector('img').src = level.previewImage || levelPreview(level);
         card.querySelector('.primary').addEventListener('click', () => start(index, true));
         card.querySelector('.secondary').addEventListener('click', () => {
           game.levelIndex = index;
@@ -1087,6 +1135,12 @@
     function drawBoard() {
       drawRoundedRect(BOARD_X - 8, BOARD_Y - 8, BOARD_W + 16, BOARD_H + 16, 12, '#070b18', 'rgba(68,231,255,0.32)');
       const maze = game.maze;
+      if (game.level.theme === 'cat' && catImage.complete) {
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.drawImage(catImage, BOARD_X + BOARD_W - 132, BOARD_Y + 14, 104, 104);
+        ctx.restore();
+      }
       maze.walls.forEach(k => {
         const c = parseKey(k);
         const x = BOARD_X + c.x * TILE + 2;
@@ -1099,13 +1153,24 @@
         ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
       });
       maze.pellets.forEach(k => drawCircle(center(parseKey(k)), 8 + Math.sin(performance.now() / 140) * 2, COLORS.text, COLORS.cyan));
-      maze.crystals.forEach(k => drawDiamond(center(parseKey(k)), 13, COLORS.cyan));
+      maze.crystals.forEach(k => {
+        const p = center(parseKey(k));
+        if (game.level.theme === 'cat') drawFish(p);
+        else drawDiamond(p, 13, COLORS.cyan);
+      });
       maze.cores.forEach(k => {
         const p = center(parseKey(k));
-        drawCircle(p, 12, COLORS.orange, COLORS.yellow);
-        drawCircle(p, 5, COLORS.yellow);
+        if (game.level.theme === 'cat') drawBell(p);
+        else {
+          drawCircle(p, 12, COLORS.orange, COLORS.yellow);
+          drawCircle(p, 5, COLORS.yellow);
+        }
       });
-      maze.shields.forEach(k => drawCircle(center(parseKey(k)), 11, 'transparent', COLORS.green, 3));
+      maze.shields.forEach(k => {
+        const p = center(parseKey(k));
+        if (game.level.theme === 'cat') drawYarn(p);
+        else drawCircle(p, 11, 'transparent', COLORS.green, 3);
+      });
       maze.traps.forEach(k => {
         const p = center(parseKey(k));
         ctx.fillStyle = COLORS.red;
@@ -1123,8 +1188,12 @@
       if (maze.gate) {
         const p = center(parseKey(maze.gate));
         const open = maze.gateOpen();
-        drawRoundedRect(p.x - 12, p.y - 16, 24, 32, 6, open ? COLORS.green : COLORS.red, COLORS.text);
-        if (!open) {
+        if (game.level.theme === 'cat') {
+          drawCatDoor(p, open);
+        } else {
+          drawRoundedRect(p.x - 12, p.y - 16, 24, 32, 6, open ? COLORS.green : COLORS.red, COLORS.text);
+        }
+        if (!open && game.level.theme !== 'cat') {
           ctx.strokeStyle = COLORS.text; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.moveTo(p.x - 9, p.y - 10); ctx.lineTo(p.x + 9, p.y + 10); ctx.stroke();
           ctx.beginPath(); ctx.moveTo(p.x + 9, p.y - 10); ctx.lineTo(p.x - 9, p.y + 10); ctx.stroke();
@@ -1152,6 +1221,86 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+    }
+
+    function drawFish(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = '#ffd58a';
+      ctx.strokeStyle = '#fff5ca';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 11, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(-18, -7);
+      ctx.lineTo(-18, 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#7a4c2f';
+      ctx.beginPath();
+      ctx.arc(6, -1.5, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBell(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.fillStyle = COLORS.yellow;
+      ctx.strokeStyle = '#fff7bd';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-9, 6);
+      ctx.quadraticCurveTo(-7, -10, 0, -11);
+      ctx.quadraticCurveTo(7, -10, 9, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = COLORS.orange;
+      ctx.fillRect(-11, 5, 22, 4);
+      ctx.beginPath();
+      ctx.arc(0, 10, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawYarn(p) {
+      drawCircle(p, 11, '#ff9fc3', '#ffd6e5', 2);
+      ctx.strokeStyle = '#ffd6e5';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(p.x - 3, p.y, 6, -0.4, Math.PI * 1.25);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p.x - 8, p.y + 5);
+      ctx.lineTo(p.x + 8, p.y - 5);
+      ctx.stroke();
+    }
+
+    function drawCatDoor(p, open) {
+      const fill = open ? '#45e080' : '#ff7fa3';
+      drawRoundedRect(p.x - 13, p.y - 17, 26, 34, 10, fill, '#fff2c4');
+      ctx.fillStyle = '#fff2c4';
+      ctx.beginPath();
+      ctx.moveTo(p.x - 8, p.y - 12);
+      ctx.lineTo(p.x - 2, p.y - 20);
+      ctx.lineTo(p.x + 1, p.y - 11);
+      ctx.lineTo(p.x + 8, p.y - 20);
+      ctx.lineTo(p.x + 8, p.y - 10);
+      ctx.fill();
+      if (!open) {
+        ctx.strokeStyle = '#fff2c4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 8, p.y + 8);
+        ctx.lineTo(p.x + 8, p.y - 8);
+        ctx.stroke();
+      }
     }
 
     function drawPortal(p, color) {
@@ -1331,7 +1480,8 @@
           levels: [
             { id: "level1", name: "Level 1 / Beginner Maze" },
             { id: "level2", name: "Level 2 / Ghost Rush" },
-            { id: "level3", name: "Level 3 / Nightmare Maze" }
+            { id: "level3", name: "Level 3 / Nightmare Maze" },
+            { id: "level4", name: "Level 4 / Cat Nap Garden" }
           ],
           getLevelId: () => window.ZIziChompCurrentLevelId || "level1"
         });

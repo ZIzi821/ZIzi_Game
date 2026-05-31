@@ -21,22 +21,22 @@
       </header>
 
       <section class="game-grid" aria-label="游戏入口 / Game list">
-        <a class="game" href="aetherfall-protocol/" style="--accent: linear-gradient(135deg, rgba(255, 231, 146, 0.78), rgba(116, 216, 202, 0.62))">
+        <a class="game starfall-card" href="aetherfall-protocol/">
           <strong>Starfall / 星坠</strong>
           <span>守住能量核心，在一波波追击里升级、闪避、冲出高分。</span>
           <span>Guard the energy core, dodge through waves, and chase a bright new score.</span>
           <b>开始游戏 / Play</b>
         </a>
 
-        <a class="game" href="starline-defense/" style="--accent: linear-gradient(135deg, rgba(159, 206, 255, 0.74), rgba(184, 174, 255, 0.58))">
+        <a class="game sentinel-card" href="starline-defense/">
           <strong>Sentinel / 哨兵防线</strong>
           <span>摆好防线，守住核心，把每一波敌人拦在门外。</span>
           <span>Build a cozy but stubborn defense and hold the line.</span>
           <b>开始游戏 / Play</b>
         </a>
 
-        <a class="game" href="pacman-odyssey/" style="--accent: linear-gradient(135deg, rgba(255, 188, 216, 0.78), rgba(255, 221, 128, 0.6))">
-          <strong>Chomp / 大口吞</strong>
+        <a class="game chomp-card" href="pacman-odyssey/">
+          <strong>Chomp / 大口吃</strong>
           <span>穿过迷宫、收集核心、甩开追击者，每一关都有自己的榜单。</span>
           <span>Dash through mazes, collect cores, and climb each level board.</span>
           <b>开始游戏 / Play</b>
@@ -47,7 +47,7 @@
         <div class="section-head">
           <div>
             <h2>排行榜总览 / Leaderboard Overview</h2>
-            <p class="intro">展示每个游戏的 Top 5。Chomp 会同时显示 Level 1、Level 2、Level 3 三个榜单。</p>
+            <p class="intro">展示每个游戏的 Top 5。Chomp 会同时显示 Level 1、Level 2、Level 3、Level 4 四个榜单。</p>
           </div>
           <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
         </div>
@@ -61,7 +61,7 @@
             <div class="lb-list" id="lb-sentinel"><p class="lb-empty">加载中 / Loading...</p></div>
           </article>
           <article class="lb-card" data-board="chomp">
-            <h3>Chomp / 大口吞</h3>
+            <h3>Chomp / 大口吃</h3>
             <div class="chomp-levels">
               <section class="chomp-level">
                 <h4>Level 1 / 第一关</h4>
@@ -74,6 +74,10 @@
               <section class="chomp-level">
                 <h4>Level 3 / 第三关</h4>
                 <div class="lb-list" id="lb-chomp-level3"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 4 / 猫猫大地图</h4>
+                <div class="lb-list" id="lb-chomp-level4"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
             </div>
           </article>
@@ -88,7 +92,8 @@
         sentinel: document.getElementById("lb-sentinel"),
         chompLevel1: document.getElementById("lb-chomp-level1"),
         chompLevel2: document.getElementById("lb-chomp-level2"),
-        chompLevel3: document.getElementById("lb-chomp-level3")
+        chompLevel3: document.getElementById("lb-chomp-level3"),
+        chompLevel4: document.getElementById("lb-chomp-level4")
       };
 
       function renderRows(container, rows) {
@@ -117,18 +122,20 @@
       async function loadOverview() {
         try {
           const module = await import("./assets/leaderboard.js");
-          const [starfall, sentinel, chompLevel1, chompLevel2, chompLevel3] = await Promise.all([
+          const [starfall, sentinel, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
             module.fetchLeaderboardRows({ gameId: "starfall", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "sentinel", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level2", limit: 5 }),
-            module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 })
+            module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level4", limit: 5 })
           ]);
           renderRows(boards.starfall, starfall);
           renderRows(boards.sentinel, sentinel);
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);
+          renderRows(boards.chompLevel4, chompLevel4);
           statusEl.textContent = "已更新 / Loaded";
         } catch (error) {
           console.warn("[ZIzi Home] Leaderboard overview failed:", error);
