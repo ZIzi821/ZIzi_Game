@@ -4,179 +4,76 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZIzi Game Collection</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        --panel: rgba(255, 255, 255, 0.07);
-        --line: rgba(255, 255, 255, 0.16);
-        --text: #f3f7fb;
-        --muted: #a5b0bd;
-        --cyan: #42f5d4;
-        --gold: #ffc857;
-      }
-      * { box-sizing: border-box; }
-      body {
-        min-height: 100vh;
-        margin: 0;
-        background:
-          radial-gradient(circle at 18% 12%, rgba(66, 245, 212, 0.18), transparent 30%),
-          radial-gradient(circle at 82% 74%, rgba(255, 200, 87, 0.14), transparent 32%),
-          linear-gradient(135deg, #07090c, #101621 58%, #08090d);
-        color: var(--text);
-      }
-      main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: clamp(28px, 6vw, 72px) 0; }
-      header { display: grid; gap: 14px; margin-bottom: clamp(28px, 5vw, 52px); }
-      .eyebrow { margin: 0; color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: uppercase; }
-      h1 { max-width: 760px; margin: 0; font-size: clamp(42px, 8vw, 92px); line-height: 0.95; letter-spacing: 0; }
-      h2 { margin: 0; font-size: clamp(26px, 4vw, 42px); line-height: 1; }
-      .intro { max-width: 66ch; margin: 0; color: var(--muted); font-size: clamp(16px, 2vw, 19px); line-height: 1.7; }
-      .actions { display: flex; flex-wrap: wrap; gap: 10px; }
-      .log-link {
-        width: max-content;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 42px;
-        padding: 9px 13px;
-        border: 1px solid rgba(66, 245, 212, 0.34);
-        border-radius: 8px;
-        background: rgba(66, 245, 212, 0.09);
-        color: var(--cyan);
-        text-decoration: none;
-        font-weight: 800;
-      }
-      .log-link:hover { border-color: rgba(255, 200, 87, 0.58); color: var(--gold); }
-      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-      .game {
-        min-height: 260px;
-        display: grid;
-        align-content: end;
-        gap: 14px;
-        padding: 22px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: linear-gradient(rgba(7, 9, 12, 0.18), rgba(7, 9, 12, 0.86)), var(--accent);
-        color: inherit;
-        text-decoration: none;
-        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.28);
-        transition: transform 150ms ease, border-color 150ms ease;
-      }
-      .game:hover { transform: translateY(-3px); border-color: rgba(66, 245, 212, 0.52); }
-      .game strong { font-size: 24px; line-height: 1.1; }
-      .game span { color: #d2dbe3; line-height: 1.55; }
-      .game b {
-        width: max-content;
-        padding: 8px 11px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 7px;
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--gold);
-        font-size: 13px;
-      }
-      .leaderboard-overview { margin-top: clamp(32px, 6vw, 58px); display: grid; gap: 16px; }
-      .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: end; }
-      .section-head p { margin: 8px 0 0; color: var(--muted); line-height: 1.55; }
-      .lb-status { color: var(--gold); font-size: 13px; font-weight: 800; }
-      .lb-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-      .lb-card {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.065);
-        padding: 16px;
-        min-height: 260px;
-        display: grid;
-        gap: 12px;
-        align-content: start;
-        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
-      }
-      .lb-card h3 { margin: 0; font-size: 21px; letter-spacing: 0; }
-      .chomp-levels { display: grid; gap: 12px; }
-      .chomp-level h4 { margin: 0 0 8px; color: var(--cyan); font-size: 13px; letter-spacing: 0; }
-      .lb-list { display: grid; gap: 8px; }
-      .lb-row {
-        display: grid;
-        grid-template-columns: 34px minmax(0, 1fr) 78px;
-        gap: 8px;
-        align-items: center;
-        min-height: 34px;
-        padding: 8px 9px;
-        border-radius: 7px;
-        background: rgba(0, 0, 0, 0.18);
-        font-size: 13px;
-      }
-      .lb-row b { color: var(--cyan); }
-      .lb-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .lb-row strong { color: var(--gold); text-align: right; }
-      .lb-empty { color: var(--muted); line-height: 1.55; }
-      @media (max-width: 900px) {
-        .grid, .lb-cards { grid-template-columns: 1fr; }
-        .game { min-height: 210px; }
-      }
-    </style>
+    <link rel="stylesheet" href="assets/site.css" />
   </head>
-  <body>
+  <body class="home-page">
     <main>
-      <header>
+      <header class="hero">
         <p class="eyebrow">ZIzi Game Collection</p>
-        <h1>选择一个游戏开始 / Choose a game</h1>
-        <p class="intro">Play the ZIzi game collection in your browser. Firebase is the official database; exported JSON files are only fallback cache.</p>
-        <div class="actions">
-          <a class="log-link" href="updates.html">Check Updates</a>
-          <a class="log-link" href="forum.html">Community</a>
-          <a class="log-link" href="developer.html">Developer</a>
+        <h1>选择一个游戏开始 / Choose a Game</h1>
+        <p class="intro">挑一个小世界进去玩吧。排行榜会在游戏入口之后慢慢加载，就算网络有点慢，主页也会先稳稳打开。</p>
+        <p class="intro">Pick a little world and jump in. Leaderboards load after the game cards, so the page stays ready even when the network is slow.</p>
+        <div class="hero-actions">
+          <a class="button" href="updates.html">更新日志 / Updates</a>
+          <a class="button primary" href="forum.html">社区留言板 / Community Board</a>
+          <a class="button" href="developer.html">开发者简介 / Developer Profile</a>
         </div>
       </header>
 
-      <section class="grid" aria-label="Game list">
-        <a class="game" href="aetherfall-protocol/" style="--accent: linear-gradient(135deg, #102c2f, #2c1f45)">
+      <section class="game-grid" aria-label="游戏入口 / Game list">
+        <a class="game" href="aetherfall-protocol/" style="--accent: linear-gradient(135deg, rgba(255, 231, 146, 0.78), rgba(116, 216, 202, 0.62))">
           <strong>Starfall / 星坠</strong>
-          <span>Survive escalating waves around an energy core and push for a high score.</span>
-          <b>Start Game</b>
+          <span>守住能量核心，在一波波追击里升级、闪避、冲出高分。</span>
+          <span>Guard the energy core, dodge through waves, and chase a bright new score.</span>
+          <b>开始游戏 / Play</b>
         </a>
-        <a class="game" href="starline-defense/" style="--accent: linear-gradient(135deg, #101b35, #33244b)">
+
+        <a class="game" href="starline-defense/" style="--accent: linear-gradient(135deg, rgba(159, 206, 255, 0.74), rgba(184, 174, 255, 0.58))">
           <strong>Sentinel / 哨兵防线</strong>
-          <span>Deploy defenders, hold the lane, and outlast every wave.</span>
-          <b>Start Game</b>
+          <span>摆好防线，守住核心，把每一波敌人拦在门外。</span>
+          <span>Build a cozy but stubborn defense and hold the line.</span>
+          <b>开始游戏 / Play</b>
         </a>
-        <a class="game" href="pacman-odyssey/" style="--accent: linear-gradient(135deg, #2a2035, #423314)">
+
+        <a class="game" href="pacman-odyssey/" style="--accent: linear-gradient(135deg, rgba(255, 188, 216, 0.78), rgba(255, 221, 128, 0.6))">
           <strong>Chomp / 大口吞</strong>
-          <span>Navigate maze levels, collect cores, and escape the chase.</span>
-          <b>Start Game</b>
+          <span>穿过迷宫、收集核心、甩开追击者，每一关都有自己的榜单。</span>
+          <span>Dash through mazes, collect cores, and climb each level board.</span>
+          <b>开始游戏 / Play</b>
         </a>
       </section>
 
-      <section class="leaderboard-overview" aria-label="Leaderboard overview">
+      <section class="leaderboard-overview" aria-label="排行榜总览 / Leaderboard overview">
         <div class="section-head">
           <div>
-            <h2>排行榜总览 / Leaderboards</h2>
-            <p>Top 5 across the collection. This section loads after the game links and cannot block the home page.</p>
+            <h2>排行榜总览 / Leaderboard Overview</h2>
+            <p class="intro">展示每个游戏的 Top 5。Chomp 会同时显示 Level 1、Level 2、Level 3 三个榜单。</p>
           </div>
-          <span class="lb-status" id="leaderboardStatus">Loading...</span>
+          <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
         </div>
         <div class="lb-cards">
           <article class="lb-card" data-board="starfall">
             <h3>Starfall / 星坠</h3>
-            <div class="lb-list" id="lb-starfall"><p class="lb-empty">Loading...</p></div>
+            <div class="lb-list" id="lb-starfall"><p class="lb-empty">加载中 / Loading...</p></div>
           </article>
           <article class="lb-card" data-board="sentinel">
             <h3>Sentinel / 哨兵防线</h3>
-            <div class="lb-list" id="lb-sentinel"><p class="lb-empty">Loading...</p></div>
+            <div class="lb-list" id="lb-sentinel"><p class="lb-empty">加载中 / Loading...</p></div>
           </article>
           <article class="lb-card" data-board="chomp">
             <h3>Chomp / 大口吞</h3>
             <div class="chomp-levels">
               <section class="chomp-level">
-                <h4>Level 1</h4>
-                <div class="lb-list" id="lb-chomp-level1"><p class="lb-empty">Loading...</p></div>
+                <h4>Level 1 / 第一关</h4>
+                <div class="lb-list" id="lb-chomp-level1"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
               <section class="chomp-level">
-                <h4>Level 2</h4>
-                <div class="lb-list" id="lb-chomp-level2"><p class="lb-empty">Loading...</p></div>
+                <h4>Level 2 / 第二关</h4>
+                <div class="lb-list" id="lb-chomp-level2"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
               <section class="chomp-level">
-                <h4>Level 3</h4>
-                <div class="lb-list" id="lb-chomp-level3"><p class="lb-empty">Loading...</p></div>
+                <h4>Level 3 / 第三关</h4>
+                <div class="lb-list" id="lb-chomp-level3"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
             </div>
           </article>
@@ -199,7 +96,7 @@
         if (!rows.length) {
           const empty = document.createElement("p");
           empty.className = "lb-empty";
-          empty.textContent = "No scores yet.";
+          empty.textContent = "还没有成绩 / No scores yet.";
           container.append(empty);
           return;
         }
@@ -232,11 +129,11 @@
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);
-          statusEl.textContent = "Loaded";
+          statusEl.textContent = "已更新 / Loaded";
         } catch (error) {
           console.warn("[ZIzi Home] Leaderboard overview failed:", error);
           Object.values(boards).forEach((board) => renderRows(board, []));
-          statusEl.textContent = "Leaderboard unavailable.";
+          statusEl.textContent = "排行榜暂不可用 / Leaderboard unavailable";
         }
       }
 

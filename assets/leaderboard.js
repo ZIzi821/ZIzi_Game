@@ -24,9 +24,9 @@ function normalizeScore(score) {
 }
 
 function formatTime(value) {
-  if (!value) return "Just now";
+  if (!value) return "刚刚 / Just now";
   const date = typeof value.toDate === "function" ? value.toDate() : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Just now";
+  if (Number.isNaN(date.getTime())) return "刚刚 / Just now";
   return date.toLocaleString("zh-CN", {
     month: "2-digit",
     day: "2-digit",
@@ -157,32 +157,33 @@ function injectStyles() {
   const style = document.createElement("style");
   style.id = "zizi-leaderboard-style";
   style.textContent = `
-    .zizi-lb-button { position: fixed; right: clamp(14px, 3vw, 28px); bottom: clamp(14px, 3vw, 28px); z-index: 80; border: 1px solid rgba(124, 229, 255, 0.45); border-radius: 999px; padding: 12px 18px; color: #eafaff; background: linear-gradient(135deg, rgba(13, 27, 45, 0.94), rgba(38, 36, 54, 0.94)); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42); font: 800 14px/1.2 system-ui, sans-serif; cursor: pointer; letter-spacing: 0; }
+    .zizi-lb-button { position: fixed; right: clamp(14px, 3vw, 28px); bottom: clamp(14px, 3vw, 28px); z-index: 80; border: 1px solid rgba(91, 141, 239, 0.24); border-radius: 999px; padding: 12px 18px; color: #ffffff; background: linear-gradient(135deg, #18a999, #5b8def); box-shadow: 0 14px 30px rgba(77, 89, 121, 0.24); font: 800 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; cursor: pointer; letter-spacing: 0; }
+    .zizi-lb-button:hover, .zizi-lb-button:focus-visible { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(77, 89, 121, 0.28); }
     .zizi-lb-button.is-inline { position: static; display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; padding: 10px 13px; font-size: 13px; }
-    .zizi-lb-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(4, 8, 15, 0.78); backdrop-filter: blur(12px); }
+    .zizi-lb-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(249, 244, 232, 0.68); backdrop-filter: blur(14px); }
     .zizi-lb-modal[hidden], .zizi-lb-form[hidden], .zizi-lb-note[hidden], .zizi-lb-pending[hidden] { display: none; }
-    .zizi-lb-panel { width: min(720px, 100%); max-height: min(760px, 92vh); overflow: auto; border: 1px solid rgba(126, 226, 255, 0.32); border-radius: 8px; color: #eefbff; background: linear-gradient(180deg, rgba(13, 27, 45, 0.98), rgba(7, 12, 22, 0.98)); box-shadow: 0 28px 80px rgba(0, 0, 0, 0.58); }
-    .zizi-lb-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; padding: 22px 22px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-    .zizi-lb-head h2 { margin: 0; font-size: clamp(22px, 4vw, 34px); letter-spacing: 0; }
-    .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: rgba(222, 245, 255, 0.74); font-size: 13px; line-height: 1.45; }
+    .zizi-lb-panel { width: min(760px, 100%); max-height: min(780px, 92vh); overflow: auto; border: 1px solid rgba(83, 101, 135, 0.18); border-radius: 20px; color: #263044; background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 255, 0.9)); box-shadow: 0 24px 70px rgba(77, 89, 121, 0.28); }
+    .zizi-lb-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; padding: 22px 22px 14px; border-bottom: 1px solid rgba(83, 101, 135, 0.12); }
+    .zizi-lb-head h2 { margin: 0; color: #263044; font-size: clamp(24px, 4vw, 36px); letter-spacing: 0; }
+    .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: #657186; font-size: 13px; line-height: 1.45; }
     .zizi-lb-body { padding: 18px 22px 22px; }
-    .zizi-lb-close, .zizi-lb-submit, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(126, 226, 255, 0.34); border-radius: 8px; padding: 10px 14px; color: #effcff; background: rgba(255, 255, 255, 0.08); cursor: pointer; font: 800 13px/1 system-ui, sans-serif; }
+    .zizi-lb-close, .zizi-lb-submit, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(91, 141, 239, 0.24); border-radius: 999px; padding: 10px 14px; color: #315caa; background: rgba(255, 255, 255, 0.82); cursor: pointer; box-shadow: 0 8px 18px rgba(77, 89, 121, 0.12); font: 800 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
     .zizi-lb-form, .zizi-lb-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
-    .zizi-lb-submit, .zizi-lb-sync { background: linear-gradient(135deg, #52d9d0, #ffc857); border-color: transparent; color: #07111c; }
-    .zizi-lb-form { padding: 14px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; background: rgba(255, 255, 255, 0.045); }
-    .zizi-lb-form label { display: grid; gap: 7px; flex: 1 1 190px; color: rgba(235, 250, 255, 0.76); font-size: 12px; font-weight: 800; text-transform: uppercase; }
-    .zizi-lb-form input, .zizi-lb-level-select, .zizi-lb-pending textarea { width: 100%; box-sizing: border-box; border: 1px solid rgba(126, 226, 255, 0.3); border-radius: 8px; padding: 11px 12px; color: #effcff; background: rgba(2, 7, 14, 0.76); outline: none; font: 700 14px/1.2 system-ui, sans-serif; }
+    .zizi-lb-submit, .zizi-lb-sync { background: linear-gradient(135deg, #18a999, #5b8def); border-color: transparent; color: #ffffff; }
+    .zizi-lb-form { padding: 14px; border: 1px solid rgba(83, 101, 135, 0.12); border-radius: 16px; background: rgba(255, 255, 255, 0.68); }
+    .zizi-lb-form label { display: grid; gap: 7px; flex: 1 1 190px; color: #4f5b70; font-size: 13px; font-weight: 800; }
+    .zizi-lb-form input, .zizi-lb-level-select, .zizi-lb-pending textarea { width: 100%; box-sizing: border-box; border: 1px solid rgba(91, 141, 239, 0.22); border-radius: 14px; padding: 11px 12px; color: #263044; background: rgba(255, 255, 255, 0.86); outline: none; font: 700 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
     .zizi-lb-level-select { margin-top: 10px; }
     .zizi-lb-list { display: grid; gap: 8px; margin-top: 12px; }
-    .zizi-lb-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 120px 126px; gap: 10px; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 8px; background: rgba(255, 255, 255, 0.045); }
-    .zizi-lb-row.is-head { min-height: 28px; color: rgba(220, 241, 255, 0.62); background: transparent; border-color: transparent; font-size: 12px; text-transform: uppercase; }
-    .zizi-lb-rank { color: #83f2e9; font-weight: 900; }
+    .zizi-lb-row { display: grid; grid-template-columns: 54px minmax(0, 1fr) 120px 126px; gap: 10px; align-items: center; min-height: 44px; padding: 10px 12px; border: 1px solid rgba(83, 101, 135, 0.1); border-radius: 14px; background: rgba(255, 255, 255, 0.68); }
+    .zizi-lb-row.is-head { min-height: 28px; color: #657186; background: transparent; border-color: transparent; font-size: 12px; }
+    .zizi-lb-rank { color: #18a999; font-weight: 900; }
     .zizi-lb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
-    .zizi-lb-score { color: #ffe08a; font-weight: 900; text-align: right; }
-    .zizi-lb-time { color: rgba(220, 241, 255, 0.68); font-size: 12px; text-align: right; }
-    .zizi-lb-empty, .zizi-lb-pending { padding: 14px; border: 1px dashed rgba(126, 226, 255, 0.28); border-radius: 8px; color: rgba(229, 246, 255, 0.72); }
+    .zizi-lb-score { color: #a46800; font-weight: 900; text-align: right; }
+    .zizi-lb-time { color: #657186; font-size: 12px; text-align: right; }
+    .zizi-lb-empty, .zizi-lb-pending { padding: 14px; border: 1px dashed rgba(91, 141, 239, 0.3); border-radius: 16px; color: #657186; background: rgba(255, 255, 255, 0.5); }
     .zizi-lb-pending textarea { min-height: 96px; margin: 10px 0; resize: vertical; }
-    @media (max-width: 620px) { .zizi-lb-row { grid-template-columns: 40px minmax(0, 1fr) 86px; } .zizi-lb-time, .zizi-lb-row.is-head .zizi-lb-time { display: none; } }
+    @media (max-width: 620px) { .zizi-lb-panel { border-radius: 18px; } .zizi-lb-row { grid-template-columns: 40px minmax(0, 1fr) 86px; } .zizi-lb-time, .zizi-lb-row.is-head .zizi-lb-time { display: none; } }
   `;
   document.head.appendChild(style);
 }
@@ -190,7 +191,7 @@ function injectStyles() {
 function makeHeadRow() {
   const row = document.createElement("div");
   row.className = "zizi-lb-row is-head";
-  ["Rank", "Nickname", "Score", "Time"].forEach((text, index) => {
+  ["排名 / Rank", "昵称 / Nickname", "分数 / Score", "时间 / Time"].forEach((text, index) => {
     const cell = document.createElement("span");
     cell.textContent = text;
     if (index === 0) cell.className = "zizi-lb-rank";
@@ -210,7 +211,7 @@ function makeRow({ rank, nickname, score, createdAt }, scoreFormatter) {
   rankEl.textContent = `#${rank}`;
   const nameEl = document.createElement("span");
   nameEl.className = "zizi-lb-name";
-  nameEl.textContent = nickname || "Anonymous";
+  nameEl.textContent = nickname || "匿名玩家 / Anonymous";
   const scoreEl = document.createElement("span");
   scoreEl.className = "zizi-lb-score";
   scoreEl.textContent = scoreFormatter(score);
@@ -247,7 +248,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const button = document.createElement("button");
   button.className = buttonContainer ? "zizi-lb-button is-inline" : "zizi-lb-button";
   button.type = "button";
-  button.textContent = buttonLabel || "Leaderboard";
+  button.textContent = buttonLabel || "排行榜 / Leaderboard";
 
   const modal = document.createElement("section");
   modal.className = "zizi-lb-modal";
@@ -261,7 +262,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   head.className = "zizi-lb-head";
   const titleWrap = document.createElement("div");
   const title = document.createElement("h2");
-  title.textContent = "Leaderboard";
+  title.textContent = "排行榜 / Leaderboard";
   const subtitle = document.createElement("p");
   subtitle.textContent = getBoardName();
   titleWrap.append(title, subtitle);
@@ -278,7 +279,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const close = document.createElement("button");
   close.className = "zizi-lb-close";
   close.type = "button";
-  close.textContent = "Back";
+  close.textContent = "返回游戏 / Back";
   head.append(titleWrap, close);
 
   const body = document.createElement("div");
@@ -287,15 +288,15 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   form.className = "zizi-lb-form";
   form.hidden = true;
   const nameLabel = document.createElement("label");
-  nameLabel.textContent = "Nickname";
+  nameLabel.textContent = "昵称 / Nickname";
   const nameInput = document.createElement("input");
   nameInput.name = "nickname";
   nameInput.maxLength = MAX_NAME;
-  nameInput.placeholder = "20 characters max";
+  nameInput.placeholder = "最多 20 个字符 / 20 characters max";
   nameInput.autocomplete = "nickname";
   nameLabel.appendChild(nameInput);
   const scoreLabel = document.createElement("label");
-  scoreLabel.textContent = "Score";
+  scoreLabel.textContent = "分数 / Score";
   const scoreInput = document.createElement("input");
   scoreInput.name = "score";
   scoreInput.readOnly = true;
@@ -303,7 +304,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const submit = document.createElement("button");
   submit.className = "zizi-lb-submit";
   submit.type = "submit";
-  submit.textContent = "Submit score";
+  submit.textContent = "提交分数 / Submit Score";
   form.append(nameLabel, scoreLabel, submit);
 
   const note = document.createElement("p");
@@ -325,13 +326,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const syncButton = document.createElement("button");
   syncButton.className = "zizi-lb-sync";
   syncButton.type = "button";
-  syncButton.textContent = "Submit to GitHub Sync Inbox";
+  syncButton.textContent = "提交到 GitHub 同步箱 / Submit to GitHub Sync Inbox";
   const copyButton = document.createElement("button");
   copyButton.className = "zizi-lb-copy";
   copyButton.type = "button";
-  copyButton.textContent = "Copy GitHub Issue link";
+  copyButton.textContent = "复制 Issue 链接 / Copy Issue Link";
   pendingActions.append(syncButton, copyButton);
-  pendingPanel.append("Firebase is unavailable. Your score was saved locally and can be submitted through GitHub sync.", pendingText, pendingActions);
+  pendingPanel.append("Firebase 暂时不可用，分数已保存在本地，可稍后提交到 GitHub 同步箱。 / Firebase is unavailable. Your score was saved locally and can be submitted through GitHub sync.", pendingText, pendingActions);
 
   body.append(form, note, status, list, pendingPanel);
   panel.append(head, body);
@@ -349,7 +350,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     if (!rows.length) {
       const empty = document.createElement("div");
       empty.className = "zizi-lb-empty";
-      empty.textContent = "No scores yet.";
+      empty.textContent = "还没有成绩 / No scores yet.";
       list.appendChild(empty);
       return;
     }
@@ -363,16 +364,16 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     subtitle.textContent = getBoardName();
     const levelId = getBoardLevelId();
     note.hidden = false;
-    note.textContent = "Firebase leaderboard. If Firebase times out, this view falls back to the latest exported cache.";
-    setStatus("Loading leaderboard...");
+    note.textContent = "Firebase 排行榜优先加载；如果超时，会显示最近一次导出的缓存数据。 / Firebase loads first. If it times out, this view falls back to the latest exported cache.";
+    setStatus("正在加载排行榜 / Loading leaderboard...");
     try {
       const rows = await fetchLeaderboardRows({ gameId, levelId, limit: TOP_LIMIT });
       renderRows(rows);
-      setStatus("Leaderboard loaded.");
+      setStatus("排行榜已更新 / Leaderboard loaded.");
     } catch (error) {
       console.warn("[ZIzi Leaderboard] Read failed:", error);
       renderRows([]);
-      setStatus("Leaderboard unavailable.", true);
+      setStatus("排行榜暂不可用 / Leaderboard unavailable.", true);
     }
   }
 
@@ -416,7 +417,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   copyButton.addEventListener("click", async () => {
     if (!lastPendingItem) return;
     await navigator.clipboard?.writeText(createIssueUrlFromItems([lastPendingItem]));
-    setStatus("GitHub Issue link copied.");
+    setStatus("Issue 链接已复制 / GitHub Issue link copied.");
   });
 
   form.addEventListener("submit", async (event) => {
@@ -425,11 +426,11 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     const score = normalizeScore(pendingScore);
     const levelId = getBoardLevelId();
     if (!nickname) {
-      setStatus("Please enter a nickname.", true);
+      setStatus("请输入昵称 / Please enter a nickname.", true);
       return;
     }
     submit.disabled = true;
-    setStatus("Submitting score...");
+    setStatus("正在提交分数 / Submitting score...");
     const pendingItem = {
       id: makeSyncId(),
       type: "score",
@@ -447,7 +448,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       if (gameId === "chomp") data.levelId = levelId;
       await withTimeout(firebase.addDoc(ref, data), FIREBASE_TIMEOUT_MS, "Firebase score submit");
       form.hidden = true;
-      setStatus("Score submitted to Firebase.");
+      setStatus("分数已提交 / Score submitted.");
       await loadScores();
     } catch (error) {
       console.warn("[ZIzi Leaderboard] Score queued for GitHub sync:", {
@@ -456,7 +457,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       });
       const saved = addPendingSyncItem(pendingItem);
       showPendingSync(saved);
-      setStatus("Firebase is unavailable. Score saved locally for GitHub sync.", true);
+      setStatus("Firebase 暂时不可用，分数已保存到本地待同步。 / Firebase is unavailable. Score saved locally for sync.", true);
     } finally {
       submit.disabled = false;
     }

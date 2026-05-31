@@ -3,195 +3,93 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>更新日志 / Update Log - ZIzi Game</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        --bg: #07090c;
-        --line: rgba(255, 255, 255, 0.16);
-        --text: #f3f7fb;
-        --muted: #a5b0bd;
-        --cyan: #42f5d4;
-        --gold: #ffc857;
-        --panel: rgba(255, 255, 255, 0.075);
-      }
-
-      * { box-sizing: border-box; }
-
-      body {
-        min-height: 100vh;
-        margin: 0;
-        background:
-          radial-gradient(circle at 18% 12%, rgba(66, 245, 212, 0.16), transparent 30%),
-          radial-gradient(circle at 82% 74%, rgba(255, 200, 87, 0.13), transparent 32%),
-          linear-gradient(135deg, #07090c, #101621 58%, #08090d);
-        color: var(--text);
-      }
-
-      main {
-        width: min(900px, calc(100% - 32px));
-        margin: 0 auto;
-        padding: clamp(28px, 6vw, 72px) 0;
-      }
-
-      nav { margin-bottom: 34px; }
-
-      .back {
-        display: inline-flex;
-        align-items: center;
-        min-height: 38px;
-        padding: 8px 12px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--cyan);
-        text-decoration: none;
-        font-weight: 800;
-      }
-
-      .eyebrow {
-        margin: 0 0 12px;
-        color: var(--cyan);
-        font-size: 12px;
-        font-weight: 900;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(42px, 8vw, 76px);
-        line-height: 0.96;
-        letter-spacing: 0;
-      }
-
-      .intro {
-        max-width: 68ch;
-        margin: 18px 0 34px;
-        color: var(--muted);
-        line-height: 1.75;
-        font-size: 17px;
-      }
-
-      .log {
-        display: grid;
-        gap: 16px;
-      }
-
-      article {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--panel);
-        padding: 20px;
-      }
-
-      article time {
-        color: var(--gold);
-        font-weight: 900;
-        font-size: 13px;
-      }
-
-      article h2 {
-        margin: 10px 0 8px;
-        font-size: 24px;
-      }
-
-      article ul {
-        margin: 0;
-        padding-left: 20px;
-        color: #d6e1ea;
-        line-height: 1.7;
-      }
-
-      .tag {
-        color: var(--cyan);
-        font-weight: 800;
-      }
-    </style>
+    <title>Updates - ZIzi Game</title>
+    <link rel="stylesheet" href="assets/site.css" />
   </head>
-  <body>
+  <body class="updates-page">
     <main>
-      <nav><a class="back" href="./">返回游戏主页</a></nav>
-      <p class="eyebrow">Update Log</p>
-      <h1>更新日志</h1>
-      <p class="intro">
-        这里记录 ZIzi Game Collection 的主要更新日志。同一天的更新会合并在同一个日期下面，最新内容放在最上面。
-      </p>
+      <nav class="site-nav"><a class="back" href="./">返回主页 / Back Home</a></nav>
+      <header class="hero">
+        <p class="eyebrow">Updates</p>
+        <h1>更新日志 / Updates</h1>
+        <p class="intro">这里记录 ZIzi Game Collection 的主要变化。最新内容在最上面，方便你快速看看最近发生了什么。</p>
+        <p class="intro">A friendly log of what changed in the collection. The newest notes stay at the top.</p>
+      </header>
 
-      <section class="log" aria-label="更新日志列表">
-        <article>
+      <section class="log-list" aria-label="更新日志列表 / Update list">
+        <article class="log-card">
           <time datetime="2026-05-29">2026-05-29</time>
-          <h2>5 月 29 日更新</h2>
+          <h2>5 月 29 日更新 / May 29 Update</h2>
           <ul>
-            <li><span class="tag">Starfall / 星陨</span>：修复排行榜窗口遮挡游戏按键提示的问题。</li>
-            <li><span class="tag">Chomp / 大口吃</span>：修复关卡选择不明确的问题。</li>
-            <li><span class="tag">Chomp / 大口吃</span>：新增每关独立排行榜。</li>
-            <li><span class="tag">网站</span>：新增主页排行榜总览页面。</li>
+            <li><span class="tag">Starfall / 星坠</span>: 修复排行榜窗口遮挡游戏按钮提示的问题。</li>
+            <li><span class="tag">Chomp / 大口吞</span>: 优化关卡选择的清晰度。</li>
+            <li><span class="tag">Chomp / 大口吞</span>: 新增每关独立排行榜。</li>
+            <li><span class="tag">网站 / Site</span>: 新增首页排行榜总览。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-28">2026-05-28</time>
-          <h2>5 月 28 日更新</h2>
+          <h2>5 月 28 日更新 / May 28 Update</h2>
           <ul>
-            <li><span class="tag">在线排行榜系统 / Leaderboards</span>：新增在线排行榜系统。</li>
-            <li><span class="tag">在线排行榜系统 / Leaderboards</span>：玩家现在可以提交成绩并与其他玩家竞争。</li>
-            <li><span class="tag">社区留言板</span>：新增公开社区留言板。</li>
-            <li><span class="tag">开发者简介</span>：新增开发者资料、项目介绍、充电站和技术支持页面。</li>
+            <li><span class="tag">排行榜 / Leaderboards</span>: 新增在线排行榜系统。</li>
+            <li><span class="tag">排行榜 / Leaderboards</span>: 玩家可以提交成绩，并和其他玩家一起竞争。</li>
+            <li><span class="tag">社区留言板 / Community Board</span>: 新增公开留言板。</li>
+            <li><span class="tag">开发者简介 / Developer Profile</span>: 新增开发者资料、项目介绍、充电站和技术支持页面。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-27">2026-05-27</time>
-          <h2>5 月 27 日更新</h2>
+          <h2>5 月 27 日更新 / May 27 Update</h2>
           <ul>
-            <li><span class="tag">Sentinel / 哨兵防线</span>：重做视觉效果。</li>
-            <li><span class="tag">Sentinel / 哨兵防线</span>：强化单位待机、敌人行走、弹道、命中、死亡和入侵警报反馈，让战斗更有生命感。</li>
-            <li><span class="tag">Chomp / 大口吃</span>：修复暂停、说明页返回、选关按钮、Enter 键误触发和结算界面相关问题。</li>
-            <li><span class="tag">重新命名</span>：三个游戏tmd我看不懂名字，重新命名；以及菜单文案、浏览器标题和项目说明。</li>
-            <li><span class="tag">网站</span>：整合网站；新增更新日志页面；枫叶学子优良传统。</li>
+            <li><span class="tag">Sentinel / 哨兵防线</span>: 重做视觉效果。</li>
+            <li><span class="tag">Sentinel / 哨兵防线</span>: 强化单位待机、敌人行走、弹道、命中、死亡和入侵警报反馈，让战斗更有生命感。</li>
+            <li><span class="tag">Chomp / 大口吞</span>: 修复暂停、说明页返回、选关按钮、Enter 键误触发和结算界面相关问题。</li>
+            <li><span class="tag">重新命名 / Renaming</span>: 三个游戏重新命名，并更新菜单文案、浏览器标题和项目说明。</li>
+            <li><span class="tag">网站 / Site</span>: 整合网站并新增更新日志页面。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-26">2026-05-26</time>
-          <h2>5 月 26 日更新</h2>
+          <h2>5 月 26 日更新 / May 26 Update</h2>
           <ul>
-            <li><span class="tag">Aetherfall Protocol</span>：游戏构建完成。</li>
-            <li><span class="tag">Starline Defense</span>：打包测试。</li>
+            <li><span class="tag">Aetherfall Protocol</span>: 游戏构建完成。</li>
+            <li><span class="tag">Starline Defense</span>: 打包测试。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-25">2026-05-25</time>
-          <h2>5 月 25 日更新</h2>
+          <h2>5 月 25 日更新 / May 25 Update</h2>
           <ul>
-            <li><span class="tag">椰浆饭 / Nasi lemak</span>：新增相关更新记录。</li>
+            <li><span class="tag">Nasi lemak</span>: 新增相关更新记录。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-21">2026-05-21</time>
-          <h2>5 月 21 日更新</h2>
+          <h2>5 月 21 日更新 / May 21 Update</h2>
           <ul>
-            <li><span class="tag">Starline Defense</span>：构建。</li>
+            <li><span class="tag">Starline Defense</span>: 构建。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-20">2026-05-20</time>
-          <h2>5 月 20 日更新</h2>
+          <h2>5 月 20 日更新 / May 20 Update</h2>
           <ul>
-            <li><span class="tag">Aetherfall Protocol</span>：感谢 Mark 提供初始源代码<code>experiment for codex.zip</code>，游戏雏形。</li>
-            <li><span class="tag">PacmanGame.exe</span>：打包测试。</li>
+            <li><span class="tag">Aetherfall Protocol</span>: 感谢 Mark 提供初始源码 <code>experiment for codex.zip</code>，游戏雏形完成。</li>
+            <li><span class="tag">PacmanGame.exe</span>: 打包测试。</li>
           </ul>
         </article>
 
-        <article>
+        <article class="log-card">
           <time datetime="2026-05-19">2026-05-19</time>
-          <h2>5 月 19 日更新</h2>
+          <h2>5 月 19 日更新 / May 19 Update</h2>
           <ul>
-            <li><span class="tag">PacmanGame</span>：构建。</li>
+            <li><span class="tag">PacmanGame</span>: 构建。</li>
           </ul>
         </article>
       </section>
