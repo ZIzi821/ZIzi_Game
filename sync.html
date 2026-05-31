@@ -20,14 +20,17 @@
   </head>
   <body>
     <main>
-      <nav><a href="./">Home</a><a href="developer.html">Developer</a></nav>
-      <h1>Sync tool</h1>
-      <p>Primary sync is automatic through GitHub Actions. This page is a fallback helper only. It does not contain Firebase Admin credentials or GitHub tokens.</p>
+      <nav><a href="./">返回主页 / Back Home</a><a href="developer.html">开发者简介 / Developer Profile</a></nav>
+      <h1>开发者同步工具 / Developer Sync Tool</h1>
+      <p>这是网站维护者使用的备用工具，普通玩家不需要使用。正常情况下，留言和分数会自动提交；只有在需要手动处理 ZIZI-SYNC 同步码时才会用到这里。</p>
+      <p>This is a backup tool for site maintainers. Regular players do not need to use it. Comments and scores are normally submitted automatically; this page is only for manually handling ZIZI-SYNC codes when needed.</p>
+      <p>本页面不包含 Firebase Admin 私钥、GitHub Token 或任何敏感信息。</p>
+      <p>This page does not contain Firebase Admin credentials, GitHub tokens, or any other secrets.</p>
       <section class="panel">
-        <textarea id="syncCode" placeholder="Paste ZIZI-SYNC code here"></textarea>
+        <textarea id="syncCode" placeholder="粘贴 ZIZI-SYNC 同步码 / Paste ZIZI-SYNC code here"></textarea>
         <div class="actions">
-          <button id="openIssue" type="button">Open GitHub Issue Sync Inbox</button>
-          <button id="copyIssue" type="button">Copy GitHub Issue link</button>
+          <button id="openIssue" type="button">打开 GitHub Sync / Open GitHub Sync</button>
+          <button id="copyIssue" type="button">复制 GitHub Issue 链接 / Copy GitHub Issue Link</button>
         </div>
       </section>
     </main>

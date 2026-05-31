@@ -1,8 +1,7 @@
 import { firebaseConfig } from "./firebase-config.js";
 import {
-  addPendingSyncItem,
   cleanText,
-  createIssueUrlFromItems,
+  createSyncCode,
   makeSyncId,
   openIssueForItems
 } from "./sync-code.js";
@@ -165,13 +164,14 @@ function injectStyles() {
     .zizi-lb-panel { width: min(760px, 100%); max-height: min(780px, 92vh); overflow: auto; border: 1px solid rgba(83, 101, 135, 0.18); border-radius: 20px; color: #263044; background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 255, 0.9)); box-shadow: 0 24px 70px rgba(77, 89, 121, 0.28); }
     .zizi-lb-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; padding: 22px 22px 14px; border-bottom: 1px solid rgba(83, 101, 135, 0.12); }
     .zizi-lb-head h2 { margin: 0; color: #263044; font-size: clamp(24px, 4vw, 36px); letter-spacing: 0; }
-    .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: #657186; font-size: 13px; line-height: 1.45; }
+    .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: #34425c; font-size: 13px; line-height: 1.45; }
     .zizi-lb-body { padding: 18px 22px 22px; }
     .zizi-lb-close, .zizi-lb-submit, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(91, 141, 239, 0.24); border-radius: 999px; padding: 10px 14px; color: #315caa; background: rgba(255, 255, 255, 0.82); cursor: pointer; box-shadow: 0 8px 18px rgba(77, 89, 121, 0.12); font: 800 13px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
     .zizi-lb-form, .zizi-lb-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
     .zizi-lb-submit, .zizi-lb-sync { background: linear-gradient(135deg, #18a999, #5b8def); border-color: transparent; color: #ffffff; }
     .zizi-lb-form { padding: 14px; border: 1px solid rgba(83, 101, 135, 0.12); border-radius: 16px; background: rgba(255, 255, 255, 0.68); }
     .zizi-lb-form label { display: grid; gap: 7px; flex: 1 1 190px; color: #4f5b70; font-size: 13px; font-weight: 800; }
+    .zizi-lb-submit-level { flex: 1 1 100%; margin: 0; padding: 9px 12px; border-radius: 12px; background: rgba(91, 141, 239, 0.1); color: #263044; font-size: 13px; font-weight: 850; }
     .zizi-lb-form input, .zizi-lb-level-select, .zizi-lb-pending textarea { width: 100%; box-sizing: border-box; border: 1px solid rgba(91, 141, 239, 0.22); border-radius: 14px; padding: 11px 12px; color: #263044; background: rgba(255, 255, 255, 0.86); outline: none; font: 700 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
     .zizi-lb-level-select { margin-top: 10px; }
     .zizi-lb-list { display: grid; gap: 8px; margin-top: 12px; }
@@ -181,7 +181,7 @@ function injectStyles() {
     .zizi-lb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
     .zizi-lb-score { color: #a46800; font-weight: 900; text-align: right; }
     .zizi-lb-time { color: #657186; font-size: 12px; text-align: right; }
-    .zizi-lb-empty, .zizi-lb-pending { padding: 14px; border: 1px dashed rgba(91, 141, 239, 0.3); border-radius: 16px; color: #657186; background: rgba(255, 255, 255, 0.5); }
+    .zizi-lb-empty, .zizi-lb-pending { padding: 14px; border: 1px dashed rgba(91, 141, 239, 0.3); border-radius: 16px; color: #34425c; background: rgba(255, 255, 255, 0.5); }
     .zizi-lb-pending textarea { min-height: 96px; margin: 10px 0; resize: vertical; }
     @media (max-width: 620px) { .zizi-lb-panel { border-radius: 18px; } .zizi-lb-row { grid-template-columns: 40px minmax(0, 1fr) 86px; } .zizi-lb-time, .zizi-lb-row.is-head .zizi-lb-time { display: none; } }
   `;
@@ -287,6 +287,9 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const form = document.createElement("form");
   form.className = "zizi-lb-form";
   form.hidden = true;
+  const submitLevel = document.createElement("p");
+  submitLevel.className = "zizi-lb-submit-level";
+  submitLevel.hidden = true;
   const nameLabel = document.createElement("label");
   nameLabel.textContent = "昵称 / Nickname";
   const nameInput = document.createElement("input");
@@ -305,7 +308,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   submit.className = "zizi-lb-submit";
   submit.type = "submit";
   submit.textContent = "提交分数 / Submit Score";
-  form.append(nameLabel, scoreLabel, submit);
+  form.append(submitLevel, nameLabel, scoreLabel, submit);
 
   const note = document.createElement("p");
   note.className = "zizi-lb-note";
@@ -319,6 +322,14 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const pendingPanel = document.createElement("div");
   pendingPanel.className = "zizi-lb-pending";
   pendingPanel.hidden = true;
+  const pendingNotice = document.createElement("div");
+  pendingNotice.innerHTML = `
+    <p><strong>Firebase 暂时无法连接，你的分数没有自动提交。</strong><br />Firebase is temporarily unavailable. Your score was not submitted automatically.</p>
+    <p><strong>同步码已生成，请现在复制。</strong><br />A sync code has been generated. Please copy it now.</p>
+    <p>刷新或关闭页面后，这个同步码不会保存在你的设备上。<br />After refreshing or closing this page, this sync code will not be saved on your device.</p>
+    <p><strong>有 GitHub 账号 / With a GitHub account:</strong><br />点击 “提交到 GitHub Sync / Submit to GitHub Sync”，打开 GitHub 后保持标题和内容不变，然后点击 “Submit new issue”。</p>
+    <p><strong>没有 GitHub 账号 / Without a GitHub account:</strong><br />复制 ZIZI-SYNC 同步码发给 ZIzi，只需要发送同步码，不需要发送其他内容。</p>
+  `;
   const pendingText = document.createElement("textarea");
   pendingText.readOnly = true;
   const pendingActions = document.createElement("div");
@@ -326,13 +337,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const syncButton = document.createElement("button");
   syncButton.className = "zizi-lb-sync";
   syncButton.type = "button";
-  syncButton.textContent = "提交到 GitHub 同步箱 / Submit to GitHub Sync Inbox";
+  syncButton.textContent = "提交到 GitHub Sync / Submit to GitHub Sync";
   const copyButton = document.createElement("button");
   copyButton.className = "zizi-lb-copy";
   copyButton.type = "button";
-  copyButton.textContent = "复制 Issue 链接 / Copy Issue Link";
+  copyButton.textContent = "复制同步码 / Copy Sync Code";
   pendingActions.append(syncButton, copyButton);
-  pendingPanel.append("Firebase 暂时不可用，分数已保存在本地，可稍后提交到 GitHub 同步箱。 / Firebase is unavailable. Your score was saved locally and can be submitted through GitHub sync.", pendingText, pendingActions);
+  pendingPanel.append(pendingNotice, pendingText, pendingActions);
 
   body.append(form, note, status, list, pendingPanel);
   panel.append(head, body);
@@ -342,7 +353,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   function setStatus(text, isError = false) {
     status.textContent = text;
-    status.style.color = isError ? "#ff9a9a" : "rgba(222, 245, 255, 0.74)";
+    status.style.color = isError ? "#b4234a" : "#34425c";
   }
 
   function renderRows(rows) {
@@ -379,7 +390,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   function showPendingSync(item) {
     lastPendingItem = item;
-    pendingText.value = createIssueUrlFromItems([item]);
+    pendingText.value = createSyncCode([item]);
     pendingPanel.hidden = false;
   }
 
@@ -393,6 +404,12 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     }
     modal.hidden = false;
     form.hidden = !showSubmit;
+    levelSelect.disabled = Boolean(showSubmit);
+    submitLevel.hidden = !(showSubmit && hasLevels);
+    if (showSubmit && hasLevels) {
+      const level = levelOptions.find((option) => option.id === selectedLevelId);
+      submitLevel.textContent = `当前地图 / Current Level: ${level?.name || selectedLevelId}`;
+    }
     if (showSubmit) nameInput.focus();
     loadScores();
   }
@@ -416,15 +433,15 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   });
   copyButton.addEventListener("click", async () => {
     if (!lastPendingItem) return;
-    await navigator.clipboard?.writeText(createIssueUrlFromItems([lastPendingItem]));
-    setStatus("Issue 链接已复制 / GitHub Issue link copied.");
+    await navigator.clipboard?.writeText(createSyncCode([lastPendingItem]));
+    setStatus("同步码已复制 / Sync code copied.");
   });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const nickname = cleanText(nameInput.value, MAX_NAME);
     const score = normalizeScore(pendingScore);
-    const levelId = getBoardLevelId();
+    const levelId = hasLevels && pendingLevelId ? pendingLevelId : getBoardLevelId();
     if (!nickname) {
       setStatus("请输入昵称 / Please enter a nickname.", true);
       return;
@@ -448,16 +465,18 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       if (gameId === "chomp") data.levelId = levelId;
       await withTimeout(firebase.addDoc(ref, data), FIREBASE_TIMEOUT_MS, "Firebase score submit");
       form.hidden = true;
+      levelSelect.disabled = false;
+      submitLevel.hidden = true;
+      pendingLevelId = null;
       setStatus("分数已提交 / Score submitted.");
       await loadScores();
     } catch (error) {
-      console.warn("[ZIzi Leaderboard] Score queued for GitHub sync:", {
+      console.warn("[ZIzi Leaderboard] Score needs manual sync:", {
         path: getScorePath(gameId, levelId),
         error
       });
-      const saved = addPendingSyncItem(pendingItem);
-      showPendingSync(saved);
-      setStatus("Firebase 暂时不可用，分数已保存到本地待同步。 / Firebase is unavailable. Score saved locally for sync.", true);
+      showPendingSync(pendingItem);
+      setStatus("Firebase 暂时无法连接，你的分数没有自动提交。 / Firebase is temporarily unavailable. Your score was not submitted automatically.", true);
     } finally {
       submit.disabled = false;
     }

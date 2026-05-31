@@ -28,13 +28,19 @@
       </section>
 
       <section class="panel pending" id="pendingPanel" hidden>
-        <strong>待同步留言 / Pending Sync</strong>
-        <p class="hint">Firebase 暂时不可用，留言已保存在本地。你可以稍后通过 GitHub 同步箱提交。</p>
+        <strong>同步码 / Sync Code</strong>
+        <p class="hint">Firebase 暂时无法连接，你的内容没有自动提交。Firebase is temporarily unavailable. Your content was not submitted automatically.</p>
+        <p class="hint">同步码已生成，请现在复制。A sync code has been generated. Please copy it now.</p>
+        <p class="hint">刷新或关闭页面后，这个同步码不会保存在你的设备上。After refreshing or closing this page, this sync code will not be saved on your device.</p>
+        <p class="hint">有 GitHub 账号：点击“提交到 GitHub Sync”，打开 GitHub 后保持标题和内容不变，然后点击“Submit new issue”。</p>
+        <p class="hint">With a GitHub account: click “Submit to GitHub Sync”, keep the title and body unchanged, then click “Submit new issue”.</p>
+        <p class="hint">没有 GitHub 账号：复制下面的 ZIZI-SYNC 同步码发给 ZIzi，只需要发送同步码，不需要发送其他内容。</p>
+        <p class="hint">Without a GitHub account: copy the ZIZI-SYNC code below and send it to ZIzi. Only the sync code is needed.</p>
         <textarea id="syncCodeText" readonly></textarea>
         <div class="pending-actions">
-          <button class="tool" id="githubButton" type="button">提交到 GitHub 同步箱 / Submit to GitHub Sync Inbox</button>
-          <button class="tool" id="copyButton" type="button">复制 Issue 链接 / Copy Issue Link</button>
-          <button class="tool" id="deleteButton" type="button">删除本地待同步内容 / Delete Local Draft</button>
+          <button class="tool" id="githubButton" type="button">提交到 GitHub Sync / Submit to GitHub Sync</button>
+          <button class="tool" id="copyButton" type="button">复制同步码 / Copy Sync Code</button>
+          <button class="tool" id="deleteButton" type="button">关闭提示 / Close Notice</button>
         </div>
       </section>
 
@@ -44,15 +50,11 @@
     <script type="module">
       import { firebaseConfig } from "./assets/firebase-config.js";
       import {
-        addPendingSyncItem,
         cleanMessage,
         cleanText,
-        createIssueUrlFromItems,
         createSyncCode,
-        getPendingSyncItems,
         makeSyncId,
-        openIssueForItems,
-        removePendingSyncItem
+        openIssueForItems
       } from "./assets/sync-code.js";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
       import { addDoc, collection, getDocs, getFirestore, limit, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -120,10 +122,6 @@
         syncCodeText.value = createSyncCode([item]);
         pendingPanel.hidden = false;
       }
-      function loadPending() {
-        const items = getPendingSyncItems().filter((item) => item.type === "comment");
-        if (items[0]) showPending(items[items.length - 1]);
-      }
       async function loadCachedComments(reason = "") {
         const response = await fetch("./data/comments.json", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -180,10 +178,9 @@
           setStatus("留言已发布 / Comment posted.");
           await loadComments();
         } catch (error) {
-          console.warn("[ZIzi Forum] Comment queued for GitHub sync:", error);
-          const saved = addPendingSyncItem(pendingItem);
-          showPending(saved);
-          setStatus("Firebase 暂时不可用，留言已保存到本地待同步。 / Firebase is unavailable. Comment saved locally for sync.", true);
+          console.warn("[ZIzi Forum] Comment needs manual sync:", error);
+          showPending(pendingItem);
+          setStatus("Firebase 暂时无法连接，内容没有自动提交。请复制本页生成的同步码。 / Firebase is temporarily unavailable. Please copy the sync code shown on this page.", true);
         } finally {
           submitButton.disabled = false;
         }
@@ -193,17 +190,16 @@
       });
       copyButton.addEventListener("click", async () => {
         if (!activePendingItem) return;
-        await navigator.clipboard?.writeText(createIssueUrlFromItems([activePendingItem]));
-        setStatus("Issue 链接已复制 / GitHub Issue link copied.");
+        await navigator.clipboard?.writeText(createSyncCode([activePendingItem]));
+        setStatus("同步码已复制 / Sync code copied.");
       });
       deleteButton.addEventListener("click", () => {
-        if (activePendingItem) removePendingSyncItem(activePendingItem.id);
         activePendingItem = null;
+        syncCodeText.value = "";
         pendingPanel.hidden = true;
-        setStatus("本地待同步内容已删除 / Local pending content deleted.");
+        setStatus("同步码提示已关闭 / Sync notice closed.");
       });
       loadComments();
-      loadPending();
     </script>
   </body>
 </html>

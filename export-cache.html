@@ -22,19 +22,22 @@
   </head>
   <body>
     <main>
-      <nav><a href="./">Home</a><a href="developer.html">Developer</a></nav>
-      <h1>Export cache</h1>
-      <p>Normally GitHub Actions updates the cache files automatically. This fallback tool reads Firebase through the public client SDK and generates downloadable JSON. It does not write to GitHub.</p>
-      <div class="actions"><button id="loadButton" type="button">Read Firebase and generate JSON</button><span id="status">Idle</span></div>
+      <nav><a href="./">返回主页 / Back Home</a><a href="developer.html">开发者简介 / Developer Profile</a></nav>
+      <h1>缓存导出工具 / Cache Export Tool</h1>
+      <p>这是网站维护者使用的备用工具，普通玩家不需要使用。正常情况下，GitHub Actions 会自动更新缓存文件。</p>
+      <p>This is a backup tool for site maintainers. Regular players do not need to use it. Normally, GitHub Actions updates the cache files automatically.</p>
+      <p>这个工具只通过公开 Firebase 客户端 SDK 读取数据并生成可下载 JSON，不会写入 GitHub，也不包含 Firebase Admin 私钥或 GitHub Token。</p>
+      <p>This tool only reads data through the public Firebase client SDK and generates downloadable JSON. It does not write to GitHub and does not contain Firebase Admin credentials or GitHub tokens.</p>
+      <div class="actions"><button id="loadButton" type="button">读取 Firebase 并生成 JSON / Read Firebase and Generate JSON</button><span id="status">Idle</span></div>
       <section class="grid">
         <article class="panel">
           <h2>comments.json</h2>
-          <div class="actions"><button data-copy="comments" type="button">Copy comments.json</button><button data-download="comments" type="button">Download comments.json</button></div>
+          <div class="actions"><button data-copy="comments" type="button">复制 comments.json / Copy comments.json</button><button data-download="comments" type="button">下载 comments.json / Download comments.json</button></div>
           <textarea id="commentsOutput" readonly></textarea>
         </article>
         <article class="panel">
           <h2>leaderboards.json</h2>
-          <div class="actions"><button data-copy="leaderboards" type="button">Copy leaderboards.json</button><button data-download="leaderboards" type="button">Download leaderboards.json</button></div>
+          <div class="actions"><button data-copy="leaderboards" type="button">复制 leaderboards.json / Copy leaderboards.json</button><button data-download="leaderboards" type="button">下载 leaderboards.json / Download leaderboards.json</button></div>
           <textarea id="leaderboardsOutput" readonly></textarea>
         </article>
       </section>
