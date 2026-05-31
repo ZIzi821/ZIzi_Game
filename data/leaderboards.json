@@ -1,10 +1,41 @@
 {
-  "updatedAt": "",
+  "updatedAt": "2026-05-31T13:55:17.897Z",
   "leaderboards": {
-    "starfall": [],
-    "sentinel": [],
+    "starfall": [
+      {
+        "id": "uh2gdteS2JlEMEz2a1Bj",
+        "nickname": "Mark",
+        "score": 21684,
+        "createdAt": "2026-05-29T08:14:49.360Z",
+        "sourceRegion": ""
+      },
+      {
+        "id": "vVnQohY0ae0dl9ActtXl",
+        "nickname": "ZIzi",
+        "score": 19873,
+        "createdAt": "2026-05-28T12:45:59.499Z",
+        "sourceRegion": ""
+      }
+    ],
+    "sentinel": [
+      {
+        "id": "8QMEKabBN4JZsHwolDR5",
+        "nickname": "ZIzi",
+        "score": 27576,
+        "createdAt": "2026-05-29T05:55:45.958Z",
+        "sourceRegion": ""
+      }
+    ],
     "chomp": {
-      "level1": [],
+      "level1": [
+        {
+          "id": "gbAuSuJancHbxt6vz51W",
+          "nickname": "都是发的",
+          "score": 101,
+          "createdAt": "2026-05-29T11:45:49.193Z",
+          "sourceRegion": ""
+        }
+      ],
       "level2": [],
       "level3": []
     }
