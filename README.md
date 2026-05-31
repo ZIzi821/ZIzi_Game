@@ -1,72 +1,57 @@
 # ZIzi_Game
 
-ZIzi 的游戏合集仓库，使用 GitHub Pages 从 `main` 分支根目录发布。
+ZIzi Game Collection is published with GitHub Pages from the repository root on the `main` branch.
 
-网站主页：
-https://zizi821.github.io/ZIzi_Game/
+Site: https://zizi821.github.io/ZIzi_Game/
 
-更新日志：
-https://zizi821.github.io/ZIzi_Game/updates.html
+Community: https://zizi821.github.io/ZIzi_Game/forum.html
 
-社区留言板：
-https://zizi821.github.io/ZIzi_Game/forum.html
+Updates: https://zizi821.github.io/ZIzi_Game/updates.html
 
-开发者简介：
-https://zizi821.github.io/ZIzi_Game/developer.html
+Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 
 ## Games
 
-- [Starfall / 星陨](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)：能量核心生存射击；尝试面对不同的波次，与不同的升级选择 坚持到最后。
-- [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)：路线塔防，部署单位守住核心。
-- [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)：吃豆游戏。
+- [Starfall / 星坠](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)
+- [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)
+- [Chomp / 大口吞](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
 
-## Source Projects
+## Unified Community
 
-- `pacman_game/`：Chomp / 大口吃 的 Pygame 源代码，包含图片、音效、音乐和运行脚本。
+`forum.html` is the only community entry point.
 
-## Folder Layout
+- Reads comments from Firebase Firestore first.
+- Falls back to `data/comments.json` if Firebase fails or times out.
+- Writes new comments to Firebase first.
+- If a write fails, the browser creates a `ZIZI-SYNC` code and opens a GitHub Issue submission URL.
 
-```text
-/
-  index.html
-  README.md
-  updates.html
-  forum.html
-  developer.html
-  firestore.rules
-  assets/
-  aetherfall-protocol/
-  starline-defense/
-  pacman-odyssey/
-  pacman_game/
-```
+The older `forum-mainland.html` and `forum-international.html` pages redirect to `forum.html`.
 
-## Leaderboards / 排行榜
+## Unified Leaderboards
 
-All three games include a public text-only leaderboard:
+Firebase Firestore is the only official leaderboard database. JSON files are read-only cache backups.
 
-- `starfall` - Starfall / 星陨
-- `sentinel` - Sentinel / 哨兵防线
-- `chomp` - Chomp / 大口吃
-
-The leaderboard is a static-site feature that uses Firebase Firestore for the international version. It does not use a backend server and does not store public scores in `localStorage`.
-
-Firebase config lives in:
-
-```text
-assets/firebase-config.js
-```
-
-Mainland China backend config lives in:
-
-```text
-assets/mainland-config.js
-```
-
-Leaderboard documents are stored at:
+Score documents are stored at:
 
 ```text
 leaderboards/{gameId}/scores/{scoreId}
+leaderboards/chomp/levels/{levelId}/scores/{scoreId}
+```
+
+Supported game IDs:
+
+```text
+starfall
+sentinel
+chomp
+```
+
+Supported Chomp level IDs:
+
+```text
+level1
+level2
+level3
 ```
 
 Each score record contains:
@@ -78,73 +63,54 @@ gameId
 createdAt
 ```
 
-Security rules are stored in `firestore.rules`. Paste those rules into Firebase Console > Firestore Database > Rules before testing international submissions.
-
-For mainland China users, the UI shows a fallback note until Tencent CloudBase is configured. The mainland leaderboard uses the same `nickname`, `score`, `gameId`, and `createdAt` fields.
-
-## Community and Leaderboard Regions
-
-`forum.html` is now a region selection page.
-
-- Mainland China: `forum-mainland.html`
-- International, including Hong Kong, Macau, and Taiwan: `forum-international.html`
-
-The international community and leaderboard keep using Firebase Firestore. The Mainland China community and leaderboard do not load Firebase or Google services; they are prepared for Tencent CloudBase and show a construction fallback until `assets/mainland-config.js` is enabled.
-
-Recommended mainland backend: Tencent CloudBase.
-
-Create:
-
-- Tencent Cloud account
-- CloudBase environment in Mainland China, recommended region `ap-shanghai`
-- CloudBase database collections: `messages` and `leaderboards`
-- Anonymous login enabled
-- Web security domain added for `zizi821.github.io`
-
-Paste these values into `assets/mainland-config.js`:
-
-```js
-enabled: true
-cloudbase.env: "your CloudBase environment ID"
-cloudbase.region: "ap-shanghai"
-cloudbase.accessKey: "optional CloudBase publishable key, if your CloudBase auth setup requires it"
-```
-
-Mainland community documents:
+Synced fallback records may also contain:
 
 ```text
-messages/{id}
-nickname
-message
-createdAt
+syncId
+sourceRegion
+syncedAt
+sourceIssueNumber
 ```
 
-Mainland leaderboard documents:
+## Cache Files
+
+The cache files are exported from Firebase by GitHub Actions:
 
 ```text
-leaderboards/{id}
-nickname
-score
-gameId
-createdAt
+data/comments.json
+data/leaderboards.json
 ```
 
-### Local Test
+They are only used when Firebase reads fail. Do not treat them as the source of truth.
+
+## GitHub Actions
+
+`export-cache.yml` exports Firebase comments and leaderboard scores on a schedule or manual run.
+
+`zizi-sync.yml` processes Issues with titles containing `[ZIzi Sync]`, writes validated sync items to Firebase, exports cache JSON, comments on the Issue, labels it, and closes it when successful.
+
+Required GitHub Actions secret:
+
+```text
+FIREBASE_SERVICE_ACCOUNT_JSON
+```
+
+This must be the full Firebase Admin service account JSON. Do not commit it to the repository.
+
+## Local Test
 
 Run a local static server from the repository root:
 
 ```powershell
-python -m http.server 8765 --bind 127.0.0.1
+node local-static-server.js
 ```
 
 Then open:
 
 ```text
-http://127.0.0.1:8765/aetherfall-protocol/
-http://127.0.0.1:8765/starline-defense/
-http://127.0.0.1:8765/pacman-odyssey/
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/forum.html
+http://127.0.0.1:8000/aetherfall-protocol/
+http://127.0.0.1:8000/starline-defense/
+http://127.0.0.1:8000/pacman-odyssey/
 ```
-
-Open `排行榜 / Leaderboard` in each game, finish a round, enter a nickname, and submit the score. Higher scores rank first; equal scores are sorted by earlier timestamp first in the UI.
-
-新增游戏时，在根目录创建独立文件夹，并在 `index.html` 和 `README.md` 里添加入口链接。

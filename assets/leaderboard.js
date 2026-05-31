@@ -12,7 +12,6 @@ const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3"]);
 const MAX_NAME = 20;
 const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
-const READ_LIMIT = 50;
 const FIREBASE_TIMEOUT_MS = 3500;
 const CACHE_URL = new URL("../data/leaderboards.json", import.meta.url);
 
@@ -59,18 +58,15 @@ function normalizeLevelId(gameId, levelId = "") {
 }
 
 function getScoreCollection(firebase, gameId, levelId = "") {
-  const cleanLevelId = normalizeLevelId(gameId, levelId);
   if (gameId === "chomp") {
-    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", cleanLevelId, "scores");
+    return firebase.collection(firebase.db, "leaderboards", gameId, "levels", normalizeLevelId(gameId, levelId), "scores");
   }
   return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
 }
 
 function getScorePath(gameId, levelId = "") {
-  const cleanLevelId = normalizeLevelId(gameId, levelId);
-  return gameId === "chomp"
-    ? `leaderboards/${gameId}/levels/${cleanLevelId}/scores`
-    : `leaderboards/${gameId}/scores`;
+  if (gameId === "chomp") return `leaderboards/${gameId}/levels/${normalizeLevelId(gameId, levelId)}/scores`;
+  return `leaderboards/${gameId}/scores`;
 }
 
 function mapScoreDoc(doc) {
@@ -134,10 +130,9 @@ async function fetchCachedRows(gameId, levelId, limitCount) {
   return sortRows(Array.isArray(source) ? source : [], limitCount);
 }
 
-export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5, preferCache = false } = {}) {
+export async function fetchLeaderboardRows({ gameId, levelId = "", limit = 5 } = {}) {
   if (!VALID_GAMES.has(gameId)) throw new Error(`Unknown leaderboard gameId: ${gameId}`);
   const cleanLevelId = normalizeLevelId(gameId, levelId);
-  if (preferCache) return fetchCachedRows(gameId, cleanLevelId, limit);
   try {
     return await withTimeout(fetchFirebaseRows(gameId, cleanLevelId, limit), FIREBASE_TIMEOUT_MS, "Firebase leaderboard");
   } catch (error) {
@@ -171,8 +166,8 @@ function injectStyles() {
     .zizi-lb-head h2 { margin: 0; font-size: clamp(22px, 4vw, 34px); letter-spacing: 0; }
     .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: rgba(222, 245, 255, 0.74); font-size: 13px; line-height: 1.45; }
     .zizi-lb-body { padding: 18px 22px 22px; }
-    .zizi-lb-close, .zizi-lb-submit, .zizi-lb-region, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(126, 226, 255, 0.34); border-radius: 8px; padding: 10px 14px; color: #effcff; background: rgba(255, 255, 255, 0.08); cursor: pointer; font: 800 13px/1 system-ui, sans-serif; }
-    .zizi-lb-actions, .zizi-lb-form, .zizi-lb-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    .zizi-lb-close, .zizi-lb-submit, .zizi-lb-sync, .zizi-lb-copy { border: 1px solid rgba(126, 226, 255, 0.34); border-radius: 8px; padding: 10px 14px; color: #effcff; background: rgba(255, 255, 255, 0.08); cursor: pointer; font: 800 13px/1 system-ui, sans-serif; }
+    .zizi-lb-form, .zizi-lb-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
     .zizi-lb-submit, .zizi-lb-sync { background: linear-gradient(135deg, #52d9d0, #ffc857); border-color: transparent; color: #07111c; }
     .zizi-lb-form { padding: 14px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; background: rgba(255, 255, 255, 0.045); }
     .zizi-lb-form label { display: grid; gap: 7px; flex: 1 1 190px; color: rgba(235, 250, 255, 0.76); font-size: 12px; font-weight: 800; text-transform: uppercase; }
@@ -235,7 +230,6 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   const formatScore = scoreFormatter || ((score) => Number(score || 0).toLocaleString("zh-CN"));
   let pendingScore = null;
   let pendingLevelId = null;
-  let selectedRegion = "international";
   let selectedLevelId = hasLevels ? levelOptions[0].id : "";
   let lastPendingItem = null;
 
@@ -289,18 +283,6 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   const body = document.createElement("div");
   body.className = "zizi-lb-body";
-  const actions = document.createElement("div");
-  actions.className = "zizi-lb-actions";
-  const internationalButton = document.createElement("button");
-  internationalButton.className = "zizi-lb-region";
-  internationalButton.type = "button";
-  internationalButton.textContent = "International / Firebase";
-  const mainlandButton = document.createElement("button");
-  mainlandButton.className = "zizi-lb-region";
-  mainlandButton.type = "button";
-  mainlandButton.textContent = "Mainland / Cache";
-  actions.append(internationalButton, mainlandButton);
-
   const form = document.createElement("form");
   form.className = "zizi-lb-form";
   form.hidden = true;
@@ -351,7 +333,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   pendingActions.append(syncButton, copyButton);
   pendingPanel.append("Firebase is unavailable. Your score was saved locally and can be submitted through GitHub sync.", pendingText, pendingActions);
 
-  body.append(actions, form, note, status, list, pendingPanel);
+  body.append(form, note, status, list, pendingPanel);
   panel.append(head, body);
   modal.appendChild(panel);
   (buttonContainer || document.body).appendChild(button);
@@ -380,16 +362,13 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     pendingPanel.hidden = true;
     subtitle.textContent = getBoardName();
     const levelId = getBoardLevelId();
-    const preferCache = selectedRegion === "mainland";
     note.hidden = false;
-    note.textContent = preferCache
-      ? "Cache leaderboard, may not be latest."
-      : "Firebase first. If Firebase times out, this view falls back to the latest exported cache.";
+    note.textContent = "Firebase leaderboard. If Firebase times out, this view falls back to the latest exported cache.";
     setStatus("Loading leaderboard...");
     try {
-      const rows = await fetchLeaderboardRows({ gameId, levelId, limit: TOP_LIMIT, preferCache });
+      const rows = await fetchLeaderboardRows({ gameId, levelId, limit: TOP_LIMIT });
       renderRows(rows);
-      setStatus(preferCache ? "Cache leaderboard loaded." : "Leaderboard loaded.");
+      setStatus("Leaderboard loaded.");
     } catch (error) {
       console.warn("[ZIzi Leaderboard] Read failed:", error);
       renderRows([]);
@@ -420,14 +399,6 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   button.addEventListener("click", () => open(false));
   close.addEventListener("click", () => {
     modal.hidden = true;
-  });
-  internationalButton.addEventListener("click", () => {
-    selectedRegion = "international";
-    loadScores();
-  });
-  mainlandButton.addEventListener("click", () => {
-    selectedRegion = "mainland";
-    loadScores();
   });
   levelSelect.addEventListener("change", () => {
     selectedLevelId = levelSelect.value;
@@ -467,10 +438,9 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       nickname,
       score,
       createdAt: new Date().toISOString(),
-      sourceRegion: selectedRegion === "mainland" ? "mainland" : "international"
+      sourceRegion: "web"
     };
     try {
-      if (selectedRegion === "mainland") throw new Error("Mainland score submissions use GitHub sync.");
       const firebase = await getFirebase();
       const ref = getScoreCollection(firebase, gameId, levelId);
       const data = { nickname, score, gameId, createdAt: firebase.serverTimestamp() };

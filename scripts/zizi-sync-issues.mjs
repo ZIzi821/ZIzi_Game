@@ -3,6 +3,7 @@ import process from "node:process";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import admin from "firebase-admin";
+import { exportAll } from "./export-cache.mjs";
 
 const MAX_NAME = 20;
 const MAX_MESSAGE = 300;
@@ -37,7 +38,7 @@ function normalizeItem(item) {
     type,
     nickname: cleanText(item?.nickname, MAX_NAME),
     createdAt: Number.isNaN(createdAt.getTime()) ? new Date() : createdAt,
-    sourceRegion: cleanText(item?.sourceRegion || "mainland", 20) || "mainland"
+    sourceRegion: cleanText(item?.sourceRegion || "web", 20) || "web"
   };
   if (!base.nickname) throw new Error("Nickname is required.");
   if (type === "comment") {
@@ -87,8 +88,18 @@ async function commentExists(db, syncId) {
 }
 
 async function scoreExists(db, syncId) {
-  const snapshot = await db.collectionGroup("scores").where("syncId", "==", syncId).limit(1).get();
-  return !snapshot.empty;
+  const refs = [
+    db.collection("leaderboards").doc("starfall").collection("scores"),
+    db.collection("leaderboards").doc("sentinel").collection("scores"),
+    db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores"),
+    db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores"),
+    db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores")
+  ];
+  for (const ref of refs) {
+    const snapshot = await ref.where("syncId", "==", syncId).limit(1).get();
+    if (!snapshot.empty) return true;
+  }
+  return false;
 }
 
 function scoreCollection(db, item) {
@@ -225,8 +236,7 @@ async function main() {
       for (const item of items) {
         results.push(await writeItem(db, item, issue.number));
       }
-      await exportComments(db);
-      await exportLeaderboards(db);
+      await exportAll(db);
       const wrote = results.filter((result) => !result.skipped).length;
       const skipped = results.filter((result) => result.skipped).length;
       await markIssue(octokit, owner, repo, issue, true, `Synced to Firebase and cache files updated.\n\nNew items: ${wrote}\nSkipped duplicates: ${skipped}`);

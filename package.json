@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "check": "node --check assets/leaderboard.js && node --check assets/sync-code.js && node --check scripts/zizi-sync-issues.mjs"
+    "check": "node --check assets/leaderboard.js && node --check assets/sync-code.js && node --check scripts/export-cache.mjs && node --check scripts/zizi-sync-issues.mjs"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

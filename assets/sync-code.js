@@ -48,7 +48,7 @@ export function normalizeSyncItem(item) {
     type,
     nickname: cleanText(item?.nickname, MAX_NAME),
     createdAt: new Date(item?.createdAt || Date.now()).toISOString(),
-    sourceRegion: cleanText(item?.sourceRegion || "mainland", 20) || "mainland"
+    sourceRegion: cleanText(item?.sourceRegion || "web", 20) || "web"
   };
   if (!base.nickname) throw new Error("Nickname is required.");
 
