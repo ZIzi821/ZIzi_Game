@@ -1438,7 +1438,7 @@
       if (ghost.type === 'warden') drawCircle(p, ghost.radius + 4, 'transparent', COLORS.text, 2);
     }
 
-    function drawCatPlayer(p, dir, mouth) {
+    function drawCatPlayer(p, dir) {
       if (!catImage.complete || !catImage.naturalWidth) return false;
       const size = game.player.radius * 3.05;
       const bob = Math.sin(game.player.mouth * 0.7) * 1.7;
@@ -1451,17 +1451,6 @@
       ctx.shadowBlur = game.player.dash > 0 ? 18 : 10;
       ctx.drawImage(catImage, -size / 2, -size / 2, size, size);
       ctx.shadowBlur = 0;
-
-      const bite = 2 + mouth * 8;
-      ctx.fillStyle = 'rgba(74, 31, 26, 0.82)';
-      ctx.beginPath();
-      ctx.ellipse(0, size * 0.13, bite * 0.86, bite * 0.48, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 214, 214, 0.88)';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.arc(0, size * 0.13, bite * 0.55, 0.1, Math.PI - 0.1);
-      ctx.stroke();
       ctx.restore();
       return true;
     }
@@ -1473,9 +1462,9 @@
       if (dir.x < 0) angle = Math.PI;
       if (dir.y < 0) angle = -Math.PI / 2;
       if (dir.y > 0) angle = Math.PI / 2;
-      const mouth = Math.abs(Math.sin(game.player.mouth)) * 0.55 + 0.12;
-      const usedCatPlayer = game.level.theme === 'cat' && drawCatPlayer(p, dir, mouth);
+      const usedCatPlayer = game.level.theme === 'cat' && drawCatPlayer(p, dir);
       if (!usedCatPlayer) {
+        const mouth = Math.abs(Math.sin(game.player.mouth)) * 0.55 + 0.12;
         ctx.fillStyle = game.player.dash > 0 ? COLORS.text : COLORS.yellow;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
