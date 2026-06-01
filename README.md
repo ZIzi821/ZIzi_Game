@@ -14,6 +14,7 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 
 - [Starfall / 星坠](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)
 - [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)
+- [Blue Crowd Rush / 蓝色人群冲刺](https://zizi821.github.io/ZIzi_Game/blue-crowd-rush/)
 - [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
 
 ## Unified Community
@@ -43,6 +44,7 @@ Supported game IDs:
 ```text
 starfall
 sentinel
+bluecrowd
 chomp
 ```
 
@@ -113,5 +115,6 @@ http://127.0.0.1:8000/
 http://127.0.0.1:8000/forum.html
 http://127.0.0.1:8000/aetherfall-protocol/
 http://127.0.0.1:8000/starline-defense/
+http://127.0.0.1:8000/blue-crowd-rush/
 http://127.0.0.1:8000/pacman-odyssey/
 ```

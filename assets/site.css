@@ -189,7 +189,7 @@ p {
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
 
@@ -249,6 +249,13 @@ p {
     repeating-linear-gradient(0deg, rgba(49, 92, 170, 0.2) 0 3px, transparent 3px 24px),
     repeating-linear-gradient(90deg, rgba(49, 92, 170, 0.2) 0 3px, transparent 3px 24px),
     linear-gradient(135deg, rgba(255, 188, 216, 0.86), rgba(255, 221, 128, 0.68));
+}
+
+.bluecrowd-card {
+  --game-bg:
+    linear-gradient(90deg, rgba(36, 144, 255, 0.16) 0 18%, transparent 19% 81%, rgba(255, 75, 100, 0.12) 82%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 4px, transparent 4px 28px),
+    linear-gradient(135deg, rgba(199, 240, 255, 0.9), rgba(168, 236, 212, 0.7) 52%, rgba(255, 220, 138, 0.62));
 }
 
 .game-visual {
@@ -368,6 +375,49 @@ p {
     88px 22px 0 -2px rgba(255, 255, 255, 0.94),
     128px 56px 0 -3px rgba(255, 255, 255, 0.86),
     166px 88px 0 -4px rgba(255, 255, 255, 0.78);
+}
+
+.bluecrowd-visual {
+  background:
+    linear-gradient(90deg, rgba(31, 144, 255, 0.18) 0 20%, transparent 20% 80%, rgba(255, 75, 100, 0.14) 80%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(219, 249, 255, 0.44)),
+    linear-gradient(90deg, transparent 0 26%, rgba(255, 255, 255, 0.78) 27% 28%, transparent 29% 71%, rgba(255, 255, 255, 0.78) 72% 73%, transparent 74%),
+    linear-gradient(135deg, rgba(36, 144, 255, 0.44), rgba(22, 183, 166, 0.34));
+}
+
+.bluecrowd-visual::before {
+  content: "+10    x2";
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  top: 18px;
+  display: flex;
+  justify-content: space-between;
+  color: #2459a7;
+  font-size: 20px;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.78);
+}
+
+.bluecrowd-visual::after {
+  content: "";
+  position: absolute;
+  left: 38px;
+  bottom: 24px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2490ff;
+  box-shadow:
+    24px -7px 0 1px #2490ff,
+    48px 1px 0 -1px #2490ff,
+    72px -9px 0 0 #2490ff,
+    96px 0 0 -2px #2490ff,
+    138px -5px 0 2px #ff4b64,
+    164px 5px 0 0 #ff4b64,
+    190px -7px 0 1px #ff4b64;
+  filter: drop-shadow(0 12px 12px rgba(35, 48, 68, 0.18));
 }
 
 .game strong {

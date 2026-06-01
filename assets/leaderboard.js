@@ -6,7 +6,7 @@ import {
   openIssueForItems
 } from "./sync-code.js";
 
-const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
+const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", "chomp"]);
 const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
 const MAX_NAME = 20;
 const MAX_SCORE = 999999999;

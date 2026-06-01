@@ -37,6 +37,14 @@
           <b>开始游戏 / Play</b>
         </a>
 
+        <a class="game bluecrowd-card" href="blue-crowd-rush/">
+          <span class="game-visual bluecrowd-visual" aria-hidden="true"><span></span></span>
+          <strong>Blue Crowd Rush / 蓝色人群冲刺</strong>
+          <span>带领蓝色人群穿过增益门、躲避红色敌人，尽可能多地冲到终点。</span>
+          <span>Lead the blue crowd through boost gates, dodge red rivals, and rush as many runners to the finish as you can.</span>
+          <b>开始游戏 / Play</b>
+        </a>
+
         <a class="game chomp-card" href="pacman-odyssey/">
           <span class="game-visual chomp-visual" aria-hidden="true"><span></span></span>
           <strong>Chomp / 大口吃</strong>
@@ -62,6 +70,10 @@
           <article class="lb-card" data-board="sentinel">
             <h3>Sentinel / 哨兵防线</h3>
             <div class="lb-list" id="lb-sentinel"><p class="lb-empty">加载中 / Loading...</p></div>
+          </article>
+          <article class="lb-card" data-board="bluecrowd">
+            <h3>Blue Crowd Rush / 蓝色人群冲刺</h3>
+            <div class="lb-list" id="lb-bluecrowd"><p class="lb-empty">加载中 / Loading...</p></div>
           </article>
           <article class="lb-card" data-board="chomp">
             <h3>Chomp / 大口吃</h3>
@@ -93,6 +105,7 @@
       const boards = {
         starfall: document.getElementById("lb-starfall"),
         sentinel: document.getElementById("lb-sentinel"),
+        bluecrowd: document.getElementById("lb-bluecrowd"),
         chompLevel1: document.getElementById("lb-chomp-level1"),
         chompLevel2: document.getElementById("lb-chomp-level2"),
         chompLevel3: document.getElementById("lb-chomp-level3"),
@@ -125,9 +138,10 @@
       async function loadOverview() {
         try {
           const module = await import("./assets/leaderboard.js");
-          const [starfall, sentinel, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
+          const [starfall, sentinel, bluecrowd, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
             module.fetchLeaderboardRows({ gameId: "starfall", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "sentinel", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "bluecrowd", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 }),
@@ -135,6 +149,7 @@
           ]);
           renderRows(boards.starfall, starfall);
           renderRows(boards.sentinel, sentinel);
+          renderRows(boards.bluecrowd, bluecrowd);
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);

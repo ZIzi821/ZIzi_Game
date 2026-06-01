@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blue Crowd Rush / 蓝色人群冲刺</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas id="gameCanvas" aria-label="Blue Crowd Rush 3D game scene"></canvas>
+
+      <header class="top-bar" aria-label="Game status">
+        <a class="back-link" href="../">Back to Game Selection / 返回“选择一个游戏开始”</a>
+        <div class="hud">
+          <span><b>Level / 关卡</b><strong id="hudLevel">1</strong></span>
+          <span><b>Crowd / 人数</b><strong id="hudCrowd">1</strong></span>
+          <span><b>Score / 分数</b><strong id="hudScore">0</strong></span>
+        </div>
+        <button id="pauseButton" class="icon-button" type="button" aria-label="Pause or resume">P / Esc</button>
+      </header>
+
+      <section class="progress-wrap" aria-label="Distance progress">
+        <span>Start / 起点</span>
+        <div class="progress-track"><i id="progressFill"></i></div>
+        <span>Finish / 终点</span>
+      </section>
+
+      <div id="overlay" class="overlay">
+        <section class="dialog">
+          <p class="eyebrow">ZIzi Game Collection</p>
+          <h1 id="overlayTitle">Blue Crowd Rush / 蓝色人群冲刺</h1>
+          <p id="overlayText">Lead the blue crowd through boost gates, dodge red rivals, and rush as many runners to the finish as you can.</p>
+          <p class="cn">带领蓝色人群穿过增益门、躲避红色敌人，尽可能多地冲到终点。</p>
+          <div class="controls-note">
+            <span>Drag / 触摸拖动</span>
+            <span>A D / ← →</span>
+            <span>P or Esc / 暂停</span>
+          </div>
+          <div class="dialog-actions">
+            <button id="startButton" type="button">Start Game / 开始游戏</button>
+            <button id="restartButton" type="button" hidden>Restart / 重新开始</button>
+            <button id="nextButton" type="button" hidden>Next Level / 下一关</button>
+            <button id="leaderboardButton" type="button" hidden>Leaderboard / 排行榜</button>
+            <a href="../">Back to Game Selection / 返回主页</a>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

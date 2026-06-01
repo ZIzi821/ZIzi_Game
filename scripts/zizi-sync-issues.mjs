@@ -8,7 +8,7 @@ import { exportAll } from "./export-cache.mjs";
 const MAX_NAME = 20;
 const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
-const VALID_GAMES = new Set(["starfall", "sentinel", "chomp"]);
+const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", "chomp"]);
 const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
 const SYNC_RE = /ZIZI-SYNC:([A-Za-z0-9+/=_-]+)/;
 
@@ -91,6 +91,7 @@ async function scoreExists(db, syncId) {
   const refs = [
     db.collection("leaderboards").doc("starfall").collection("scores"),
     db.collection("leaderboards").doc("sentinel").collection("scores"),
+    db.collection("leaderboards").doc("bluecrowd").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores"),
@@ -177,6 +178,7 @@ async function exportLeaderboards(db) {
   const leaderboards = {
     starfall: await exportScorePath(db.collection("leaderboards").doc("starfall").collection("scores")),
     sentinel: await exportScorePath(db.collection("leaderboards").doc("sentinel").collection("scores")),
+    bluecrowd: await exportScorePath(db.collection("leaderboards").doc("bluecrowd").collection("scores")),
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),
       level2: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores")),

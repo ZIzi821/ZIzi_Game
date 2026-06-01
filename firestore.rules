@@ -7,6 +7,7 @@ service cloud.firestore {
       return gameId in [
         'starfall',
         'sentinel',
+        'bluecrowd',
         'chomp'
       ];
     }
@@ -14,7 +15,8 @@ service cloud.firestore {
     function validStandardLeaderboardGame(gameId) {
       return gameId in [
         'starfall',
-        'sentinel'
+        'sentinel',
+        'bluecrowd'
       ];
     }
 
