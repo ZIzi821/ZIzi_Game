@@ -244,6 +244,10 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     const requestedText = cleanText(requested, 40);
     return hasLevels && levelOptions.some((level) => level.id === requestedText) ? requestedText : selectedLevelId;
   };
+  const resolveLevelId = (levelId) => {
+    const requestedText = cleanText(levelId, 40);
+    return hasLevels && levelOptions.some((level) => level.id === requestedText) ? requestedText : getCurrentLevelId();
+  };
   const getBoardLevelId = () => (hasLevels ? selectedLevelId : "");
   const getBoardName = () => {
     const level = levelOptions.find((option) => option.id === selectedLevelId);
@@ -489,9 +493,10 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
 
   return {
     open,
-    openSubmit(score) {
+    openSubmit(score, options = {}) {
       pendingScore = normalizeScore(score);
-      pendingLevelId = hasLevels ? getCurrentLevelId() : "";
+      const explicitLevelId = typeof options === "string" ? options : options?.levelId;
+      pendingLevelId = hasLevels ? resolveLevelId(explicitLevelId || getCurrentLevelId()) : "";
       scoreInput.value = formatScore(pendingScore);
       open(true);
     },

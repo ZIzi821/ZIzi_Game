@@ -918,7 +918,7 @@
       ensureChompLeaderboard()
         .then((leaderboard) => {
           window.ZIziChompCurrentLevelId = levelId;
-          leaderboard.openSubmit(score);
+          leaderboard.openSubmit(score, { levelId });
           syncLeaderboardLevel();
         })
         .catch(() => {
@@ -1242,12 +1242,6 @@
     function drawBoard() {
       drawRoundedRect(BOARD_X - 8, BOARD_Y - 8, BOARD_W + 16, BOARD_H + 16, 12, '#070b18', 'rgba(68,231,255,0.32)');
       const maze = game.maze;
-      if (game.level.theme === 'cat' && catImage.complete) {
-        ctx.save();
-        ctx.globalAlpha = 0.15;
-        ctx.drawImage(catImage, BOARD_X + BOARD_W - 132, BOARD_Y + 14, 104, 104);
-        ctx.restore();
-      }
       maze.walls.forEach(k => {
         const c = parseKey(k);
         const x = BOARD_X + c.x * TILE + 2;
@@ -1444,6 +1438,34 @@
       if (ghost.type === 'warden') drawCircle(p, ghost.radius + 4, 'transparent', COLORS.text, 2);
     }
 
+    function drawCatPlayer(p, dir, mouth) {
+      if (!catImage.complete || !catImage.naturalWidth) return false;
+      const size = game.player.radius * 3.05;
+      const bob = Math.sin(game.player.mouth * 0.7) * 1.7;
+      ctx.save();
+      ctx.translate(p.x, p.y + bob);
+      if (dir.x < 0) ctx.scale(-1, 1);
+      if (dir.y < 0) ctx.rotate(-0.08);
+      if (dir.y > 0) ctx.rotate(0.08);
+      ctx.shadowColor = game.player.dash > 0 ? 'rgba(255,255,255,0.72)' : 'rgba(255,167,70,0.42)';
+      ctx.shadowBlur = game.player.dash > 0 ? 18 : 10;
+      ctx.drawImage(catImage, -size / 2, -size / 2, size, size);
+      ctx.shadowBlur = 0;
+
+      const bite = 2 + mouth * 8;
+      ctx.fillStyle = 'rgba(74, 31, 26, 0.82)';
+      ctx.beginPath();
+      ctx.ellipse(0, size * 0.13, bite * 0.86, bite * 0.48, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 214, 214, 0.88)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0, size * 0.13, bite * 0.55, 0.1, Math.PI - 0.1);
+      ctx.stroke();
+      ctx.restore();
+      return true;
+    }
+
     function drawPlayer() {
       const p = game.player.pos;
       const dir = game.player.dir;
@@ -1452,12 +1474,15 @@
       if (dir.y < 0) angle = -Math.PI / 2;
       if (dir.y > 0) angle = Math.PI / 2;
       const mouth = Math.abs(Math.sin(game.player.mouth)) * 0.55 + 0.12;
-      ctx.fillStyle = game.player.dash > 0 ? COLORS.text : COLORS.yellow;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.arc(p.x, p.y, game.player.radius, angle + mouth, angle + Math.PI * 2 - mouth);
-      ctx.closePath();
-      ctx.fill();
+      const usedCatPlayer = game.level.theme === 'cat' && drawCatPlayer(p, dir, mouth);
+      if (!usedCatPlayer) {
+        ctx.fillStyle = game.player.dash > 0 ? COLORS.text : COLORS.yellow;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, game.player.radius, angle + mouth, angle + Math.PI * 2 - mouth);
+        ctx.closePath();
+        ctx.fill();
+      }
       if (game.player.shield > 0) drawCircle(p, game.player.radius + 7, 'transparent', COLORS.green, 2);
       if (game.player.power > 0) drawCircle(p, game.player.radius + 11, 'transparent', COLORS.cyan, 1);
     }
