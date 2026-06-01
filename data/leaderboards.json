@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-01T12:11:10.809Z",
+  "updatedAt": "2026-06-01T14:20:55.827Z",
   "leaderboards": {
     "starfall": [
       {
@@ -62,6 +62,13 @@
       ],
       "level3": [
         {
+          "id": "rHw6iGrcxilL8P6iW6rF",
+          "nickname": "101",
+          "score": 10708,
+          "createdAt": "2026-06-01T14:14:31.100Z",
+          "sourceRegion": ""
+        },
+        {
           "id": "Tlah9rScE1dmZUl6pqZl",
           "nickname": "d",
           "score": 181,
@@ -70,6 +77,13 @@
         }
       ],
       "level4": [
+        {
+          "id": "na1PWH8fAklqh6Z1RGrP",
+          "nickname": "isdayv",
+          "score": 11919,
+          "createdAt": "2026-06-01T14:19:52.520Z",
+          "sourceRegion": "web"
+        },
         {
           "id": "1TH9QhSffl8e26D0AC4P",
           "nickname": "Nickname",
