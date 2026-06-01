@@ -189,12 +189,12 @@ p {
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(18px, 3vw, 26px);
 }
 
 .game {
-  min-height: 360px;
+  min-height: 340px;
   display: grid;
   grid-template-rows: auto auto auto auto;
   align-content: start;
@@ -473,8 +473,8 @@ p {
 
 .lb-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.5vw, 24px);
 }
 
 .lb-card {
@@ -491,8 +491,8 @@ p {
 
 .chomp-levels {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .chomp-level h4 {
@@ -741,7 +741,7 @@ select:focus {
   }
 
   .game {
-    min-height: 330px;
+    min-height: 310px;
   }
 
   .game strong {

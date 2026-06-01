@@ -14,56 +14,56 @@ const POINTER_SCALE = 0.018;
 const levels = [
   {
     name: "Level 1 / 教学关",
-    length: 120,
+    length: 180,
     startCount: 1,
     speed: 9,
     gates: [
-      { z: 20, left: "+10", right: "x2" },
-      { z: 50, left: "+15", right: "+8" },
-      { z: 82, left: "x2", right: "+20" }
+      { z: 30, left: "+10", right: "x2" },
+      { z: 78, left: "+15", right: "+8" },
+      { z: 128, left: "x2", right: "+20" }
     ],
     enemies: [
-      { z: 38, x: 2.5, count: 8 },
-      { z: 70, x: -2.4, count: 12 },
-      { z: 102, x: 0, count: 18 }
+      { z: 55, x: 2.5, count: 8 },
+      { z: 108, x: -2.4, count: 12 },
+      { z: 158, x: 0, count: 18 }
     ]
   },
   {
     name: "Level 2 / 中等冲刺",
-    length: 165,
+    length: 245,
     startCount: 8,
     speed: 10,
     gates: [
-      { z: 22, left: "+12", right: "x2" },
-      { z: 54, left: "x2", right: "+25" },
-      { z: 88, left: "+18", right: "x3" },
-      { z: 124, left: "x2", right: "+30" }
+      { z: 32, left: "+12", right: "x2" },
+      { z: 84, left: "x2", right: "+25" },
+      { z: 138, left: "+18", right: "x3" },
+      { z: 194, left: "x2", right: "+30" }
     ],
     enemies: [
-      { z: 40, x: -2.7, count: 15 },
-      { z: 68, x: 2.7, count: 24 },
-      { z: 104, x: 0, count: 36 },
-      { z: 142, x: -2.3, count: 48 }
+      { z: 58, x: -2.7, count: 15 },
+      { z: 112, x: 2.7, count: 24 },
+      { z: 166, x: 0, count: 36 },
+      { z: 220, x: -2.3, count: 48 }
     ]
   },
   {
     name: "Level 3 / 红色夹击",
-    length: 205,
+    length: 310,
     startCount: 12,
     speed: 10.8,
     gates: [
-      { z: 24, left: "x2", right: "+20" },
-      { z: 58, left: "+25", right: "x3" },
-      { z: 96, left: "x2", right: "+35" },
-      { z: 136, left: "+45", right: "x2" },
-      { z: 172, left: "x3", right: "+30" }
+      { z: 36, left: "x2", right: "+20" },
+      { z: 90, left: "+25", right: "x3" },
+      { z: 148, left: "x2", right: "+35" },
+      { z: 210, left: "+45", right: "x2" },
+      { z: 266, left: "x3", right: "+30" }
     ],
     enemies: [
-      { z: 42, x: 0, count: 20 },
-      { z: 76, x: -2.8, count: 34 },
-      { z: 112, x: 2.6, count: 52 },
-      { z: 150, x: 0.2, count: 70 },
-      { z: 188, x: -2.6, count: 82 }
+      { z: 64, x: 0, count: 20 },
+      { z: 122, x: -2.8, count: 34 },
+      { z: 180, x: 2.6, count: 52 },
+      { z: 238, x: 0.2, count: 70 },
+      { z: 288, x: -2.6, count: 82 }
     ]
   }
 ];
@@ -547,8 +547,8 @@ function updateCamera(dt) {
 
 function updateGame(dt, time) {
   const previousZ = crowdZ;
-  if (keys.left) targetX -= SIDE_SPEED * dt;
-  if (keys.right) targetX += SIDE_SPEED * dt;
+  if (keys.left) targetX += SIDE_SPEED * dt;
+  if (keys.right) targetX -= SIDE_SPEED * dt;
   targetX = clamp(targetX, -ROAD_HALF, ROAD_HALF);
   crowdX += (targetX - crowdX) * Math.min(1, dt * 12);
   crowdX = clamp(crowdX, -ROAD_HALF, ROAD_HALF);
@@ -583,7 +583,7 @@ function onPointerMove(event) {
   if (!pointerActive) return;
   const delta = event.clientX - lastPointerX;
   lastPointerX = event.clientX;
-  targetX = clamp(targetX + delta * POINTER_SCALE, -ROAD_HALF, ROAD_HALF);
+  targetX = clamp(targetX - delta * POINTER_SCALE, -ROAD_HALF, ROAD_HALF);
   event.preventDefault();
 }
 
