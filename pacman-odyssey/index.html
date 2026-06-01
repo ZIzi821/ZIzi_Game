@@ -58,16 +58,17 @@
     .brand h1 {
       margin: 0;
       font-size: clamp(28px, 4vw, 52px);
-      line-height: 1;
+      line-height: 1.08;
       letter-spacing: 0;
       color: var(--yellow);
       text-shadow: 0 0 18px rgba(255, 225, 90, 0.28);
     }
 
     .brand p {
-      margin: 7px 0 0;
+      margin: 14px 0 0;
       color: var(--muted);
       font-size: 14px;
+      line-height: 1.55;
     }
 
     .hud,
@@ -168,14 +169,14 @@
     }
 
     .modal h2 {
-      margin: 0 0 10px;
+      margin: 0 0 18px;
       font-size: clamp(30px, 5vw, 58px);
       color: var(--yellow);
-      line-height: 1;
+      line-height: 1.08;
     }
 
     .modal p {
-      margin: 8px 0;
+      margin: 12px 0;
       color: var(--muted);
       line-height: 1.65;
     }
@@ -441,6 +442,7 @@
     const BOARD_Y = 76;
     const BOARD_W = GRID_W * TILE;
     const BOARD_H = GRID_H * TILE;
+    const GHOST_RESPAWN_DELAY = 5;
 
     const COLORS = {
       bg: '#070914',
@@ -623,6 +625,7 @@
     function worldToCell(pos) { return { x: Math.floor((pos.x - BOARD_X) / TILE), y: Math.floor((pos.y - BOARD_Y) / TILE) }; }
     function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
     function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function dirFromCell(from, to) { return { x: Math.sign(to.x - from.x), y: Math.sign(to.y - from.y) }; }
 
     class Maze {
       constructor(level) {
@@ -665,6 +668,9 @@
         if (cell.x < 0 || cell.y < 0 || cell.x >= GRID_W || cell.y >= GRID_H) return true;
         return this.walls.has(key(cell));
       }
+      isOpenCell(cell) {
+        return !this.isWall(cell);
+      }
       canMove(pos, radius = 10) {
         const points = [
           { x: pos.x - radius, y: pos.y - radius },
@@ -673,6 +679,34 @@
           { x: pos.x + radius, y: pos.y + radius }
         ];
         return points.every(p => !this.isWall(worldToCell(p)));
+      }
+      nearestOpenCell(cell, fallback = { x: 1, y: 1 }) {
+        const first = this.isOpenCell(cell) ? cell : fallback;
+        const queue = [first];
+        const seen = new Set([key(first)]);
+        while (queue.length) {
+          const current = queue.shift();
+          if (this.isOpenCell(current) && this.canMove(center(current), 10)) return current;
+          for (const d of Object.values(DIRS)) {
+            const next = { x: current.x + d.x, y: current.y + d.y };
+            const nextKey = key(next);
+            if (seen.has(nextKey) || next.x < 1 || next.y < 1 || next.x >= GRID_W - 1 || next.y >= GRID_H - 1) continue;
+            seen.add(nextKey);
+            queue.push(next);
+          }
+        }
+        return fallback;
+      }
+      safePortalExit(targetCell, preferredDir) {
+        const candidates = [preferredDir, ...Object.values(DIRS), { x: -preferredDir.x, y: -preferredDir.y }]
+          .filter((d, index, list) => (d.x || d.y) && list.findIndex((x) => x.x === d.x && x.y === d.y) === index);
+        for (const d of candidates) {
+          const cell = { x: targetCell.x + d.x, y: targetCell.y + d.y };
+          const pos = center(cell);
+          if (this.isOpenCell(cell) && this.canMove(pos, 10)) return { pos, dir: d };
+        }
+        const safeCell = this.nearestOpenCell(targetCell, { x: Math.floor(GRID_W / 2), y: Math.floor(GRID_H / 2) });
+        return { pos: center(safeCell), dir: dirFromCell(targetCell, safeCell) };
       }
       openDirs(cell) {
         return Object.values(DIRS).filter(d => !this.isWall({ x: cell.x + d.x, y: cell.y + d.y }));
@@ -699,6 +733,7 @@
     class Player {
       constructor(start) {
         this.pos = center({ x: start[0], y: start[1] });
+        this.lastSafe = { ...this.pos };
         this.dir = { x: 0, y: 0 };
         this.next = { x: 0, y: 0 };
         this.radius = 11;
@@ -725,6 +760,7 @@
         this.cooldown = Math.max(0, this.cooldown - dt);
         this.invuln = Math.max(0, this.invuln - dt);
         this.portalCooldown = Math.max(0, this.portalCooldown - dt);
+        if (!maze.canMove(this.pos, this.radius)) this.pos = { ...this.lastSafe };
         const cell = worldToCell(this.pos);
         const c = center(cell);
         const near = dist(this.pos, c) < 5;
@@ -738,9 +774,12 @@
         }
         const speed = this.speed * (this.dash > 0 ? 3 : 1);
         const nextPos = { x: this.pos.x + this.dir.x * speed * dt, y: this.pos.y + this.dir.y * speed * dt };
-        if (maze.canMove(nextPos, this.radius)) this.pos = nextPos;
-        else {
+        if (maze.canMove(nextPos, this.radius)) {
+          this.pos = nextPos;
+          this.lastSafe = { ...this.pos };
+        } else {
           this.pos = c;
+          if (!maze.canMove(this.pos, this.radius)) this.pos = { ...this.lastSafe };
           this.dir = { x: 0, y: 0 };
         }
         this.mouth += dt * 10;
@@ -751,16 +790,25 @@
       constructor(x, y, type) {
         this.spawn = [x, y];
         this.pos = center({ x, y });
+        this.lastSafe = { ...this.pos };
         this.type = type;
         this.radius = type === 'warden' ? 15 : 12;
+        this.moveRadius = Math.min(10.5, this.radius);
         this.speed = type === 'warden' ? 92 : 112;
         this.dir = { ...Object.values(DIRS)[Math.floor(Math.random() * 4)] };
         this.decide = 0;
         this.respawn = 0;
       }
-      reset() {
-        this.pos = center({ x: this.spawn[0], y: this.spawn[1] });
-        this.respawn = 1.0;
+      spawnAtHome(maze) {
+        const spawnCell = maze ? maze.nearestOpenCell({ x: this.spawn[0], y: this.spawn[1] }) : { x: this.spawn[0], y: this.spawn[1] };
+        this.pos = center(spawnCell);
+        this.lastSafe = { ...this.pos };
+        this.respawn = 0;
+        this.decide = 0;
+        this.dir = { ...Object.values(DIRS)[Math.floor(Math.random() * 4)] };
+      }
+      reset(delay = 1.0) {
+        this.respawn = delay;
       }
       target(player) {
         const p = worldToCell(player.pos);
@@ -770,10 +818,22 @@
         return p;
       }
       update(dt, maze, player, boost) {
-        if (this.respawn > 0) { this.respawn -= dt; return; }
+        if (this.respawn > 0) {
+          this.respawn -= dt;
+          if (this.respawn <= 0) this.spawnAtHome(maze);
+          return;
+        }
         this.decide -= dt;
-        const cell = worldToCell(this.pos);
-        const c = center(cell);
+        let cell = worldToCell(this.pos);
+        let c = center(cell);
+        if (!maze.canMove(this.pos, this.moveRadius)) {
+          const safeCell = maze.nearestOpenCell(cell, { x: this.spawn[0], y: this.spawn[1] });
+          this.pos = center(safeCell);
+          this.lastSafe = { ...this.pos };
+          cell = safeCell;
+          c = center(cell);
+          this.decide = 0;
+        }
         if (dist(this.pos, c) < 5 && this.decide <= 0) {
           let opts = maze.openDirs(cell);
           if (opts.length > 1) opts = opts.filter(d => !(d.x === -this.dir.x && d.y === -this.dir.y));
@@ -792,8 +852,14 @@
         }
         const speed = this.speed * boost * (player.power > 0 ? 0.72 : 1);
         const next = { x: this.pos.x + this.dir.x * speed * dt, y: this.pos.y + this.dir.y * speed * dt };
-        if (maze.canMove(next, this.radius)) this.pos = next;
-        else this.dir = { x: -this.dir.x, y: -this.dir.y };
+        if (maze.canMove(next, this.moveRadius)) {
+          this.pos = next;
+          this.lastSafe = { ...this.pos };
+        } else {
+          const dirs = maze.openDirs(worldToCell(this.pos));
+          this.dir = dirs.length ? { ...dirs[Math.floor(Math.random() * dirs.length)] } : { x: -this.dir.x, y: -this.dir.y };
+          if (!maze.canMove(this.pos, this.moveRadius)) this.pos = { ...this.lastSafe };
+        }
       }
     }
 
@@ -817,6 +883,48 @@
 
     function syncLeaderboardLevel() {
       window.ZIziChompCurrentLevelId = game.level?.leaderboardId || LEVELS[game.levelIndex]?.leaderboardId || 'bite-circuit';
+    }
+
+    let chompLeaderboardPromise = null;
+    function ensureChompLeaderboard() {
+      window.ZIziLeaderboards = window.ZIziLeaderboards || {};
+      if (window.ZIziLeaderboards.chomp) return Promise.resolve(window.ZIziLeaderboards.chomp);
+      if (!chompLeaderboardPromise) {
+        chompLeaderboardPromise = import('../assets/leaderboard.js')
+          .then(({ setupLeaderboard }) => {
+            window.ZIziLeaderboards.chomp = setupLeaderboard({
+              gameId: "chomp",
+              gameName: "Chomp / 大口吃",
+              levels: [
+                { id: "level1", name: "Level 1 / Beginner Maze" },
+                { id: "level2", name: "Level 2 / Ghost Rush" },
+                { id: "level3", name: "Level 3 / Nightmare Maze" },
+                { id: "level4", name: "Level 4 / Cat Nap Garden" }
+              ],
+              getLevelId: () => window.ZIziChompCurrentLevelId || "level1"
+            });
+            return window.ZIziLeaderboards.chomp;
+          })
+          .catch((error) => {
+            chompLeaderboardPromise = null;
+            console.error("[ZIzi Leaderboard] Chomp leaderboard module failed to load:", error);
+            throw error;
+          });
+      }
+      return chompLeaderboardPromise;
+    }
+
+    function submitScoreToLeaderboard(score, levelId = window.ZIziChompCurrentLevelId || 'level1') {
+      ensureChompLeaderboard()
+        .then((leaderboard) => {
+          window.ZIziChompCurrentLevelId = levelId;
+          leaderboard.openSubmit(score);
+          syncLeaderboardLevel();
+        })
+        .catch(() => {
+          game.message = '排行榜暂时无法连接，请稍后再试';
+          game.messageTime = 2.5;
+        });
     }
 
     function start(levelIndex = game.levelIndex, resetScore = true) {
@@ -857,7 +965,7 @@
       playTone(160, 0.18, 'sawtooth', 0.055);
       if (game.lives <= 0) {
         game.state = 'gameover';
-        window.ZIziLeaderboards?.chomp?.openSubmit(game.levelScore);
+        submitScoreToLeaderboard(game.levelScore);
         showOverlay('挑战失败', `最终分数：${game.score}。点击重新开始。`, '重新开始', true);
         return;
       }
@@ -918,19 +1026,17 @@
       const dest = game.maze.portalDest(k);
       if (dest && game.player.portalCooldown <= 0 && dist(game.player.pos, center(cell)) < 6) {
         const target = parseKey(dest);
-        const exit = center(target);
         let exitDir = { ...game.player.dir };
         if (target.x <= 1) exitDir = { ...DIRS.right };
         else if (target.x >= GRID_W - 2) exitDir = { ...DIRS.left };
         else if (target.y <= 1) exitDir = { ...DIRS.down };
         else if (target.y >= GRID_H - 2) exitDir = { ...DIRS.up };
         if (!exitDir.x && !exitDir.y) exitDir = { ...DIRS.right };
-        game.player.pos = {
-          x: exit.x + exitDir.x * TILE * 0.55,
-          y: exit.y + exitDir.y * TILE * 0.55
-        };
-        game.player.dir = { ...exitDir };
-        game.player.next = { ...exitDir };
+        const exit = game.maze.safePortalExit(target, exitDir);
+        game.player.pos = { ...exit.pos };
+        game.player.lastSafe = { ...exit.pos };
+        game.player.dir = { ...exit.dir };
+        game.player.next = { ...exit.dir };
         game.player.portalCooldown = 0.65;
         game.player.dash = Math.max(game.player.dash, 0.12);
         playTone(1180, 0.08, 'sine', 0.035);
@@ -943,7 +1049,7 @@
           if (game.player.power > 0) {
             game.combo++;
             addScore(200 * game.combo);
-            ghost.reset();
+            ghost.reset(GHOST_RESPAWN_DELAY);
             playTone(420 + game.combo * 70, 0.08, 'triangle');
           } else if (game.player.dash <= 0) {
             loseLife();
@@ -966,7 +1072,8 @@
       playTone(1040, 0.16, 'triangle', 0.06);
       const clearedScore = game.levelScore;
       const clearedLevel = game.level.name;
-      window.ZIziLeaderboards?.chomp?.openSubmit(clearedScore);
+      const clearedLevelId = game.level.leaderboardId;
+      submitScoreToLeaderboard(clearedScore, clearedLevelId);
       if (game.levelIndex < LEVELS.length - 1) {
         game.state = 'win';
         game.levelIndex += 1;
@@ -1088,7 +1195,7 @@
           game.levelIndex = index;
           game.level = LEVELS[index];
           syncLeaderboardLevel();
-          window.ZIziLeaderboards?.chomp?.open(false);
+          ensureChompLeaderboard().then((leaderboard) => leaderboard.open(false));
         });
         levelGrid.appendChild(card);
       });
@@ -1317,6 +1424,7 @@
     }
 
     function drawGhost(ghost) {
+      if (ghost.respawn > 0) return;
       const p = ghost.pos;
       const frightened = game.player.power > 0;
       const color = frightened ? COLORS.blue : ghostColor(ghost.type);
@@ -1471,25 +1579,7 @@
 
     updateHud();
     showIntro();
-    import('../assets/leaderboard.js')
-      .then(({ setupLeaderboard }) => {
-        window.ZIziLeaderboards = window.ZIziLeaderboards || {};
-        window.ZIziLeaderboards.chomp = setupLeaderboard({
-          gameId: "chomp",
-          gameName: "Chomp / 大口吃",
-          levels: [
-            { id: "level1", name: "Level 1 / Beginner Maze" },
-            { id: "level2", name: "Level 2 / Ghost Rush" },
-            { id: "level3", name: "Level 3 / Nightmare Maze" },
-            { id: "level4", name: "Level 4 / Cat Nap Garden" }
-          ],
-          getLevelId: () => window.ZIziChompCurrentLevelId || "level1"
-        });
-      })
-      .catch((error) => {
-        console.error("[ZIzi Leaderboard] Chomp leaderboard module failed to load:", error);
-        window.ZIziLeaderboards = window.ZIziLeaderboards || {};
-      });
+    ensureChompLeaderboard().catch(() => {});
     requestAnimationFrame(loop);
   </script>
 </body>

@@ -19,6 +19,7 @@ BOARD_X = 40
 BOARD_Y = 112
 BOARD_W = GRID_W * TILE
 BOARD_H = GRID_H * TILE
+GHOST_RESPAWN_DELAY = 5.0
 
 TITLE = "title"
 LEVEL_SELECT = "level_select"
@@ -69,6 +70,14 @@ def grid_to_world(cell):
 
 def world_to_grid(pos):
     return int((pos.x - BOARD_X) // TILE), int((pos.y - BOARD_Y) // TILE)
+
+
+def vector_to_dir(vec):
+    if abs(vec.x) > abs(vec.y):
+        return (1 if vec.x > 0 else -1, 0)
+    if vec.y:
+        return (0, 1 if vec.y > 0 else -1)
+    return (1, 0)
 
 
 def draw_text(surface, font, text, color, center=None, topleft=None):
@@ -425,6 +434,38 @@ class Maze:
                 return False
         return True
 
+    def nearest_open_cell(self, cell, fallback=None, radius=11):
+        fallback = fallback or self.definition.player_start
+        start = cell if not self.is_wall(cell) else fallback
+        queue = [start]
+        seen = {start}
+        while queue:
+            current = queue.pop(0)
+            if not self.is_wall(current) and self.can_move_to(grid_to_world(current), radius):
+                return current
+            for dx, dy in DIRS.values():
+                nxt = (current[0] + dx, current[1] + dy)
+                if nxt in seen or nxt[0] < 1 or nxt[1] < 1 or nxt[0] >= self.width - 1 or nxt[1] >= self.height - 1:
+                    continue
+                seen.add(nxt)
+                queue.append(nxt)
+        return fallback
+
+    def safe_portal_exit(self, target_cell, preferred_dir, radius=11):
+        candidates = [preferred_dir, *DIRS.values(), (-preferred_dir[0], -preferred_dir[1])]
+        unique = []
+        for direction in candidates:
+            if direction != (0, 0) and direction not in unique:
+                unique.append(direction)
+        for dx, dy in unique:
+            cell = (target_cell[0] + dx, target_cell[1] + dy)
+            pos = grid_to_world(cell)
+            if not self.is_wall(cell) and self.can_move_to(pos, radius):
+                return pos, pygame.Vector2(dx, dy)
+        cell = self.nearest_open_cell(target_cell, radius=radius)
+        direction = vector_to_dir(pygame.Vector2(cell[0] - target_cell[0], cell[1] - target_cell[1]))
+        return grid_to_world(cell), pygame.Vector2(direction)
+
     def open_neighbors(self, cell):
         result = []
         for direction in DIRS.values():
@@ -557,6 +598,8 @@ class Player:
             self.portal_cooldown -= dt
 
         speed = self.base_speed * (3.0 if self.dash_timer > 0 else 1.0)
+        if not maze.can_move_to(self.pos, self.radius):
+            self.pos = self.last_safe.copy()
         center_cell = world_to_grid(self.pos)
         cell_center = grid_to_world(center_cell)
         near_center = self.pos.distance_to(cell_center) < 6
@@ -573,6 +616,8 @@ class Player:
             self.last_safe = self.pos.copy()
         else:
             self.pos = cell_center
+            if not maze.can_move_to(self.pos, self.radius):
+                self.pos = self.last_safe.copy()
             self.direction.update(0, 0)
 
         self.mouth = (self.mouth + dt * 10) % (math.pi * 2)
@@ -618,11 +663,16 @@ class Ghost:
         self.speed = 118 if ghost_type != "warden" else 96
         self.decide_timer = 0
         self.respawn_timer = 0
+        self.move_radius = min(self.radius, TILE / 2 - 2)
 
-    def reset(self):
-        self.pos = grid_to_world(self.spawn_cell)
+    def spawn_at_home(self, maze):
+        cell = maze.nearest_open_cell(self.spawn_cell, self.spawn_cell, self.move_radius)
+        self.pos = grid_to_world(cell)
         self.direction = pygame.Vector2(random.choice(list(DIRS.values())))
-        self.respawn_timer = 1.2
+        self.decide_timer = 0
+
+    def reset(self, delay=1.2):
+        self.respawn_timer = delay
 
     def target_for(self, player):
         player_cell = world_to_grid(player.pos)
@@ -637,11 +687,19 @@ class Ghost:
     def update(self, dt, maze, player, global_speed=1.0):
         if self.respawn_timer > 0:
             self.respawn_timer -= dt
+            if self.respawn_timer <= 0:
+                self.spawn_at_home(maze)
             return
 
         self.decide_timer -= dt
         cell = world_to_grid(self.pos)
         center = grid_to_world(cell)
+        if not maze.can_move_to(self.pos, self.move_radius):
+            safe_cell = maze.nearest_open_cell(cell, self.spawn_cell, self.move_radius)
+            self.pos = grid_to_world(safe_cell)
+            cell = safe_cell
+            center = grid_to_world(cell)
+            self.decide_timer = 0
         near_center = self.pos.distance_to(center) < 5
         if near_center and self.decide_timer <= 0:
             options = [pygame.Vector2(v) for v in maze.open_neighbors(cell)]
@@ -667,12 +725,15 @@ class Ghost:
         if player.power_timer > 0:
             speed *= 0.74
         nxt = self.pos + self.direction * speed * dt
-        if maze.can_move_to(nxt, self.radius):
+        if maze.can_move_to(nxt, self.move_radius):
             self.pos = nxt
         else:
-            self.direction *= -1
+            options = [pygame.Vector2(v) for v in maze.open_neighbors(world_to_grid(self.pos))]
+            self.direction = random.choice(options) if options else -self.direction
 
     def draw(self, surface, frightened=False):
+        if self.respawn_timer > 0:
+            return
         color = BLUE if frightened else self.color
         if frightened and int(pygame.time.get_ticks() / 130) % 2:
             color = WHITE
@@ -955,7 +1016,7 @@ class Game:
                     self.combo += 1
                     pts = 200 * self.combo
                     self.add_score(pts, ghost.pos, f"+{pts}", CYAN)
-                    ghost.reset()
+                    ghost.reset(GHOST_RESPAWN_DELAY)
                     self.sound.play("pickup")
                 elif self.player.dash_timer <= 0:
                     self.lose_life()
@@ -1002,7 +1063,6 @@ class Game:
             return
         dest = self.maze.portal_destination(cell)
         if dest:
-            target = grid_to_world(dest)
             if self.player.pos.distance_to(grid_to_world(cell)) < 7:
                 exit_dir = self.player.direction.copy()
                 if dest[0] <= 1:
@@ -1015,7 +1075,8 @@ class Game:
                     exit_dir = pygame.Vector2(DIRS["up"])
                 if exit_dir.length_squared() == 0:
                     exit_dir = pygame.Vector2(DIRS["right"])
-                self.player.pos = target + exit_dir * TILE * 0.55
+                target, exit_dir = self.maze.safe_portal_exit(dest, vector_to_dir(exit_dir), self.player.radius)
+                self.player.pos = target
                 self.player.direction = exit_dir.copy()
                 self.player.queued = exit_dir.copy()
                 self.player.portal_cooldown = 0.65

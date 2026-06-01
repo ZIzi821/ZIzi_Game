@@ -11,7 +11,7 @@ const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
 const MAX_NAME = 20;
 const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
-const FIREBASE_TIMEOUT_MS = 3500;
+const FIREBASE_TIMEOUT_MS = 8000;
 const CACHE_URL = new URL("../data/leaderboards.json", import.meta.url);
 
 let firebasePromise;
