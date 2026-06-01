@@ -31,18 +31,37 @@
         <div class="actions">
           <button id="openIssue" type="button">打开 GitHub Sync / Open GitHub Sync</button>
           <button id="copyIssue" type="button">复制 GitHub Issue 链接 / Copy GitHub Issue Link</button>
+          <span id="status">Idle</span>
         </div>
       </section>
     </main>
     <script type="module">
       import { parseSyncCode, createIssueUrlFromItems } from "./assets/sync-code.js";
       const syncCode = document.getElementById("syncCode");
+      const status = document.getElementById("status");
       function makeUrl() {
         const parsed = parseSyncCode(syncCode.value);
         return createIssueUrlFromItems(parsed.items);
       }
-      document.getElementById("openIssue").addEventListener("click", () => window.open(makeUrl(), "_blank", "noopener,noreferrer"));
-      document.getElementById("copyIssue").addEventListener("click", async () => navigator.clipboard?.writeText(makeUrl()));
+      function withStatus(action) {
+        try {
+          action();
+          status.textContent = "Ready.";
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      }
+      document.getElementById("openIssue").addEventListener("click", () => {
+        withStatus(() => window.open(makeUrl(), "_blank", "noopener,noreferrer"));
+      });
+      document.getElementById("copyIssue").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard?.writeText(makeUrl());
+          status.textContent = "Copied.";
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      });
     </script>
   </body>
 </html>

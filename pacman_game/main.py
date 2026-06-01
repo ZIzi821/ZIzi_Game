@@ -532,6 +532,7 @@ class Player:
         self.dash_cooldown = 0
         self.power_timer = 0
         self.shield = 0
+        self.portal_cooldown = 0
         self.mouth = 0
         self.last_safe = self.pos.copy()
 
@@ -552,6 +553,8 @@ class Player:
             self.dash_timer -= dt
         if self.dash_cooldown > 0:
             self.dash_cooldown -= dt
+        if self.portal_cooldown > 0:
+            self.portal_cooldown -= dt
 
         speed = self.base_speed * (3.0 if self.dash_timer > 0 else 1.0)
         center_cell = world_to_grid(self.pos)
@@ -995,13 +998,30 @@ class Game:
             self.sound.play("pickup")
 
     def handle_portals(self, cell):
+        if self.player.portal_cooldown > 0:
+            return
         dest = self.maze.portal_destination(cell)
         if dest:
             target = grid_to_world(dest)
             if self.player.pos.distance_to(grid_to_world(cell)) < 7:
-                self.player.pos = target
+                exit_dir = self.player.direction.copy()
+                if dest[0] <= 1:
+                    exit_dir = pygame.Vector2(DIRS["right"])
+                elif dest[0] >= GRID_W - 2:
+                    exit_dir = pygame.Vector2(DIRS["left"])
+                elif dest[1] <= 1:
+                    exit_dir = pygame.Vector2(DIRS["down"])
+                elif dest[1] >= GRID_H - 2:
+                    exit_dir = pygame.Vector2(DIRS["up"])
+                if exit_dir.length_squared() == 0:
+                    exit_dir = pygame.Vector2(DIRS["right"])
+                self.player.pos = target + exit_dir * TILE * 0.55
+                self.player.direction = exit_dir.copy()
+                self.player.queued = exit_dir.copy()
+                self.player.portal_cooldown = 0.65
                 self.player.dash_timer = max(self.player.dash_timer, 0.15)
-                self.add_pop(target, "WARP", PURPLE)
+                self.player.last_safe = self.player.pos.copy()
+                self.add_pop(self.player.pos, "WARP", PURPLE)
                 self.sound.play("dash")
 
     def handle_traps(self, cell):

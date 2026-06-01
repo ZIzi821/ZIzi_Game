@@ -52,6 +52,7 @@ Supported Chomp level IDs:
 level1
 level2
 level3
+level4
 ```
 
 Each score record contains:

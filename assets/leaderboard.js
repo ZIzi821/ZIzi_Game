@@ -92,21 +92,26 @@ async function getFirebase() {
     firebasePromise = Promise.all([
       import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"),
       import("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js")
-    ]).then(([appModule, firestoreModule]) => {
-      const app = appModule.getApps().length
-        ? appModule.getApp()
-        : appModule.initializeApp(firebaseConfig);
-      return {
-        db: firestoreModule.getFirestore(app),
-        addDoc: firestoreModule.addDoc,
-        collection: firestoreModule.collection,
-        getDocs: firestoreModule.getDocs,
-        limit: firestoreModule.limit,
-        orderBy: firestoreModule.orderBy,
-        query: firestoreModule.query,
-        serverTimestamp: firestoreModule.serverTimestamp
-      };
-    });
+    ])
+      .then(([appModule, firestoreModule]) => {
+        const app = appModule.getApps().length
+          ? appModule.getApp()
+          : appModule.initializeApp(firebaseConfig);
+        return {
+          db: firestoreModule.getFirestore(app),
+          addDoc: firestoreModule.addDoc,
+          collection: firestoreModule.collection,
+          getDocs: firestoreModule.getDocs,
+          limit: firestoreModule.limit,
+          orderBy: firestoreModule.orderBy,
+          query: firestoreModule.query,
+          serverTimestamp: firestoreModule.serverTimestamp
+        };
+      })
+      .catch((error) => {
+        firebasePromise = undefined;
+        throw error;
+      });
   }
   return firebasePromise;
 }

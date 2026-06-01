@@ -52,10 +52,11 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const clean = (value, max) => String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+      const cleanMessage = (value, max = 300) => String(value || "").replace(/\r\n/g, "\n").replace(/\n{4,}/g, "\n\n\n").trim().slice(0, max);
       const iso = (value) => value?.toDate ? value.toDate().toISOString() : new Date(value || Date.now()).toISOString();
       async function readComments() {
         const snap = await getDocs(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(100)));
-        return snap.docs.map((doc) => ({ id: doc.id, nickname: clean(doc.data().nickname, 20), message: clean(doc.data().message, 300), createdAt: iso(doc.data().createdAt), sourceRegion: clean(doc.data().sourceRegion, 20) }));
+        return snap.docs.map((doc) => ({ id: doc.id, nickname: clean(doc.data().nickname, 20), message: cleanMessage(doc.data().message), createdAt: iso(doc.data().createdAt), sourceRegion: clean(doc.data().sourceRegion, 20) }));
       }
       async function readScores(path) {
         const snap = await getDocs(query(collection(db, ...path), orderBy("score", "desc"), limit(50)));

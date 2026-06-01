@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const root = __dirname;
+const root = path.resolve(__dirname);
 const port = 8000;
 const host = "127.0.0.1";
 const types = {
@@ -26,11 +26,19 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
 
 http
   .createServer((req, res) => {
-    const urlPath = decodeURIComponent(new URL(req.url, `http://${host}:${port}`).pathname);
-    const safePath = path.normalize(urlPath).replace(/^(\.\.[/\\])+/, "");
-    let filePath = path.join(root, safePath);
+    let urlPath;
+    try {
+      urlPath = decodeURIComponent(new URL(req.url, `http://${host}:${port}`).pathname);
+    } catch (_) {
+      send(res, 400, "Bad request");
+      return;
+    }
 
-    if (!filePath.startsWith(root)) {
+    const safePath = path.normalize(urlPath).replace(/^[/\\]+/, "");
+    let filePath = path.resolve(root, safePath);
+    const relativePath = path.relative(root, filePath);
+
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
       send(res, 403, "Forbidden");
       return;
     }

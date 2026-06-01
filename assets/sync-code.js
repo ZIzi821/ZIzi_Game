@@ -38,6 +38,11 @@ export function makeSyncId() {
   return `zizi_${Date.now()}_${random}`;
 }
 
+function normalizeCreatedAt(value) {
+  const date = new Date(value || Date.now());
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
 export function normalizeSyncItem(item) {
   const type = item?.type === "score" ? "score" : item?.type === "comment" ? "comment" : "";
   const id = cleanText(item?.id, 80).replace(/[^a-zA-Z0-9_-]/g, "");
@@ -47,7 +52,7 @@ export function normalizeSyncItem(item) {
     id,
     type,
     nickname: cleanText(item?.nickname, MAX_NAME),
-    createdAt: new Date(item?.createdAt || Date.now()).toISOString(),
+    createdAt: normalizeCreatedAt(item?.createdAt),
     sourceRegion: cleanText(item?.sourceRegion || "web", 20) || "web"
   };
   if (!base.nickname) throw new Error("Nickname is required.");
@@ -91,6 +96,7 @@ export function parseSyncCode(code) {
 
 function readPendingItems() {
   try {
+    if (typeof localStorage === "undefined") return [];
     return JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
   } catch (_) {
     return [];
@@ -98,11 +104,24 @@ function readPendingItems() {
 }
 
 function writePendingItems(items) {
-  localStorage.setItem(PENDING_KEY, JSON.stringify(items.slice(-100)));
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(PENDING_KEY, JSON.stringify(items.slice(-100)));
+  } catch (_) {
+    // Some browsers disable storage in private or restricted contexts.
+  }
 }
 
 export function getPendingSyncItems() {
-  return readPendingItems().map(normalizeSyncItem);
+  return readPendingItems()
+    .map((item) => {
+      try {
+        return normalizeSyncItem(item);
+      } catch (_) {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 export function addPendingSyncItem(item) {
@@ -118,7 +137,12 @@ export function removePendingSyncItem(id) {
 }
 
 export function clearPendingSyncItems() {
-  localStorage.removeItem(PENDING_KEY);
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(PENDING_KEY);
+  } catch (_) {
+    // Ignore storage failures in restricted browser contexts.
+  }
 }
 
 export function createIssueUrlFromItems(items) {
