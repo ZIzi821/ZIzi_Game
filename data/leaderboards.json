@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-01T05:17:15.517Z",
+  "updatedAt": "2026-06-01T05:59:51.156Z",
   "leaderboards": {
     "starfall": [
       {
@@ -68,7 +68,15 @@
           "sourceRegion": ""
         }
       ],
-      "level4": []
+      "level4": [
+        {
+          "id": "39d1zClBCatY5N4sWFyR",
+          "nickname": "w",
+          "score": 1386,
+          "createdAt": "2026-06-01T05:58:31.030Z",
+          "sourceRegion": "web"
+        }
+      ]
     }
   }
 }
