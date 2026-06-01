@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-01T14:20:55.827Z",
+  "updatedAt": "2026-06-01T14:29:28.383Z",
   "leaderboards": {
     "starfall": [
       {
@@ -77,6 +77,13 @@
         }
       ],
       "level4": [
+        {
+          "id": "1rKctI7HRkaSIZjJnYFe",
+          "nickname": "ou",
+          "score": 12808,
+          "createdAt": "2026-06-01T14:28:46.044Z",
+          "sourceRegion": "web"
+        },
         {
           "id": "na1PWH8fAklqh6Z1RGrP",
           "nickname": "isdayv",
