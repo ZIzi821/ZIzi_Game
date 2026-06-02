@@ -5,8 +5,9 @@ const GAME_ID = "tangsprint";
 const GAME_NAME = "唐人冲刺 / Tang people sprint";
 const ROAD_WIDTH = 9;
 const ROAD_HALF = ROAD_WIDTH / 2 - 0.48;
-const MAX_RENDER_CROWD = 100;
-const MAX_RENDER_ENEMY_GROUP = 45;
+const MAX_RENDER_CROWD = 160;
+const MAX_RENDER_ENEMY_GROUP = 52;
+const HERO_RUNNER_COUNT = 4;
 const PLAYER_SPEED = 10;
 const SIDE_SPEED = 8.2;
 const POINTER_SCALE = 0.018;
@@ -14,68 +15,131 @@ const POINTER_SCALE = 0.018;
 const levels = [
   {
     id: "level1",
-    name: "Level 1 / 长街冲刺",
-    length: 560,
+    name: "Level 1 / 长街炼狱",
+    length: 680,
     startCount: 4,
-    speed: 9.8,
+    speed: 11.2,
     gates: [
-      { z: 32, left: "+12", right: "x2" },
-      { z: 88, left: "x2", right: "+18" },
-      { z: 144, left: "+26", right: "x3" },
-      { z: 212, left: "x2", right: "+34" },
-      { z: 284, left: "+45", right: "x2" },
-      { z: 352, left: "x3", right: "+36" },
-      { z: 432, left: "+62", right: "x2" },
-      { z: 506, left: "x2", right: "+80" }
+      { z: 28, left: "x3", right: "+8" },
+      { z: 72, left: "+26", right: "x2" },
+      { z: 118, left: "x2", right: "+38" },
+      { z: 166, left: "+45", right: "x3" },
+      { z: 224, left: "x2", right: "+72" },
+      { z: 284, left: "+90", right: "x2" },
+      { z: 346, left: "x4", right: "+105" },
+      { z: 414, left: "+120", right: "x3" },
+      { z: 486, left: "x2", right: "+155" },
+      { z: 548, left: "+190", right: "x3" },
+      { z: 618, left: "x4", right: "+220" }
     ],
     enemies: [
-      { z: 58, x: 2.6, count: 18 },
-      { z: 96, x: -2.7, count: 24 },
-      { z: 132, x: 0.2, count: 36 },
-      { z: 184, x: -3.1, count: 42 },
-      { z: 238, x: 2.9, count: 58 },
-      { z: 316, x: -0.2, count: 78 },
-      { z: 386, x: -2.5, count: 92 },
-      { z: 420, x: 2.5, count: 108 },
-      { z: 478, x: 0, count: 128 },
-      { z: 532, x: -2.7, count: 145 }
+      { z: 52, x: 2.9, count: 16 },
+      { z: 90, x: -2.8, count: 30 },
+      { z: 136, x: 0.1, count: 48 },
+      { z: 188, x: -3.1, count: 70 },
+      { z: 206, x: 2.8, count: 76 },
+      { z: 256, x: -0.4, count: 104 },
+      { z: 316, x: 3.0, count: 142 },
+      { z: 374, x: -2.9, count: 180 },
+      { z: 398, x: 0.2, count: 210 },
+      { z: 454, x: 2.9, count: 250 },
+      { z: 512, x: -3.0, count: 310 },
+      { z: 586, x: 0, count: 390 },
+      { z: 650, x: 2.8, count: 520 }
+    ],
+    hazards: [
+      { z: 104, x: 2.15, width: 2.4, loss: 0.32, label: "-32%" },
+      { z: 156, x: -2.2, width: 2.2, loss: 24, label: "-24" },
+      { z: 270, x: 2.2, width: 2.6, loss: 0.38, label: "-38%" },
+      { z: 332, x: -1.2, width: 3.4, loss: 0.45, label: "-45%" },
+      { z: 468, x: 0.7, width: 3.8, loss: 90, label: "-90" },
+      { z: 604, x: -2.0, width: 2.8, loss: 0.5, label: "-50%" }
+    ],
+    pickups: [
+      { z: 148, x: 3.35, count: 18 },
+      { z: 240, x: -3.25, count: 35 },
+      { z: 362, x: 3.25, count: 56 },
+      { z: 532, x: -3.35, count: 95 },
+      { z: 636, x: -0.1, count: 130 }
+    ],
+    sweepers: [
+      { z: 112, count: 22, amplitude: 3.1, speed: 2.5, phase: 0.5 },
+      { z: 300, count: 72, amplitude: 3.3, speed: 3.1, phase: 2.1 },
+      { z: 438, count: 130, amplitude: 3.35, speed: 3.4, phase: 4.3 },
+      { z: 572, count: 210, amplitude: 3.45, speed: 3.8, phase: 1.1 }
     ]
   },
   {
     id: "level2",
-    name: "Level 2 / 远路极限",
-    length: 920,
-    startCount: 10,
-    speed: 10.6,
+    name: "Level 2 / 远路超变态",
+    length: 1080,
+    startCount: 5,
+    speed: 12.1,
     gates: [
-      { z: 36, left: "+20", right: "x2" },
-      { z: 108, left: "x2", right: "+34" },
-      { z: 180, left: "+42", right: "x3" },
-      { z: 252, left: "x2", right: "+58" },
-      { z: 326, left: "+70", right: "x2" },
-      { z: 406, left: "x3", right: "+62" },
-      { z: 492, left: "+82", right: "x2" },
-      { z: 574, left: "x2", right: "+96" },
-      { z: 662, left: "+120", right: "x3" },
-      { z: 754, left: "x2", right: "+140" },
-      { z: 846, left: "+160", right: "x2" }
+      { z: 34, left: "+18", right: "x4" },
+      { z: 86, left: "x2", right: "+52" },
+      { z: 140, left: "+66", right: "x3" },
+      { z: 198, left: "x4", right: "+78" },
+      { z: 260, left: "+105", right: "x2" },
+      { z: 318, left: "x3", right: "+132" },
+      { z: 380, left: "+150", right: "x4" },
+      { z: 448, left: "x2", right: "+210" },
+      { z: 520, left: "+260", right: "x3" },
+      { z: 592, left: "x4", right: "+310" },
+      { z: 666, left: "+360", right: "x2" },
+      { z: 742, left: "x3", right: "+430" },
+      { z: 818, left: "+520", right: "x4" },
+      { z: 894, left: "x2", right: "+680" },
+      { z: 976, left: "+900", right: "x3" }
     ],
     enemies: [
-      { z: 70, x: -2.9, count: 35 },
-      { z: 118, x: 2.8, count: 52 },
-      { z: 164, x: 0, count: 68 },
-      { z: 218, x: -3.0, count: 86 },
-      { z: 300, x: 2.9, count: 112 },
-      { z: 366, x: -0.2, count: 140 },
-      { z: 438, x: -2.8, count: 170 },
-      { z: 470, x: 2.8, count: 190 },
-      { z: 544, x: 0.1, count: 215 },
-      { z: 604, x: -3.1, count: 240 },
-      { z: 636, x: 3.1, count: 265 },
-      { z: 704, x: -0.2, count: 310 },
-      { z: 782, x: 2.6, count: 360 },
-      { z: 820, x: -2.6, count: 385 },
-      { z: 882, x: 0, count: 430 }
+      { z: 62, x: -2.8, count: 42 },
+      { z: 110, x: 2.9, count: 84 },
+      { z: 164, x: -0.2, count: 118 },
+      { z: 224, x: -3.1, count: 170 },
+      { z: 246, x: 2.8, count: 198 },
+      { z: 292, x: 0.6, count: 245 },
+      { z: 356, x: -2.9, count: 310 },
+      { z: 418, x: 3.0, count: 390 },
+      { z: 472, x: -0.2, count: 480 },
+      { z: 548, x: -3.05, count: 610 },
+      { z: 574, x: 3.1, count: 680 },
+      { z: 638, x: 0, count: 760 },
+      { z: 714, x: -2.8, count: 920 },
+      { z: 768, x: 2.9, count: 1080 },
+      { z: 842, x: 0.2, count: 1260 },
+      { z: 916, x: -3.0, count: 1540 },
+      { z: 946, x: 3.0, count: 1720 },
+      { z: 1030, x: 0, count: 2200 }
+    ],
+    hazards: [
+      { z: 126, x: -2.2, width: 2.7, loss: 0.35, label: "-35%" },
+      { z: 188, x: 2.0, width: 3.1, loss: 60, label: "-60" },
+      { z: 338, x: 0, width: 4.2, loss: 0.48, label: "-48%" },
+      { z: 432, x: -2.35, width: 2.7, loss: 150, label: "-150" },
+      { z: 506, x: 2.4, width: 2.9, loss: 0.52, label: "-52%" },
+      { z: 624, x: -0.8, width: 3.6, loss: 260, label: "-260" },
+      { z: 700, x: 2.3, width: 3.1, loss: 0.56, label: "-56%" },
+      { z: 806, x: -2.0, width: 3.4, loss: 420, label: "-420" },
+      { z: 970, x: 0.4, width: 4.4, loss: 0.62, label: "-62%" }
+    ],
+    pickups: [
+      { z: 152, x: 3.3, count: 55 },
+      { z: 276, x: -3.35, count: 90 },
+      { z: 404, x: 0.1, count: 130 },
+      { z: 616, x: 3.35, count: 220 },
+      { z: 734, x: -3.35, count: 300 },
+      { z: 884, x: 3.25, count: 460 },
+      { z: 1010, x: -3.25, count: 700 }
+    ],
+    sweepers: [
+      { z: 74, count: 44, amplitude: 3.2, speed: 2.8, phase: 0.2 },
+      { z: 306, count: 150, amplitude: 3.4, speed: 3.3, phase: 1.5 },
+      { z: 494, count: 300, amplitude: 3.5, speed: 3.7, phase: 3.4 },
+      { z: 666, count: 520, amplitude: 3.45, speed: 4.1, phase: 2.3 },
+      { z: 790, count: 760, amplitude: 3.55, speed: 4.35, phase: 5.2 },
+      { z: 932, count: 1150, amplitude: 3.55, speed: 4.55, phase: 1.0 },
+      { z: 1002, count: 1500, amplitude: 3.55, speed: 4.8, phase: 4.1 }
     ]
   }
 ];
@@ -89,9 +153,11 @@ const restartButton = document.getElementById("restartButton");
 const nextButton = document.getElementById("nextButton");
 const leaderboardButton = document.getElementById("leaderboardButton");
 const pauseButton = document.getElementById("pauseButton");
+const musicButton = document.getElementById("musicButton");
 const hudLevel = document.getElementById("hudLevel");
 const hudCrowd = document.getElementById("hudCrowd");
 const hudScore = document.getElementById("hudScore");
+const hudThreat = document.getElementById("hudThreat");
 const progressFill = document.getElementById("progressFill");
 
 window.ZIziLeaderboards = window.ZIziLeaderboards || {};
@@ -132,9 +198,16 @@ const materials = {
   lane: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62 }),
   side: new THREE.MeshStandardMaterial({ color: 0x7ad7c6, roughness: 0.5 }),
   finish: new THREE.MeshStandardMaterial({ color: 0x263044, roughness: 0.42 }),
-  blue: new THREE.MeshStandardMaterial({ color: 0xffc857, roughness: 0.38, metalness: 0.02, emissive: 0x7a3200, emissiveIntensity: 0.16 }),
-  runnerOutline: new THREE.MeshBasicMaterial({ color: 0x191f2d }),
+  blue: new THREE.MeshStandardMaterial({ color: 0x101623, roughness: 0.44, metalness: 0.02, emissive: 0x02040a, emissiveIntensity: 0.18 }),
+  runnerOutline: new THREE.MeshBasicMaterial({ color: 0xfff36a }),
+  hero: new THREE.MeshBasicMaterial({ color: 0x05070d, depthTest: false, depthWrite: false }),
   red: new THREE.MeshStandardMaterial({ color: 0xff4258, roughness: 0.48, metalness: 0.02 }),
+  hazard: new THREE.MeshStandardMaterial({ color: 0x2b2233, roughness: 0.5, emissive: 0xaa1630, emissiveIntensity: 0.18 }),
+  hazardStripe: new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.42, emissive: 0x7a3200, emissiveIntensity: 0.12 }),
+  pickup: new THREE.MeshStandardMaterial({ color: 0x22d28f, roughness: 0.3, metalness: 0.1, emissive: 0x0a8f5b, emissiveIntensity: 0.36 }),
+  sweeper: new THREE.MeshStandardMaterial({ color: 0xe02f4f, roughness: 0.36, metalness: 0.05, emissive: 0x7f0018, emissiveIntensity: 0.28 }),
+  warning: new THREE.MeshBasicMaterial({ color: 0xff304f, transparent: true, opacity: 0.18 }),
+  gold: new THREE.MeshStandardMaterial({ color: 0xffcf5d, roughness: 0.4, emissive: 0x6b3b00, emissiveIntensity: 0.16 }),
   gateLeft: new THREE.MeshStandardMaterial({ color: 0x21c7ad, transparent: true, opacity: 0.28, roughness: 0.25 }),
   gateRight: new THREE.MeshStandardMaterial({ color: 0x5b8def, transparent: true, opacity: 0.28, roughness: 0.25 }),
   gateFrame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.36, emissive: 0x77d9ff, emissiveIntensity: 0.15 }),
@@ -142,15 +215,33 @@ const materials = {
 };
 
 const crowdGeometry = new THREE.CapsuleGeometry(0.18, 0.42, 4, 8);
+const heroGeometry = new THREE.CapsuleGeometry(0.24, 0.62, 5, 10);
+const ringGeometry = new THREE.RingGeometry(0.8, 1.35, 48);
 const runnerOutline = new THREE.InstancedMesh(crowdGeometry, materials.runnerOutline, MAX_RENDER_CROWD);
+runnerOutline.renderOrder = 1;
 scene.add(runnerOutline);
 
 const blueCrowd = new THREE.InstancedMesh(crowdGeometry, materials.blue, MAX_RENDER_CROWD);
 blueCrowd.castShadow = true;
 blueCrowd.receiveShadow = true;
+blueCrowd.renderOrder = 2;
 scene.add(blueCrowd);
 
-const enemyCrowd = new THREE.InstancedMesh(crowdGeometry, materials.red, 900);
+const heroRunnerGroup = new THREE.Group();
+const heroRunners = Array.from({ length: HERO_RUNNER_COUNT }, () => {
+  const runner = new THREE.Mesh(heroGeometry, materials.hero);
+  runner.renderOrder = 12;
+  heroRunnerGroup.add(runner);
+  return runner;
+});
+scene.add(heroRunnerGroup);
+
+const playerRing = new THREE.Mesh(ringGeometry, materials.gold);
+playerRing.rotation.x = -Math.PI / 2;
+playerRing.position.y = 0.08;
+scene.add(playerRing);
+
+const enemyCrowd = new THREE.InstancedMesh(crowdGeometry, materials.red, 1500);
 enemyCrowd.castShadow = true;
 enemyCrowd.receiveShadow = true;
 scene.add(enemyCrowd);
@@ -158,13 +249,18 @@ scene.add(enemyCrowd);
 const roadGroup = new THREE.Group();
 const obstacleGroup = new THREE.Group();
 const labelGroup = new THREE.Group();
-scene.add(roadGroup, obstacleGroup, labelGroup);
+const effectGroup = new THREE.Group();
+scene.add(roadGroup, obstacleGroup, labelGroup, effectGroup);
 
 const dummy = new THREE.Object3D();
 const cameraTarget = new THREE.Vector3();
 const gateBoxGeometry = new THREE.BoxGeometry(0.18, 2.6, 0.18);
 const gateTopGeometry = new THREE.BoxGeometry(2.85, 0.18, 0.18);
 const gatePlaneGeometry = new THREE.PlaneGeometry(2.85, 2.1);
+const hazardGeometry = new THREE.BoxGeometry(1, 0.1, 3.4);
+const pickupGeometry = new THREE.TorusGeometry(0.38, 0.1, 10, 28);
+const sweeperGeometry = new THREE.BoxGeometry(2.25, 0.34, 0.58);
+const warningGeometry = new THREE.PlaneGeometry(1, 4.8);
 
 let currentLevelIndex = 0;
 let currentLevel = levels[0];
@@ -179,9 +275,150 @@ let finalScore = 0;
 let submittedThisRun = false;
 let gates = [];
 let enemies = [];
+let hazards = [];
+let pickups = [];
+let sweepers = [];
+let effects = [];
 let pointerActive = false;
 let lastPointerX = 0;
 const keys = { left: false, right: false };
+
+class MusicSystem {
+  constructor(button) {
+    this.button = button;
+    this.context = null;
+    this.master = null;
+    this.timer = 0;
+    this.nextTime = 0;
+    this.step = 0;
+    this.enabled = true;
+    this.playing = false;
+    this.tempo = 138;
+    this.updateButton();
+  }
+
+  init() {
+    if (this.context) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) {
+      this.enabled = false;
+      this.button.disabled = true;
+      this.button.textContent = "×";
+      return;
+    }
+    this.context = new AudioContext();
+    this.master = this.context.createGain();
+    this.master.gain.value = 0;
+    this.master.connect(this.context.destination);
+  }
+
+  async play() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.context) return;
+    await this.context.resume();
+    this.playing = true;
+    this.nextTime = Math.max(this.nextTime, this.context.currentTime + 0.03);
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.linearRampToValueAtTime(0.16, this.context.currentTime + 0.35);
+    if (!this.timer) {
+      this.timer = window.setInterval(() => this.schedule(), 90);
+    }
+    this.updateButton();
+  }
+
+  pause() {
+    this.playing = false;
+    if (this.context && this.master) {
+      this.master.gain.cancelScheduledValues(this.context.currentTime);
+      this.master.gain.linearRampToValueAtTime(0, this.context.currentTime + 0.22);
+    }
+    if (this.timer) {
+      window.clearInterval(this.timer);
+      this.timer = 0;
+    }
+    this.updateButton();
+  }
+
+  toggle() {
+    this.enabled = !this.enabled;
+    if (this.enabled && gameState === "running") this.play();
+    else this.pause();
+    this.updateButton();
+  }
+
+  updateButton() {
+    if (!this.button) return;
+    this.button.textContent = this.enabled ? "♪" : "×";
+    this.button.setAttribute("aria-pressed", String(this.enabled));
+  }
+
+  schedule() {
+    if (!this.context || !this.playing) return;
+    const beat = 60 / this.tempo;
+    while (this.nextTime < this.context.currentTime + 0.35) {
+      this.scheduleStep(this.nextTime, this.step);
+      this.nextTime += beat / 2;
+      this.step = (this.step + 1) % 32;
+    }
+  }
+
+  scheduleStep(time, step) {
+    const bass = [82.41, 98, 110, 146.83];
+    const lead = [392, 440, 523.25, 587.33, 659.25, 587.33, 523.25, 440];
+    if (step % 4 === 0) {
+      this.tone(bass[Math.floor(step / 8) % bass.length], time, 0.28, "sawtooth", 0.11);
+      this.kick(time);
+    }
+    if (step % 2 === 1) this.hat(time);
+    if ([2, 5, 10, 13, 18, 21, 26, 29].includes(step)) {
+      this.tone(lead[step % lead.length], time, 0.16, "triangle", 0.045);
+    }
+  }
+
+  tone(freq, time, duration, type, volume) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(volume, time + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(gain).connect(this.master);
+    osc.start(time);
+    osc.stop(time + duration + 0.03);
+  }
+
+  kick(time) {
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(92, time);
+    osc.frequency.exponentialRampToValueAtTime(38, time + 0.16);
+    gain.gain.setValueAtTime(0.12, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
+    osc.connect(gain).connect(this.master);
+    osc.start(time);
+    osc.stop(time + 0.2);
+  }
+
+  hat(time) {
+    const buffer = this.context.createBuffer(1, 900, this.context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
+    const source = this.context.createBufferSource();
+    const gain = this.context.createGain();
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(0.018, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
+    source.connect(gain).connect(this.master);
+    source.start(time);
+  }
+}
+
+const music = new MusicSystem(musicButton);
 
 const crowdLabel = makeTextSprite("1", {
   color: "#ffffff",
@@ -271,6 +508,39 @@ function clearGroup(group) {
   }
 }
 
+function clearEffects() {
+  effects = [];
+  clearGroup(effectGroup);
+}
+
+function addPopText(text, x, z, color = "#ffffff", background = "rgba(35, 48, 68, 0.9)") {
+  const sprite = makeTextSprite(text, {
+    color,
+    background,
+    width: 210,
+    height: 82,
+    fontSize: 34
+  });
+  sprite.position.set(x, 2.7, z);
+  sprite.scale.set(2.6, 1.08, 1);
+  effectGroup.add(sprite);
+  effects.push({ sprite, age: 0, ttl: 0.9, baseY: 2.7 });
+}
+
+function updateEffects(dt) {
+  effects = effects.filter((effect) => {
+    effect.age += dt;
+    const progress = effect.age / effect.ttl;
+    effect.sprite.position.y = effect.baseY + progress * 1.1;
+    effect.sprite.material.opacity = Math.max(0, 1 - progress);
+    if (effect.age < effect.ttl) return true;
+    effectGroup.remove(effect.sprite);
+    effect.sprite.material.map?.dispose();
+    effect.sprite.material.dispose();
+    return false;
+  });
+}
+
 function createRoad(level) {
   clearGroup(roadGroup);
   const road = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.24, level.length + 24), materials.road);
@@ -291,6 +561,21 @@ function createRoad(level) {
     roadGroup.add(mark);
   }
 
+  for (let z = 24; z < level.length; z += 34) {
+    [-1, 1].forEach((side) => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.4, 0.22), materials.side);
+      post.position.set(side * (ROAD_WIDTH / 2 + 0.62), 0.7, z);
+      post.castShadow = true;
+      roadGroup.add(post);
+
+      const banner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.34, 0.12), z % 68 === 24 ? materials.gold : materials.gateRight);
+      banner.position.set(side * (ROAD_WIDTH / 2 + 1.0), 1.36, z + 1.0);
+      banner.rotation.y = side * 0.22;
+      banner.castShadow = true;
+      roadGroup.add(banner);
+    });
+  }
+
   const finish = new THREE.Group();
   finish.position.z = level.length;
   for (let i = 0; i < 8; i += 1) {
@@ -309,6 +594,15 @@ function createRoad(level) {
   finishLabel.scale.set(4.2, 1.2, 1);
   finish.add(finishLabel);
   roadGroup.add(finish);
+}
+
+function createWarningStrip(x, z, width) {
+  const strip = new THREE.Mesh(warningGeometry, materials.warning);
+  strip.rotation.x = -Math.PI / 2;
+  strip.position.set(x, 0.071, z);
+  strip.scale.set(width, 1, 1);
+  obstacleGroup.add(strip);
+  return strip;
 }
 
 function createGateSide(x, z, label, material, side) {
@@ -363,7 +657,78 @@ function createObstacles(level) {
     label.position.set(enemy.x, 2.25, enemy.z);
     label.scale.set(2, 1.02, 1);
     obstacleGroup.add(label);
+    createWarningStrip(enemy.x, enemy.z - 4.2, 1.9);
     return { ...enemy, label, triggered: false };
+  });
+
+  hazards = (level.hazards || []).map((hazard) => {
+    const mesh = new THREE.Mesh(hazardGeometry, materials.hazard);
+    mesh.position.set(hazard.x, 0.08, hazard.z);
+    mesh.scale.set(hazard.width, 1, 1);
+    mesh.receiveShadow = true;
+    obstacleGroup.add(mesh);
+    const parts = [mesh];
+
+    for (let i = -1; i <= 1; i += 1) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(hazard.width * 0.42, 0.13, 0.18), materials.hazardStripe);
+      stripe.position.set(hazard.x + i * hazard.width * 0.24, 0.16, hazard.z);
+      stripe.rotation.y = 0.7;
+      obstacleGroup.add(stripe);
+      parts.push(stripe);
+    }
+
+    const label = makeTextSprite(hazard.label || "TRAP", {
+      color: "#ffffff",
+      background: "rgba(43, 34, 51, 0.92)",
+      width: 150,
+      height: 72,
+      fontSize: 36
+    });
+    label.position.set(hazard.x, 1.75, hazard.z);
+    label.scale.set(1.8, 0.92, 1);
+    obstacleGroup.add(label);
+    createWarningStrip(hazard.x, hazard.z - 4.8, hazard.width);
+    return { ...hazard, mesh, label, parts, triggered: false };
+  });
+
+  pickups = (level.pickups || []).map((pickup) => {
+    const mesh = new THREE.Mesh(pickupGeometry, materials.pickup);
+    mesh.position.set(pickup.x, 0.85, pickup.z);
+    mesh.rotation.x = Math.PI / 2;
+    mesh.castShadow = true;
+    obstacleGroup.add(mesh);
+
+    const label = makeTextSprite(`+${pickup.count}`, {
+      color: "#053b2c",
+      background: "rgba(223, 255, 239, 0.94)",
+      width: 150,
+      height: 72,
+      fontSize: 38
+    });
+    label.position.set(pickup.x, 1.9, pickup.z);
+    label.scale.set(1.75, 0.9, 1);
+    obstacleGroup.add(label);
+    return { ...pickup, mesh, label, triggered: false };
+  });
+
+  sweepers = (level.sweepers || []).map((sweeper) => {
+    const mesh = new THREE.Mesh(sweeperGeometry, materials.sweeper);
+    mesh.position.set(0, 0.62, sweeper.z);
+    mesh.castShadow = true;
+    obstacleGroup.add(mesh);
+
+    const label = makeTextSprite(`-${sweeper.count}`, {
+      color: "#ffffff",
+      background: "rgba(224, 47, 79, 0.92)",
+      width: 145,
+      height: 70,
+      fontSize: 36
+    });
+    label.position.set(0, 1.55, sweeper.z);
+    label.scale.set(1.65, 0.85, 1);
+    obstacleGroup.add(label);
+    createWarningStrip(0, sweeper.z - 5.2, ROAD_WIDTH * 0.72);
+    return { ...sweeper, mesh, label, x: 0, triggered: false };
   });
 }
 
@@ -375,7 +740,7 @@ function setOverlay(mode, details = "") {
   leaderboardButton.hidden = mode === "menu";
   if (mode === "menu") {
     overlayTitle.textContent = GAME_NAME;
-    overlayText.textContent = "Lead the golden sprint team through long boost lanes, dodge dense rival crowds, and finish with the biggest surviving group.";
+    overlayText.textContent = "Two stages are now brutal: pick the correct gates, grab rescue boosts, avoid traps, dodge moving sweepers, and keep yourself alive in the gold ring.";
   } else if (mode === "paused") {
     overlayTitle.textContent = "Paused / 已暂停";
     overlayText.textContent = "Press P or Esc to keep running. / 按 P 或 Esc 继续冲刺。";
@@ -384,7 +749,7 @@ function setOverlay(mode, details = "") {
     overlayText.textContent = `Final Crowd: ${crowdCount}. ${details}`;
   } else {
     overlayTitle.textContent = "Game Over / 游戏失败";
-    overlayText.textContent = details || "The red crowd stopped your run. Try a better gate route next time.";
+    overlayText.textContent = details || "The brutal route crushed the team. Read the danger HUD and try a cleaner gate line.";
   }
 }
 
@@ -402,6 +767,7 @@ function resetLevel(index = currentLevelIndex) {
   lastLabelCount = -1;
   submittedThisRun = false;
   finalScore = 0;
+  clearEffects();
   keys.left = false;
   keys.right = false;
   createRoad(currentLevel);
@@ -417,11 +783,13 @@ function startGame(index = currentLevelIndex) {
   gameState = "running";
   lastTime = performance.now();
   hideOverlay();
+  music.play();
 }
 
 function pauseGame() {
   if (gameState !== "running") return;
   gameState = "paused";
+  music.pause();
   setOverlay("paused");
 }
 
@@ -430,11 +798,13 @@ function resumeGame() {
   gameState = "running";
   lastTime = performance.now();
   hideOverlay();
+  music.play();
 }
 
 function endGame(won) {
   if (gameState === "ended") return;
   gameState = "ended";
+  music.pause();
   const progress = clamp(crowdZ / currentLevel.length, 0, 1);
   finalScore = won ? crowdCount : Math.max(0, Math.floor(crowdCount * 0.35 + progress * 18));
   if (!submittedThisRun) {
@@ -452,11 +822,26 @@ function updateHud() {
   hudLevel.textContent = `${currentLevelIndex + 1}`;
   hudCrowd.textContent = crowdCount.toLocaleString("zh-CN");
   hudScore.textContent = Math.max(0, Math.floor(crowdCount + progress * 25)).toLocaleString("zh-CN");
+  hudThreat.textContent = getThreatText();
   progressFill.style.width = `${Math.round(progress * 100)}%`;
   if (crowdCount !== lastLabelCount) {
     lastLabelCount = crowdCount;
     updateTextSprite(crowdLabel, crowdCount.toLocaleString("zh-CN"));
   }
+}
+
+function getThreatText() {
+  if (gameState !== "running") return "变态";
+  const upcoming = [
+    ...enemies.filter((enemy) => !enemy.triggered).map((enemy) => ({ z: enemy.z, label: `红队 ${enemy.count}` })),
+    ...hazards.filter((hazard) => !hazard.triggered).map((hazard) => ({ z: hazard.z, label: `陷阱 ${hazard.label || ""}` })),
+    ...sweepers.filter((sweeper) => !sweeper.triggered).map((sweeper) => ({ z: sweeper.z, label: `横扫 -${sweeper.count}` }))
+  ]
+    .filter((item) => item.z > crowdZ)
+    .sort((a, b) => a.z - b.z)[0];
+  if (!upcoming) return "冲线";
+  const distance = Math.max(0, Math.round(upcoming.z - crowdZ));
+  return `${distance}m ${upcoming.label}`;
 }
 
 function formationOffset(index, total) {
@@ -468,6 +853,30 @@ function formationOffset(index, total) {
   const x = (col - (columns - 1) / 2) * spacing;
   const z = (row - (rows - 1) / 2) * spacing;
   return { x, z };
+}
+
+function heroOffset(index) {
+  const offsets = [
+    { x: -0.28, z: -0.2 },
+    { x: 0.28, z: -0.2 },
+    { x: -0.2, z: 0.32 },
+    { x: 0.2, z: 0.32 }
+  ];
+  return offsets[index] || { x: 0, z: 0 };
+}
+
+function updateHeroRunners(time) {
+  const heroVisible = Math.min(HERO_RUNNER_COUNT, crowdCount);
+  heroRunnerGroup.position.set(crowdX, 0, crowdZ - 0.1);
+  heroRunners.forEach((runner, index) => {
+    runner.visible = index < heroVisible;
+    if (!runner.visible) return;
+    const offset = heroOffset(index);
+    const bob = Math.sin(time * 9.5 + index * 0.9) * 0.045;
+    runner.position.set(offset.x, 0.48 + bob, offset.z);
+    runner.rotation.set(0, Math.sin(time * 4.6 + index) * 0.12, 0);
+    runner.scale.setScalar(1.16);
+  });
 }
 
 function updateCrowdInstances(time) {
@@ -493,7 +902,12 @@ function updateCrowdInstances(time) {
   }
   runnerOutline.instanceMatrix.needsUpdate = true;
   blueCrowd.instanceMatrix.needsUpdate = true;
+  updateHeroRunners(time);
   crowdLabel.position.set(crowdX, 2.35, crowdZ - 0.25);
+  const ringScale = clamp(Math.sqrt(Math.max(visible, 1)) * 0.16 + 0.72, 1.0, 2.45);
+  playerRing.position.x = crowdX;
+  playerRing.position.z = crowdZ;
+  playerRing.scale.setScalar(ringScale);
 }
 
 function updateEnemyInstances() {
@@ -523,15 +937,19 @@ function updateEnemyInstances() {
 function triggerGate(gate) {
   gate.triggered = true;
   const formula = crowdX < 0 ? gate.left : gate.right;
+  const before = crowdCount;
   crowdCount = clamp(Math.floor(applyGateFormula(crowdCount, formula)), 0, 999999999);
   gate.group.visible = false;
+  addPopText(`${formula.replace(/x/i, "×")}  ${before}→${crowdCount}`, crowdX, gate.z, "#053b2c", "rgba(223, 255, 239, 0.95)");
   updateHud();
 }
 
 function collideEnemy(enemy) {
   enemy.triggered = true;
   enemy.label.visible = false;
+  const loss = Math.min(crowdCount, enemy.count);
   crowdCount -= enemy.count;
+  addPopText(`-${loss}`, enemy.x, enemy.z, "#ffffff", "rgba(190, 35, 61, 0.94)");
   if (crowdCount < 1) {
     crowdCount = 0;
     updateHud();
@@ -543,10 +961,64 @@ function collideEnemy(enemy) {
   updateEnemyInstances();
 }
 
+function triggerHazard(hazard) {
+  hazard.triggered = true;
+  hazard.parts.forEach((part) => {
+    part.visible = false;
+  });
+  hazard.label.visible = false;
+  const before = crowdCount;
+  if (hazard.loss < 1) {
+    crowdCount = Math.max(0, Math.floor(crowdCount * (1 - hazard.loss)));
+  } else {
+    crowdCount = Math.max(0, crowdCount - hazard.loss);
+  }
+  addPopText(`陷阱 ${before}→${crowdCount}`, hazard.x, hazard.z, "#ffffff", "rgba(43, 34, 51, 0.94)");
+  updateHud();
+  if (crowdCount < 1) endGame(false);
+}
+
+function collectPickup(pickup) {
+  pickup.triggered = true;
+  pickup.mesh.visible = false;
+  pickup.label.visible = false;
+  crowdCount = clamp(crowdCount + pickup.count, 0, 999999999);
+  addPopText(`救援 +${pickup.count}`, pickup.x, pickup.z, "#053b2c", "rgba(223, 255, 239, 0.95)");
+  updateHud();
+}
+
+function triggerSweeper(sweeper) {
+  sweeper.triggered = true;
+  sweeper.mesh.visible = false;
+  sweeper.label.visible = false;
+  const loss = Math.min(crowdCount, sweeper.count);
+  crowdCount = Math.max(0, crowdCount - sweeper.count);
+  addPopText(`横扫 -${loss}`, sweeper.x, sweeper.z, "#ffffff", "rgba(224, 47, 79, 0.94)");
+  updateHud();
+  if (crowdCount < 1) endGame(false);
+}
+
+function updateSweepers(time) {
+  pickups.forEach((pickup) => {
+    if (pickup.triggered) return;
+    pickup.mesh.rotation.z = time * 2.8;
+    pickup.mesh.position.y = 0.85 + Math.sin(time * 4 + pickup.z) * 0.08;
+    pickup.label.position.y = 1.9 + Math.sin(time * 4 + pickup.z) * 0.08;
+  });
+  sweepers.forEach((sweeper) => {
+    if (sweeper.triggered) return;
+    sweeper.x = Math.sin(time * sweeper.speed + sweeper.phase) * sweeper.amplitude;
+    sweeper.mesh.position.x = sweeper.x;
+    sweeper.mesh.rotation.y = Math.sin(time * sweeper.speed * 1.7 + sweeper.phase) * 0.16;
+    sweeper.label.position.x = sweeper.x;
+  });
+}
+
 function updateCollisions(previousZ) {
   gates.forEach((gate) => {
     if (!gate.triggered && previousZ < gate.z && crowdZ >= gate.z) triggerGate(gate);
   });
+  if (gameState !== "running") return;
   enemies.forEach((enemy) => {
     if (enemy.triggered) return;
     const dz = Math.abs(crowdZ - enemy.z);
@@ -554,17 +1026,38 @@ function updateCollisions(previousZ) {
     const crowdRadius = clamp(Math.sqrt(Math.min(crowdCount, MAX_RENDER_CROWD)) * 0.16 + 0.45, 0.7, 1.8);
     if (dz < 1.25 && dx < crowdRadius + 0.85) collideEnemy(enemy);
   });
+  if (gameState !== "running") return;
+  hazards.forEach((hazard) => {
+    if (hazard.triggered) return;
+    const dz = Math.abs(crowdZ - hazard.z);
+    const dx = Math.abs(crowdX - hazard.x);
+    if (dz < 1.7 && dx < hazard.width * 0.5 + 0.42) triggerHazard(hazard);
+  });
+  if (gameState !== "running") return;
+  pickups.forEach((pickup) => {
+    if (pickup.triggered) return;
+    const dz = Math.abs(crowdZ - pickup.z);
+    const dx = Math.abs(crowdX - pickup.x);
+    if (dz < 1.6 && dx < 0.9) collectPickup(pickup);
+  });
+  if (gameState !== "running") return;
+  sweepers.forEach((sweeper) => {
+    if (sweeper.triggered) return;
+    const dz = Math.abs(crowdZ - sweeper.z);
+    const dx = Math.abs(crowdX - sweeper.x);
+    if (dz < 1.25 && dx < 1.55) triggerSweeper(sweeper);
+  });
 }
 
 function updateCamera(dt) {
-  const desiredX = crowdX * 0.34;
-  const desiredY = 7.1;
-  const desiredZ = crowdZ - 10.2;
-  const ease = dt ? Math.min(1, dt * 6) : 1;
+  const desiredX = crowdX * 0.58;
+  const desiredY = 5.75;
+  const desiredZ = crowdZ - 6.35;
+  const ease = dt ? Math.min(1, dt * 8.5) : 1;
   camera.position.x += (desiredX - camera.position.x) * ease;
   camera.position.y += (desiredY - camera.position.y) * ease;
   camera.position.z += (desiredZ - camera.position.z) * ease;
-  cameraTarget.set(crowdX * 0.24, 1.1, crowdZ + 11);
+  cameraTarget.set(crowdX * 0.46, 0.95, crowdZ + 3.9);
   camera.lookAt(cameraTarget);
 }
 
@@ -576,8 +1069,10 @@ function updateGame(dt, time) {
   crowdX += (targetX - crowdX) * Math.min(1, dt * 12);
   crowdX = clamp(crowdX, -ROAD_HALF, ROAD_HALF);
   crowdZ += (currentLevel.speed || PLAYER_SPEED) * dt;
+  updateSweepers(time);
   updateCollisions(previousZ);
   updateCrowdInstances(time);
+  updateEffects(dt);
   updateHud();
   if (crowdZ >= currentLevel.length && crowdCount >= 1) {
     crowdZ = currentLevel.length;
@@ -635,6 +1130,7 @@ startButton.addEventListener("click", () => startGame(0));
 restartButton.addEventListener("click", () => startGame(currentLevelIndex));
 nextButton.addEventListener("click", () => startGame(currentLevelIndex + 1));
 leaderboardButton.addEventListener("click", () => window.ZIziLeaderboards?.tangsprint?.open());
+musicButton.addEventListener("click", () => music.toggle());
 pauseButton.addEventListener("click", () => {
   if (gameState === "running") pauseGame();
   else if (gameState === "paused") resumeGame();
