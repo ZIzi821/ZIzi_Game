@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-02T14:46:20.737Z",
+  "updatedAt": "2026-06-02T14:54:37.539Z",
   "leaderboards": {
     "starfall": [
       {
@@ -36,6 +36,13 @@
     "bluecrowd": [],
     "tangsprint": {
       "level1": [
+        {
+          "id": "VjCPTRHkncRz73VrpIji",
+          "nickname": "chen",
+          "score": 346294,
+          "createdAt": "2026-06-02T14:53:18.709Z",
+          "sourceRegion": "web"
+        },
         {
           "id": "QV1oD7I98QJO2kH8kbKm",
           "nickname": "靠",
