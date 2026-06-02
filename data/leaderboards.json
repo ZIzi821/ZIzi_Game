@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-02T15:17:24.895Z",
+  "updatedAt": "2026-06-02T16:56:13.086Z",
   "leaderboards": {
     "starfall": [
       {
@@ -72,6 +72,13 @@
           "score": 97112920,
           "createdAt": "2026-06-02T14:59:34.598Z",
           "sourceRegion": "web"
+        },
+        {
+          "id": "DR9IWv62GjIqgUSX5OC0",
+          "nickname": "ZIzi",
+          "score": 16171540,
+          "createdAt": "2026-06-02T15:41:42.056Z",
+          "sourceRegion": ""
         }
       ]
     },
