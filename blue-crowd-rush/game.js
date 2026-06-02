@@ -257,7 +257,14 @@ const cameraTarget = new THREE.Vector3();
 const gateBoxGeometry = new THREE.BoxGeometry(0.18, 2.6, 0.18);
 const gateTopGeometry = new THREE.BoxGeometry(2.85, 0.18, 0.18);
 const gatePlaneGeometry = new THREE.PlaneGeometry(2.85, 2.1);
+const roadGeometry = new THREE.BoxGeometry(ROAD_WIDTH, 0.24, 1);
+const railGeometry = new THREE.BoxGeometry(0.18, 0.32, 1);
+const laneMarkGeometry = new THREE.BoxGeometry(0.08, 0.025, 5);
+const decorPostGeometry = new THREE.BoxGeometry(0.22, 1.4, 0.22);
+const decorBannerGeometry = new THREE.BoxGeometry(1.1, 0.34, 0.12);
+const finishTileGeometry = new THREE.BoxGeometry(ROAD_WIDTH / 8, 0.04, 1.3);
 const hazardGeometry = new THREE.BoxGeometry(1, 0.1, 3.4);
+const hazardStripeGeometry = new THREE.BoxGeometry(0.42, 0.13, 0.18);
 const pickupGeometry = new THREE.TorusGeometry(0.38, 0.1, 10, 28);
 const sweeperGeometry = new THREE.BoxGeometry(2.25, 0.34, 0.58);
 const warningGeometry = new THREE.PlaneGeometry(1, 4.8);
@@ -342,7 +349,7 @@ class MusicSystem {
 
   toggle() {
     this.enabled = !this.enabled;
-    if (this.enabled && gameState === "running") this.play();
+    if (this.enabled && gameState === "running") startMusic();
     else this.pause();
     this.updateButton();
   }
@@ -419,6 +426,13 @@ class MusicSystem {
 }
 
 const music = new MusicSystem(musicButton);
+
+function startMusic() {
+  music.play().catch((error) => {
+    console.warn("[Tang Sprint] Music playback failed:", error);
+    music.pause();
+  });
+}
 
 const crowdLabel = makeTextSprite("1", {
   color: "#ffffff",
@@ -543,32 +557,34 @@ function updateEffects(dt) {
 
 function createRoad(level) {
   clearGroup(roadGroup);
-  const road = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH, 0.24, level.length + 24), materials.road);
+  const road = new THREE.Mesh(roadGeometry, materials.road);
   road.position.set(0, -0.12, level.length / 2);
+  road.scale.z = level.length + 24;
   road.receiveShadow = true;
   roadGroup.add(road);
 
   for (let x = -ROAD_WIDTH / 2 - 0.32; x <= ROAD_WIDTH / 2 + 0.32; x += ROAD_WIDTH + 0.64) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.32, level.length + 24), materials.side);
+    const rail = new THREE.Mesh(railGeometry, materials.side);
     rail.position.set(x, 0.1, level.length / 2);
+    rail.scale.z = level.length + 24;
     rail.receiveShadow = true;
     roadGroup.add(rail);
   }
 
   for (let z = 12; z < level.length; z += 16) {
-    const mark = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 5), materials.lane);
+    const mark = new THREE.Mesh(laneMarkGeometry, materials.lane);
     mark.position.set(0, 0.025, z);
     roadGroup.add(mark);
   }
 
   for (let z = 24; z < level.length; z += 34) {
     [-1, 1].forEach((side) => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.4, 0.22), materials.side);
+      const post = new THREE.Mesh(decorPostGeometry, materials.side);
       post.position.set(side * (ROAD_WIDTH / 2 + 0.62), 0.7, z);
       post.castShadow = true;
       roadGroup.add(post);
 
-      const banner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.34, 0.12), z % 68 === 24 ? materials.gold : materials.gateRight);
+      const banner = new THREE.Mesh(decorBannerGeometry, z % 68 === 24 ? materials.gold : materials.gateRight);
       banner.position.set(side * (ROAD_WIDTH / 2 + 1.0), 1.36, z + 1.0);
       banner.rotation.y = side * 0.22;
       banner.castShadow = true;
@@ -579,7 +595,7 @@ function createRoad(level) {
   const finish = new THREE.Group();
   finish.position.z = level.length;
   for (let i = 0; i < 8; i += 1) {
-    const tile = new THREE.Mesh(new THREE.BoxGeometry(ROAD_WIDTH / 8, 0.04, 1.3), i % 2 ? materials.lane : materials.finish);
+    const tile = new THREE.Mesh(finishTileGeometry, i % 2 ? materials.lane : materials.finish);
     tile.position.set(-ROAD_WIDTH / 2 + ROAD_WIDTH / 16 + i * (ROAD_WIDTH / 8), 0.06, 0);
     finish.add(tile);
   }
@@ -670,9 +686,10 @@ function createObstacles(level) {
     const parts = [mesh];
 
     for (let i = -1; i <= 1; i += 1) {
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(hazard.width * 0.42, 0.13, 0.18), materials.hazardStripe);
+      const stripe = new THREE.Mesh(hazardStripeGeometry, materials.hazardStripe);
       stripe.position.set(hazard.x + i * hazard.width * 0.24, 0.16, hazard.z);
       stripe.rotation.y = 0.7;
+      stripe.scale.x = hazard.width;
       obstacleGroup.add(stripe);
       parts.push(stripe);
     }
@@ -783,7 +800,7 @@ function startGame(index = currentLevelIndex) {
   gameState = "running";
   lastTime = performance.now();
   hideOverlay();
-  music.play();
+  startMusic();
 }
 
 function pauseGame() {
@@ -798,7 +815,7 @@ function resumeGame() {
   gameState = "running";
   lastTime = performance.now();
   hideOverlay();
-  music.play();
+  startMusic();
 }
 
 function endGame(won) {

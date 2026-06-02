@@ -57,7 +57,7 @@ function withTimeout(promise, ms, label) {
 }
 
 function isLevelGame(gameId) {
-  return Object.hasOwn(LEVEL_GAME_SETS, gameId);
+  return Object.prototype.hasOwnProperty.call(LEVEL_GAME_SETS, gameId);
 }
 
 function normalizeLevelId(gameId, levelId = "") {

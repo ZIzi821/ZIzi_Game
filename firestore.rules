@@ -29,6 +29,18 @@ service cloud.firestore {
       ];
     }
 
+    function validTangSprintLevel(levelId) {
+      return levelId in [
+        'level1',
+        'level2'
+      ];
+    }
+
+    function validLevelLeaderboard(gameId, levelId) {
+      return (gameId == 'chomp' && validChompLevel(levelId)) ||
+        (gameId == 'tangsprint' && validTangSprintLevel(levelId));
+    }
+
     match /messages/{messageId} {
       allow read: if true;
 
@@ -63,11 +75,11 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    match /leaderboards/chomp/levels/{levelId}/scores/{scoreId} {
-      allow read: if validChompLevel(levelId);
+    match /leaderboards/{gameId}/levels/{levelId}/scores/{scoreId} {
+      allow read: if validLevelLeaderboard(gameId, levelId);
 
       allow create: if
-        validChompLevel(levelId) &&
+        validLevelLeaderboard(gameId, levelId) &&
         request.resource.data.keys().hasOnly(['nickname', 'score', 'gameId', 'levelId', 'createdAt']) &&
         request.resource.data.nickname is string &&
         request.resource.data.nickname.size() >= 1 &&
@@ -75,7 +87,7 @@ service cloud.firestore {
         request.resource.data.score is number &&
         request.resource.data.score >= 0 &&
         request.resource.data.score <= 999999999 &&
-        request.resource.data.gameId == 'chomp' &&
+        request.resource.data.gameId == gameId &&
         request.resource.data.levelId == levelId &&
         request.resource.data.createdAt == request.time;
 
