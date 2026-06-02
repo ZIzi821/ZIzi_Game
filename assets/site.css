@@ -253,9 +253,9 @@ p {
 
 .bluecrowd-card {
   --game-bg:
-    linear-gradient(90deg, rgba(36, 144, 255, 0.16) 0 18%, transparent 19% 81%, rgba(255, 75, 100, 0.12) 82%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 4px, transparent 4px 28px),
-    linear-gradient(135deg, rgba(199, 240, 255, 0.9), rgba(168, 236, 212, 0.7) 52%, rgba(255, 220, 138, 0.62));
+    linear-gradient(90deg, rgba(255, 200, 87, 0.22) 0 28%, transparent 29% 74%, rgba(255, 75, 100, 0.14) 75%),
+    linear-gradient(0deg, rgba(38, 48, 68, 0.12) 0 2px, transparent 2px 26px),
+    linear-gradient(135deg, rgba(255, 242, 183, 0.92), rgba(152, 225, 221, 0.72) 52%, rgba(255, 169, 124, 0.58));
 }
 
 .game-visual {
@@ -343,8 +343,9 @@ p {
 
 .chomp-visual {
   background:
-    radial-gradient(circle at 70% 42%, rgba(255, 255, 255, 0.9) 0 5px, transparent 6px),
-    radial-gradient(circle at 82% 58%, rgba(255, 255, 255, 0.82) 0 4px, transparent 5px),
+    radial-gradient(circle at 64% 40%, rgba(255, 255, 255, 0.94) 0 7px, transparent 8px),
+    radial-gradient(circle at 76% 54%, rgba(255, 255, 255, 0.88) 0 6px, transparent 7px),
+    radial-gradient(circle at 88% 68%, rgba(255, 255, 255, 0.8) 0 5px, transparent 6px),
     repeating-linear-gradient(0deg, rgba(49, 92, 170, 0.16) 0 3px, transparent 3px 24px),
     repeating-linear-gradient(90deg, rgba(49, 92, 170, 0.16) 0 3px, transparent 3px 24px),
     linear-gradient(135deg, rgba(255, 188, 216, 0.72), rgba(255, 221, 128, 0.62));
@@ -355,10 +356,10 @@ p {
   position: absolute;
   left: 24px;
   top: 24px;
-  width: 102px;
-  height: 102px;
+  width: 118px;
+  height: 118px;
   border-radius: 50%;
-  background: conic-gradient(from -0.15turn, #ffe15a 0 0.79turn, transparent 0.79turn 0.94turn, #ffe15a 0.94turn);
+  background: conic-gradient(from -0.1turn, #ffe15a 0 0.66turn, transparent 0.66turn 0.92turn, #ffe15a 0.92turn);
   filter: drop-shadow(0 18px 28px rgba(180, 119, 0, 0.2));
 }
 
@@ -367,33 +368,33 @@ p {
   position: absolute;
   width: 10px;
   height: 10px;
-  left: 70px;
-  top: 48px;
+  left: 76px;
+  top: 52px;
   border-radius: 50%;
   background: #263044;
   box-shadow:
-    88px 22px 0 -2px rgba(255, 255, 255, 0.94),
-    128px 56px 0 -3px rgba(255, 255, 255, 0.86),
-    166px 88px 0 -4px rgba(255, 255, 255, 0.78);
+    100px 20px 0 -1px rgba(255, 255, 255, 0.94),
+    146px 52px 0 -2px rgba(255, 255, 255, 0.86),
+    188px 86px 0 -3px rgba(255, 255, 255, 0.78);
 }
 
 .bluecrowd-visual {
   background:
-    linear-gradient(90deg, rgba(31, 144, 255, 0.18) 0 20%, transparent 20% 80%, rgba(255, 75, 100, 0.14) 80%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(219, 249, 255, 0.44)),
-    linear-gradient(90deg, transparent 0 26%, rgba(255, 255, 255, 0.78) 27% 28%, transparent 29% 71%, rgba(255, 255, 255, 0.78) 72% 73%, transparent 74%),
-    linear-gradient(135deg, rgba(36, 144, 255, 0.44), rgba(22, 183, 166, 0.34));
+    linear-gradient(90deg, rgba(255, 200, 87, 0.24) 0 30%, transparent 31% 76%, rgba(255, 75, 100, 0.16) 77%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(240, 255, 248, 0.48)),
+    linear-gradient(90deg, transparent 0 25%, rgba(255, 255, 255, 0.86) 26% 28%, transparent 29% 71%, rgba(255, 255, 255, 0.86) 72% 74%, transparent 75%),
+    linear-gradient(135deg, rgba(255, 200, 87, 0.64), rgba(22, 183, 166, 0.38));
 }
 
 .bluecrowd-visual::before {
-  content: "+10    x2";
+  content: "+80      x3";
   position: absolute;
   left: 26px;
   right: 26px;
   top: 18px;
   display: flex;
   justify-content: space-between;
-  color: #2459a7;
+  color: #8a4d00;
   font-size: 20px;
   font-weight: 950;
   letter-spacing: 0;
@@ -403,20 +404,21 @@ p {
 .bluecrowd-visual::after {
   content: "";
   position: absolute;
-  left: 38px;
-  bottom: 24px;
-  width: 16px;
-  height: 16px;
+  left: 34px;
+  bottom: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #2490ff;
+  background: #ffc857;
   box-shadow:
-    24px -7px 0 1px #2490ff,
-    48px 1px 0 -1px #2490ff,
-    72px -9px 0 0 #2490ff,
-    96px 0 0 -2px #2490ff,
-    138px -5px 0 2px #ff4b64,
-    164px 5px 0 0 #ff4b64,
-    190px -7px 0 1px #ff4b64;
+    8px 1px 0 4px rgba(38, 48, 68, 0.24),
+    28px -10px 0 2px #ffc857,
+    56px 0 0 0 #ffc857,
+    86px -13px 0 1px #ffc857,
+    114px 2px 0 -1px #ffc857,
+    154px -9px 0 3px #ff4b64,
+    184px 4px 0 1px #ff4b64,
+    214px -10px 0 2px #ff4b64;
   filter: drop-shadow(0 12px 12px rgba(35, 48, 68, 0.18));
 }
 

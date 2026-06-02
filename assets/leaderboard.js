@@ -6,8 +6,14 @@ import {
   openIssueForItems
 } from "./sync-code.js";
 
-const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", "chomp"]);
-const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
+const LEVEL_GAME_LEVELS = {
+  chomp: ["level1", "level2", "level3", "level4"],
+  tangsprint: ["level1", "level2"]
+};
+const LEVEL_GAME_SETS = Object.fromEntries(
+  Object.entries(LEVEL_GAME_LEVELS).map(([gameId, levels]) => [gameId, new Set(levels)])
+);
+const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", ...Object.keys(LEVEL_GAME_LEVELS)]);
 const MAX_NAME = 20;
 const MAX_SCORE = 999999999;
 const TOP_LIMIT = 20;
@@ -50,22 +56,31 @@ function withTimeout(promise, ms, label) {
   ]);
 }
 
+function isLevelGame(gameId) {
+  return Object.hasOwn(LEVEL_GAME_SETS, gameId);
+}
+
 function normalizeLevelId(gameId, levelId = "") {
   const cleanLevelId = cleanText(levelId, 40);
-  if (gameId !== "chomp") return "";
-  return VALID_CHOMP_LEVELS.has(cleanLevelId) ? cleanLevelId : "level1";
+  if (!isLevelGame(gameId)) return "";
+  const levels = LEVEL_GAME_SETS[gameId];
+  return levels.has(cleanLevelId) ? cleanLevelId : LEVEL_GAME_LEVELS[gameId][0];
 }
 
 function getScoreCollection(firebase, gameId, levelId = "") {
-  if (gameId === "chomp") {
+  if (isLevelGame(gameId)) {
     return firebase.collection(firebase.db, "leaderboards", gameId, "levels", normalizeLevelId(gameId, levelId), "scores");
   }
   return firebase.collection(firebase.db, "leaderboards", gameId, "scores");
 }
 
 function getScorePath(gameId, levelId = "") {
-  if (gameId === "chomp") return `leaderboards/${gameId}/levels/${normalizeLevelId(gameId, levelId)}/scores`;
+  if (isLevelGame(gameId)) return `leaderboards/${gameId}/levels/${normalizeLevelId(gameId, levelId)}/scores`;
   return `leaderboards/${gameId}/scores`;
+}
+
+function describeError(error) {
+  return cleanText(error?.code || error?.message || String(error || "unknown error"), 140);
 }
 
 function mapScoreDoc(doc) {
@@ -128,8 +143,8 @@ async function fetchCachedRows(gameId, levelId, limitCount) {
   const response = await fetch(CACHE_URL, { cache: "no-store" });
   if (!response.ok) throw new Error(`Cache request failed: ${response.status}`);
   const payload = await response.json();
-  const source = gameId === "chomp"
-    ? payload?.leaderboards?.chomp?.[normalizeLevelId(gameId, levelId)]
+  const source = isLevelGame(gameId)
+    ? payload?.leaderboards?.[gameId]?.[normalizeLevelId(gameId, levelId)]
     : payload?.leaderboards?.[gameId];
   return sortRows(Array.isArray(source) ? source : [], limitCount);
 }
@@ -471,7 +486,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       const firebase = await getFirebase();
       const ref = getScoreCollection(firebase, gameId, levelId);
       const data = { nickname, score, gameId, createdAt: firebase.serverTimestamp() };
-      if (gameId === "chomp") data.levelId = levelId;
+      if (isLevelGame(gameId)) data.levelId = levelId;
       await withTimeout(firebase.addDoc(ref, data), FIREBASE_TIMEOUT_MS, "Firebase score submit");
       form.hidden = true;
       levelSelect.disabled = false;
@@ -485,7 +500,7 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
         error
       });
       showPendingSync(pendingItem);
-      setStatus("Firebase 暂时无法连接，你的分数没有自动提交。 / Firebase is temporarily unavailable. Your score was not submitted automatically.", true);
+      setStatus(`Firebase 暂时无法连接，你的分数没有自动提交。 / Firebase is temporarily unavailable. Reason: ${describeError(error)}`, true);
     } finally {
       submit.disabled = false;
     }

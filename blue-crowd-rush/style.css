@@ -3,7 +3,7 @@
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
   --ink: #233044;
   --muted: #5a6a82;
-  --blue: #2490ff;
+  --blue: #2f7fff;
   --teal: #16b7a6;
   --red: #ff4b64;
   --gold: #f5b642;
@@ -23,7 +23,7 @@ body {
   margin: 0;
   overflow: hidden;
   color: var(--ink);
-  background: #9fdaf8;
+  background: #a7dff1;
 }
 
 button,
@@ -35,7 +35,7 @@ a {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: linear-gradient(180deg, #8bd3ff 0%, #dff7ff 58%, #fef5d3 100%);
+  background: linear-gradient(180deg, #a8ddf2 0%, #e9fbff 54%, #fff3c9 100%);
 }
 
 #gameCanvas {
@@ -241,7 +241,7 @@ p {
 .dialog-actions button:first-child,
 .dialog-actions button:not([hidden]) {
   color: #ffffff;
-  background: linear-gradient(135deg, var(--teal), var(--blue));
+  background: linear-gradient(135deg, #f3a712, #d84c35);
   border-color: transparent;
 }
 

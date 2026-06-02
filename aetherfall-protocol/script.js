@@ -18,6 +18,13 @@ const ui = {
   restart: document.getElementById("restartButton"),
   upgradeOverlay: document.getElementById("upgradeOverlay"),
   upgradeCards: document.getElementById("upgradeCards"),
+  bossHud: document.getElementById("bossHud"),
+  bossOneRow: document.getElementById("bossOneRow"),
+  bossTwoRow: document.getElementById("bossTwoRow"),
+  bossOneBar: document.getElementById("bossOneBar"),
+  bossTwoBar: document.getElementById("bossTwoBar"),
+  bossOneValue: document.getElementById("bossOneValue"),
+  bossTwoValue: document.getElementById("bossTwoValue"),
 };
 
 const TAU = Math.PI * 2;
@@ -144,7 +151,9 @@ class Enemy extends Entity {
       seeker: { r: 16, hp: 36, speed: 82, color: "#ff5d73", score: 45 },
       skitter: { r: 10, hp: 18, speed: 142, color: "#ffc857", score: 30 },
       bulwark: { r: 24, hp: 130, speed: 46, color: "#65a8ff", score: 120 },
-      warden: { r: 36, hp: 680, speed: 55, color: "#d7ff65", score: 900 },
+      warden: { r: 36, hp: 940, speed: 55, color: "#d7ff65", score: 900, bossSlot: 1 },
+      wardenOne: { r: 38, hp: 1100, speed: 54, color: "#d7ff65", score: 1200, bossSlot: 1 },
+      wardenTwo: { r: 44, hp: 1850, speed: 66, color: "#ff5dff", score: 2200, bossSlot: 2 },
     };
     const spec = specs[type];
     super(x, y, spec.r);
@@ -168,14 +177,26 @@ class Enemy extends Entity {
       this.vy *= 0.74;
     }
 
-    if (this.type === "warden") {
+    if (this.bossSlot) {
       this.vx += Math.cos(game.time * 0.9) * 38;
       this.vy += Math.sin(game.time * 1.1) * 38;
+      if (this.bossSlot === 2) {
+        this.vx += Math.cos(game.time * 1.8 + this.phase) * 54;
+        this.vy += Math.sin(game.time * 1.6 + this.phase) * 54;
+      }
       this.attackTimer -= dt;
       if (this.attackTimer <= 0) {
-        this.attackTimer = Math.max(0.55, 1.55 - game.wave * 0.025);
-        for (let i = 0; i < 14; i++) {
-          game.enemyShots.push(new EnemyShot(this.x, this.y, (i / 14) * TAU + game.time * 0.7));
+        const shotCount = this.bossSlot === 2 ? 20 : 14;
+        this.attackTimer = this.bossSlot === 2 ? Math.max(0.42, 1.12 - game.wave * 0.02) : Math.max(0.55, 1.55 - game.wave * 0.025);
+        for (let i = 0; i < shotCount; i++) {
+          const spin = this.bossSlot === 2 ? game.time * 1.25 : game.time * 0.7;
+          game.enemyShots.push(new EnemyShot(this.x, this.y, (i / shotCount) * TAU + spin, this.bossSlot === 2 ? 178 : 145, this.color, this.bossSlot === 2 ? 8 : 7, this.bossSlot === 2 ? 22 : 18));
+        }
+        if (this.bossSlot === 2) {
+          const aim = Math.atan2(player.y - this.y, player.x - this.x);
+          [-0.22, 0, 0.22].forEach((spread) => {
+            game.enemyShots.push(new EnemyShot(this.x, this.y, aim + spread, 235, "#ffc857", 6, 24));
+          });
         }
       }
     }
@@ -189,10 +210,11 @@ class Enemy extends Entity {
     if (this.hp <= 0) {
       this.dead = true;
       game.score += this.score;
-      const shards = this.type === "warden" ? 16 : this.type === "bulwark" ? 5 : 2;
+      const shards = this.bossSlot ? 20 + this.bossSlot * 8 : this.type === "bulwark" ? 5 : 2;
       for (let i = 0; i < shards; i++) game.pickups.push(new Shard(this.x, this.y));
       game.audio.hit();
-      game.burst(this.x, this.y, this.color, this.type === "warden" ? 70 : 22);
+      game.burst(this.x, this.y, this.color, this.bossSlot ? 80 + this.bossSlot * 28 : 22);
+      if (this.bossSlot) game.onBossDefeated(this);
     }
   }
 
@@ -205,11 +227,12 @@ class Enemy extends Entity {
     ctx.shadowColor = this.color;
     ctx.fillStyle = "rgba(8, 10, 13, 0.88)";
     ctx.strokeStyle = this.color;
-    ctx.lineWidth = this.type === "warden" ? 4 : 2;
+    ctx.lineWidth = this.bossSlot ? 4 : 2;
     ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * TAU + this.phase;
-      const r = this.radius * (i % 2 ? 0.75 : 1.1);
+    const points = this.bossSlot === 2 ? 8 : 6;
+    for (let i = 0; i < points; i++) {
+      const a = (i / points) * TAU + this.phase;
+      const r = this.radius * (i % 2 ? (this.bossSlot === 2 ? 0.55 : 0.75) : 1.12);
       const x = Math.cos(a) * r;
       const y = Math.sin(a) * r;
       if (i === 0) ctx.moveTo(x, y);
@@ -219,11 +242,22 @@ class Enemy extends Entity {
     ctx.fill();
     ctx.stroke();
 
-    if (this.type === "warden") {
-      ctx.strokeStyle = "rgba(215, 255, 101, 0.38)";
+    if (this.bossSlot) {
+      ctx.strokeStyle = this.bossSlot === 2 ? "rgba(255, 93, 255, 0.42)" : "rgba(215, 255, 101, 0.38)";
       ctx.beginPath();
       ctx.arc(0, 0, this.radius + 13, 0, TAU);
       ctx.stroke();
+      if (this.bossSlot === 2) {
+        ctx.rotate(-this.phase * 0.5);
+        ctx.strokeStyle = "rgba(255, 200, 87, 0.58)";
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius - 20);
+        ctx.lineTo(this.radius + 20, 0);
+        ctx.lineTo(0, this.radius + 20);
+        ctx.lineTo(-this.radius - 20, 0);
+        ctx.closePath();
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -231,11 +265,13 @@ class Enemy extends Entity {
 }
 
 class EnemyShot extends Entity {
-  constructor(x, y, angle) {
-    super(x, y, 7);
-    this.vx = Math.cos(angle) * 145;
-    this.vy = Math.sin(angle) * 145;
+  constructor(x, y, angle, speed = 145, color = "#d7ff65", radius = 7, damage = 18) {
+    super(x, y, radius);
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
     this.life = 4.5;
+    this.color = color;
+    this.damage = damage;
   }
 
   update(game, dt) {
@@ -247,8 +283,8 @@ class EnemyShot extends Entity {
   draw(ctx) {
     ctx.save();
     ctx.shadowBlur = 16;
-    ctx.shadowColor = "#d7ff65";
-    ctx.fillStyle = "#d7ff65";
+    ctx.shadowColor = this.color;
+    ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, TAU);
     ctx.fill();
@@ -573,7 +609,10 @@ class Game {
     this.waveTimer = 12;
     this.shake = 0;
     this.difficulty = 1;
-    this.bossSpawned = false;
+    this.bossStage = 0;
+    this.bossDelay = 0;
+    this.bossOne = null;
+    this.bossTwo = null;
   }
 
   start() {
@@ -650,6 +689,10 @@ class Game {
     this.waveTimer -= dt;
     if (this.waveTimer <= 0) this.nextWave();
     if (this.spawnTimer <= 0) this.spawnEnemyPack();
+    if (this.bossStage === 2) {
+      this.bossDelay = Math.max(0, this.bossDelay - dt);
+      if (this.bossDelay <= 0) this.spawnSecondBoss();
+    }
 
     for (const item of [...this.projectiles, ...this.enemyShots]) item.update(this, dt);
     for (const enemy of this.enemies) enemy.update(this, dt);
@@ -667,11 +710,35 @@ class Game {
     this.waveTimer = Math.max(8, 13 - this.wave * 0.35);
     this.spawnTimer = 0.05;
     this.score += 120 + this.wave * 20;
-    if (this.wave === 12 && !this.bossSpawned) {
-      this.bossSpawned = true;
+    if (this.wave === 12 && this.bossStage === 0) {
       const p = this.spawnPoint(90);
-      this.enemies.push(new Enemy(this, "warden", p.x, p.y));
+      this.bossStage = 1;
+      this.bossOne = new Enemy(this, "wardenOne", p.x, p.y);
+      this.enemies.push(this.bossOne);
       this.audio.level();
+    }
+  }
+
+  spawnSecondBoss() {
+    if (this.bossStage !== 2) return;
+    const p = this.spawnPoint(110);
+    this.bossStage = 3;
+    this.bossTwo = new Enemy(this, "wardenTwo", p.x, p.y);
+    this.enemies.push(this.bossTwo);
+    this.waveTimer = Math.max(this.waveTimer, 9);
+    this.audio.level();
+  }
+
+  onBossDefeated(enemy) {
+    if (enemy.bossSlot === 1 && this.bossStage === 1) {
+      this.bossStage = 2;
+      this.bossDelay = 30;
+      this.score += 500;
+      return;
+    }
+    if (enemy.bossSlot === 2 && this.bossStage === 3) {
+      this.bossStage = 4;
+      this.end(true);
     }
   }
 
@@ -715,8 +782,8 @@ class Game {
     for (const enemy of this.enemies) {
       const r = enemy.radius + this.player.radius;
       if (!enemy.dead && distSq(enemy, this.player) < r * r) {
-        enemy.dead = enemy.type !== "warden";
-        this.player.hurt(this, enemy.type === "warden" ? 32 : enemy.type === "bulwark" ? 28 : 18);
+        enemy.dead = !enemy.bossSlot;
+        this.player.hurt(this, enemy.bossSlot === 2 ? 42 : enemy.bossSlot === 1 ? 34 : enemy.type === "bulwark" ? 28 : 18);
       }
     }
 
@@ -724,12 +791,8 @@ class Game {
       const r = shot.radius + this.player.radius;
       if (!shot.dead && distSq(shot, this.player) < r * r) {
         shot.dead = true;
-        this.player.hurt(this, 18);
+        this.player.hurt(this, shot.damage);
       }
-    }
-
-    if (this.bossSpawned && this.wave >= 12 && !this.enemies.some((e) => e.type === "warden" && !e.dead)) {
-      this.end(true);
     }
   }
 
@@ -796,6 +859,24 @@ class Game {
     ui.health.style.transform = `scaleX(${clamp(this.player.health / this.player.maxHealth, 0, 1)})`;
     ui.shield.style.transform = `scaleX(${clamp(this.player.shield / this.player.maxShield, 0, 1)})`;
     ui.pulse.style.transform = `scaleX(${1 - clamp(this.player.pulseCooldown / this.player.pulseCooldownMax, 0, 1)})`;
+    this.updateBossHud();
+  }
+
+  updateBossHud() {
+    ui.bossHud.hidden = this.bossStage === 0 || this.state === "menu" || this.state === "gameover";
+    if (ui.bossHud.hidden) return;
+    const bossOneRatio = this.bossOne ? clamp(this.bossOne.hp / this.bossOne.maxHp, 0, 1) : 0;
+    const bossTwoRatio = this.bossTwo ? clamp(this.bossTwo.hp / this.bossTwo.maxHp, 0, 1) : 0;
+    ui.bossOneBar.style.transform = `scaleX(${bossOneRatio})`;
+    ui.bossOneValue.textContent = this.bossStage <= 1 ? `${Math.ceil(bossOneRatio * 100)}%` : "Down";
+    ui.bossTwoBar.style.transform = `scaleX(${this.bossStage === 2 ? 0 : bossTwoRatio})`;
+    if (this.bossStage === 2) {
+      ui.bossTwoValue.textContent = `${Math.ceil(this.bossDelay)}s`;
+    } else if (this.bossStage >= 3) {
+      ui.bossTwoValue.textContent = `${Math.ceil(bossTwoRatio * 100)}%`;
+    } else {
+      ui.bossTwoValue.textContent = "Locked";
+    }
   }
 
   draw() {

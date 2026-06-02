@@ -39,9 +39,9 @@
 
         <a class="game bluecrowd-card" href="blue-crowd-rush/">
           <span class="game-visual bluecrowd-visual" aria-hidden="true"><span></span></span>
-          <strong>Blue Crowd Rush / 蓝色人群冲刺</strong>
-          <span>带领蓝色人群穿过增益门、躲避红色敌人，尽可能多地冲到终点。</span>
-          <span>Lead the blue crowd through boost gates, dodge red rivals, and rush as many runners to the finish as you can.</span>
+          <strong>唐人冲刺 / Tang people sprint</strong>
+          <span>带领金色冲刺队穿过超长增益路线，躲开密集敌人，每关都有独立榜单。</span>
+          <span>Lead a golden sprint team through long boost lanes and climb each level board.</span>
           <b>开始游戏 / Play</b>
         </a>
 
@@ -58,7 +58,7 @@
         <div class="section-head">
           <div>
             <h2>排行榜总览 / Leaderboard Overview</h2>
-            <p class="intro">展示每个游戏的 Top 5。Chomp 会同时显示 Level 1、Level 2、Level 3、Level 4 四个榜单。</p>
+            <p class="intro">展示每个游戏的 Top 5。唐人冲刺显示 Level 1、Level 2 两个榜单，Chomp 显示四个独立榜单。</p>
           </div>
           <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
         </div>
@@ -71,9 +71,18 @@
             <h3>Sentinel / 哨兵防线</h3>
             <div class="lb-list" id="lb-sentinel"><p class="lb-empty">加载中 / Loading...</p></div>
           </article>
-          <article class="lb-card" data-board="bluecrowd">
-            <h3>Blue Crowd Rush / 蓝色人群冲刺</h3>
-            <div class="lb-list" id="lb-bluecrowd"><p class="lb-empty">加载中 / Loading...</p></div>
+          <article class="lb-card" data-board="tangsprint">
+            <h3>唐人冲刺 / Tang people sprint</h3>
+            <div class="chomp-levels">
+              <section class="chomp-level">
+                <h4>Level 1 / 长街冲刺</h4>
+                <div class="lb-list" id="lb-tangsprint-level1"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 2 / 远路极限</h4>
+                <div class="lb-list" id="lb-tangsprint-level2"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+            </div>
           </article>
           <article class="lb-card" data-board="chomp">
             <h3>Chomp / 大口吃</h3>
@@ -105,7 +114,8 @@
       const boards = {
         starfall: document.getElementById("lb-starfall"),
         sentinel: document.getElementById("lb-sentinel"),
-        bluecrowd: document.getElementById("lb-bluecrowd"),
+        tangLevel1: document.getElementById("lb-tangsprint-level1"),
+        tangLevel2: document.getElementById("lb-tangsprint-level2"),
         chompLevel1: document.getElementById("lb-chomp-level1"),
         chompLevel2: document.getElementById("lb-chomp-level2"),
         chompLevel3: document.getElementById("lb-chomp-level3"),
@@ -138,10 +148,11 @@
       async function loadOverview() {
         try {
           const module = await import("./assets/leaderboard.js");
-          const [starfall, sentinel, bluecrowd, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
+          const [starfall, sentinel, tangLevel1, tangLevel2, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
             module.fetchLeaderboardRows({ gameId: "starfall", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "sentinel", limit: 5 }),
-            module.fetchLeaderboardRows({ gameId: "bluecrowd", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level1", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 }),
@@ -149,7 +160,8 @@
           ]);
           renderRows(boards.starfall, starfall);
           renderRows(boards.sentinel, sentinel);
-          renderRows(boards.bluecrowd, bluecrowd);
+          renderRows(boards.tangLevel1, tangLevel1);
+          renderRows(boards.tangLevel2, tangLevel2);
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);

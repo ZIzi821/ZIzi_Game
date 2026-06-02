@@ -8,8 +8,11 @@ import { exportAll } from "./export-cache.mjs";
 const MAX_NAME = 20;
 const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
-const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", "chomp"]);
-const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
+const LEVEL_GAMES = {
+  chomp: new Set(["level1", "level2", "level3", "level4"]),
+  tangsprint: new Set(["level1", "level2"])
+};
+const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", ...Object.keys(LEVEL_GAMES)]);
 const SYNC_RE = /ZIZI-SYNC:([A-Za-z0-9+/=_-]+)/;
 
 function cleanText(value, max) {
@@ -51,9 +54,9 @@ function normalizeItem(item) {
   const score = Number(item?.score);
   if (!VALID_GAMES.has(gameId)) throw new Error("Invalid gameId.");
   if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) throw new Error("Invalid score.");
-  if (gameId === "chomp" && !VALID_CHOMP_LEVELS.has(levelId)) throw new Error("Invalid Chomp levelId.");
-  if (gameId !== "chomp" && levelId) throw new Error("Only Chomp scores can include levelId.");
-  return { ...base, gameId, levelId: gameId === "chomp" ? levelId : "", score };
+  if (LEVEL_GAMES[gameId] && !LEVEL_GAMES[gameId].has(levelId)) throw new Error("Invalid levelId.");
+  if (!LEVEL_GAMES[gameId] && levelId) throw new Error("Only level-based scores can include levelId.");
+  return { ...base, gameId, levelId: LEVEL_GAMES[gameId] ? levelId : "", score };
 }
 
 function parseSyncItems(body) {
@@ -92,6 +95,8 @@ async function scoreExists(db, syncId) {
     db.collection("leaderboards").doc("starfall").collection("scores"),
     db.collection("leaderboards").doc("sentinel").collection("scores"),
     db.collection("leaderboards").doc("bluecrowd").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores"),
@@ -105,7 +110,7 @@ async function scoreExists(db, syncId) {
 }
 
 function scoreCollection(db, item) {
-  if (item.gameId === "chomp") {
+  if (LEVEL_GAMES[item.gameId]) {
     return db.collection("leaderboards").doc(item.gameId).collection("levels").doc(item.levelId).collection("scores");
   }
   return db.collection("leaderboards").doc(item.gameId).collection("scores");
@@ -136,7 +141,7 @@ async function writeItem(db, item, issueNumber) {
     syncedAt: admin.firestore.FieldValue.serverTimestamp(),
     sourceIssueNumber: issueNumber
   };
-  if (item.gameId === "chomp") data.levelId = item.levelId;
+  if (LEVEL_GAMES[item.gameId]) data.levelId = item.levelId;
   await scoreCollection(db, item).add(data);
   return { skipped: false, id: item.id };
 }
@@ -179,6 +184,10 @@ async function exportLeaderboards(db) {
     starfall: await exportScorePath(db.collection("leaderboards").doc("starfall").collection("scores")),
     sentinel: await exportScorePath(db.collection("leaderboards").doc("sentinel").collection("scores")),
     bluecrowd: await exportScorePath(db.collection("leaderboards").doc("bluecrowd").collection("scores")),
+    tangsprint: {
+      level1: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores")),
+      level2: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores"))
+    },
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),
       level2: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores")),

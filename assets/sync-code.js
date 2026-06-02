@@ -2,8 +2,11 @@ const PENDING_KEY = "ziziPendingSyncItems";
 const MAX_NAME = 20;
 const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
-const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", "chomp"]);
-const VALID_CHOMP_LEVELS = new Set(["level1", "level2", "level3", "level4"]);
+const LEVEL_GAMES = {
+  chomp: new Set(["level1", "level2", "level3", "level4"]),
+  tangsprint: new Set(["level1", "level2"])
+};
+const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", ...Object.keys(LEVEL_GAMES)]);
 const ISSUE_URL = "https://github.com/ZIzi821/ZIzi_Game/issues/new";
 
 function textToBase64(text) {
@@ -68,12 +71,12 @@ export function normalizeSyncItem(item) {
   const score = Number(item?.score);
   if (!VALID_GAMES.has(gameId)) throw new Error("Invalid gameId.");
   if (!Number.isInteger(score) || score < 0 || score > MAX_SCORE) throw new Error("Invalid score.");
-  if (gameId === "chomp" && !VALID_CHOMP_LEVELS.has(levelId)) throw new Error("Invalid Chomp levelId.");
-  if (gameId !== "chomp" && levelId) throw new Error("Only Chomp scores can include levelId.");
+  if (LEVEL_GAMES[gameId] && !LEVEL_GAMES[gameId].has(levelId)) throw new Error("Invalid levelId.");
+  if (!LEVEL_GAMES[gameId] && levelId) throw new Error("Only level-based scores can include levelId.");
   return {
     ...base,
     gameId,
-    levelId: gameId === "chomp" ? levelId : "",
+    levelId: LEVEL_GAMES[gameId] ? levelId : "",
     score
   };
 }

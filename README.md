@@ -14,7 +14,7 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 
 - [Starfall / 星坠](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)
 - [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)
-- [Blue Crowd Rush / 蓝色人群冲刺](https://zizi821.github.io/ZIzi_Game/blue-crowd-rush/)
+- [Tang people sprint / 唐人冲刺](https://zizi821.github.io/ZIzi_Game/blue-crowd-rush/)
 - [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
 
 ## Unified Community
@@ -36,6 +36,7 @@ Score documents are stored at:
 
 ```text
 leaderboards/{gameId}/scores/{scoreId}
+leaderboards/tangsprint/levels/{levelId}/scores/{scoreId}
 leaderboards/chomp/levels/{levelId}/scores/{scoreId}
 ```
 
@@ -45,7 +46,15 @@ Supported game IDs:
 starfall
 sentinel
 bluecrowd
+tangsprint
 chomp
+```
+
+Supported Tang people sprint level IDs:
+
+```text
+level1
+level2
 ```
 
 Supported Chomp level IDs:
@@ -99,6 +108,14 @@ FIREBASE_SERVICE_ACCOUNT_JSON
 ```
 
 This must be the full Firebase Admin service account JSON. Do not commit it to the repository.
+
+## Firebase Rules Deploy
+
+GitHub Pages does not deploy Firestore security rules. After editing `firestore.rules`, deploy the backend rules separately:
+
+```powershell
+npx firebase-tools deploy --only firestore:rules --project zizicommunity
+```
 
 ## Local Test
 

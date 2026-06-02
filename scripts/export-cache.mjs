@@ -75,6 +75,10 @@ export async function exportLeaderboards(db) {
     starfall: await exportScorePath(db.collection("leaderboards").doc("starfall").collection("scores")),
     sentinel: await exportScorePath(db.collection("leaderboards").doc("sentinel").collection("scores")),
     bluecrowd: await exportScorePath(db.collection("leaderboards").doc("bluecrowd").collection("scores")),
+    tangsprint: {
+      level1: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores")),
+      level2: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores"))
+    },
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),
       level2: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores")),

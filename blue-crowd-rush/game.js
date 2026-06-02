@@ -1,8 +1,8 @@
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 import { setupLeaderboard } from "../assets/leaderboard.js";
 
-const GAME_ID = "bluecrowd";
-const GAME_NAME = "Blue Crowd Rush / 蓝色人群冲刺";
+const GAME_ID = "tangsprint";
+const GAME_NAME = "唐人冲刺 / Tang people sprint";
 const ROAD_WIDTH = 9;
 const ROAD_HALF = ROAD_WIDTH / 2 - 0.48;
 const MAX_RENDER_CROWD = 100;
@@ -13,57 +13,69 @@ const POINTER_SCALE = 0.018;
 
 const levels = [
   {
-    name: "Level 1 / 教学关",
-    length: 180,
-    startCount: 1,
-    speed: 9,
-    gates: [
-      { z: 30, left: "+10", right: "x2" },
-      { z: 78, left: "+15", right: "+8" },
-      { z: 128, left: "x2", right: "+20" }
-    ],
-    enemies: [
-      { z: 55, x: 2.5, count: 8 },
-      { z: 108, x: -2.4, count: 12 },
-      { z: 158, x: 0, count: 18 }
-    ]
-  },
-  {
-    name: "Level 2 / 中等冲刺",
-    length: 245,
-    startCount: 8,
-    speed: 10,
+    id: "level1",
+    name: "Level 1 / 长街冲刺",
+    length: 560,
+    startCount: 4,
+    speed: 9.8,
     gates: [
       { z: 32, left: "+12", right: "x2" },
-      { z: 84, left: "x2", right: "+25" },
-      { z: 138, left: "+18", right: "x3" },
-      { z: 194, left: "x2", right: "+30" }
+      { z: 88, left: "x2", right: "+18" },
+      { z: 144, left: "+26", right: "x3" },
+      { z: 212, left: "x2", right: "+34" },
+      { z: 284, left: "+45", right: "x2" },
+      { z: 352, left: "x3", right: "+36" },
+      { z: 432, left: "+62", right: "x2" },
+      { z: 506, left: "x2", right: "+80" }
     ],
     enemies: [
-      { z: 58, x: -2.7, count: 15 },
-      { z: 112, x: 2.7, count: 24 },
-      { z: 166, x: 0, count: 36 },
-      { z: 220, x: -2.3, count: 48 }
+      { z: 58, x: 2.6, count: 18 },
+      { z: 96, x: -2.7, count: 24 },
+      { z: 132, x: 0.2, count: 36 },
+      { z: 184, x: -3.1, count: 42 },
+      { z: 238, x: 2.9, count: 58 },
+      { z: 316, x: -0.2, count: 78 },
+      { z: 386, x: -2.5, count: 92 },
+      { z: 420, x: 2.5, count: 108 },
+      { z: 478, x: 0, count: 128 },
+      { z: 532, x: -2.7, count: 145 }
     ]
   },
   {
-    name: "Level 3 / 红色夹击",
-    length: 310,
-    startCount: 12,
-    speed: 10.8,
+    id: "level2",
+    name: "Level 2 / 远路极限",
+    length: 920,
+    startCount: 10,
+    speed: 10.6,
     gates: [
-      { z: 36, left: "x2", right: "+20" },
-      { z: 90, left: "+25", right: "x3" },
-      { z: 148, left: "x2", right: "+35" },
-      { z: 210, left: "+45", right: "x2" },
-      { z: 266, left: "x3", right: "+30" }
+      { z: 36, left: "+20", right: "x2" },
+      { z: 108, left: "x2", right: "+34" },
+      { z: 180, left: "+42", right: "x3" },
+      { z: 252, left: "x2", right: "+58" },
+      { z: 326, left: "+70", right: "x2" },
+      { z: 406, left: "x3", right: "+62" },
+      { z: 492, left: "+82", right: "x2" },
+      { z: 574, left: "x2", right: "+96" },
+      { z: 662, left: "+120", right: "x3" },
+      { z: 754, left: "x2", right: "+140" },
+      { z: 846, left: "+160", right: "x2" }
     ],
     enemies: [
-      { z: 64, x: 0, count: 20 },
-      { z: 122, x: -2.8, count: 34 },
-      { z: 180, x: 2.6, count: 52 },
-      { z: 238, x: 0.2, count: 70 },
-      { z: 288, x: -2.6, count: 82 }
+      { z: 70, x: -2.9, count: 35 },
+      { z: 118, x: 2.8, count: 52 },
+      { z: 164, x: 0, count: 68 },
+      { z: 218, x: -3.0, count: 86 },
+      { z: 300, x: 2.9, count: 112 },
+      { z: 366, x: -0.2, count: 140 },
+      { z: 438, x: -2.8, count: 170 },
+      { z: 470, x: 2.8, count: 190 },
+      { z: 544, x: 0.1, count: 215 },
+      { z: 604, x: -3.1, count: 240 },
+      { z: 636, x: 3.1, count: 265 },
+      { z: 704, x: -0.2, count: 310 },
+      { z: 782, x: 2.6, count: 360 },
+      { z: 820, x: -2.6, count: 385 },
+      { z: 882, x: 0, count: 430 }
     ]
   }
 ];
@@ -83,16 +95,18 @@ const hudScore = document.getElementById("hudScore");
 const progressFill = document.getElementById("progressFill");
 
 window.ZIziLeaderboards = window.ZIziLeaderboards || {};
-window.ZIziLeaderboards.bluecrowd = setupLeaderboard({
+window.ZIziLeaderboards.tangsprint = setupLeaderboard({
   gameId: GAME_ID,
-  gameName: GAME_NAME
+  gameName: GAME_NAME,
+  levels: levels.map((level) => ({ id: level.id, name: level.name })),
+  getLevelId: () => currentLevel?.id || "level1"
 });
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9fdaf8);
-scene.fog = new THREE.Fog(0x9fdaf8, 60, 250);
+scene.fog = new THREE.Fog(0x9fdaf8, 80, 720);
 
-const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
@@ -118,7 +132,8 @@ const materials = {
   lane: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62 }),
   side: new THREE.MeshStandardMaterial({ color: 0x7ad7c6, roughness: 0.5 }),
   finish: new THREE.MeshStandardMaterial({ color: 0x263044, roughness: 0.42 }),
-  blue: new THREE.MeshStandardMaterial({ color: 0x1689ff, roughness: 0.42, metalness: 0.02 }),
+  blue: new THREE.MeshStandardMaterial({ color: 0xffc857, roughness: 0.38, metalness: 0.02, emissive: 0x7a3200, emissiveIntensity: 0.16 }),
+  runnerOutline: new THREE.MeshBasicMaterial({ color: 0x191f2d }),
   red: new THREE.MeshStandardMaterial({ color: 0xff4258, roughness: 0.48, metalness: 0.02 }),
   gateLeft: new THREE.MeshStandardMaterial({ color: 0x21c7ad, transparent: true, opacity: 0.28, roughness: 0.25 }),
   gateRight: new THREE.MeshStandardMaterial({ color: 0x5b8def, transparent: true, opacity: 0.28, roughness: 0.25 }),
@@ -127,12 +142,15 @@ const materials = {
 };
 
 const crowdGeometry = new THREE.CapsuleGeometry(0.18, 0.42, 4, 8);
+const runnerOutline = new THREE.InstancedMesh(crowdGeometry, materials.runnerOutline, MAX_RENDER_CROWD);
+scene.add(runnerOutline);
+
 const blueCrowd = new THREE.InstancedMesh(crowdGeometry, materials.blue, MAX_RENDER_CROWD);
 blueCrowd.castShadow = true;
 blueCrowd.receiveShadow = true;
 scene.add(blueCrowd);
 
-const enemyCrowd = new THREE.InstancedMesh(crowdGeometry, materials.red, 350);
+const enemyCrowd = new THREE.InstancedMesh(crowdGeometry, materials.red, 900);
 enemyCrowd.castShadow = true;
 enemyCrowd.receiveShadow = true;
 scene.add(enemyCrowd);
@@ -357,7 +375,7 @@ function setOverlay(mode, details = "") {
   leaderboardButton.hidden = mode === "menu";
   if (mode === "menu") {
     overlayTitle.textContent = GAME_NAME;
-    overlayText.textContent = "Lead the blue crowd through boost gates, dodge red rivals, and rush as many runners to the finish as you can.";
+    overlayText.textContent = "Lead the golden sprint team through long boost lanes, dodge dense rival crowds, and finish with the biggest surviving group.";
   } else if (mode === "paused") {
     overlayTitle.textContent = "Paused / 已暂停";
     overlayText.textContent = "Press P or Esc to keep running. / 按 P 或 Esc 继续冲刺。";
@@ -421,7 +439,7 @@ function endGame(won) {
   finalScore = won ? crowdCount : Math.max(0, Math.floor(crowdCount * 0.35 + progress * 18));
   if (!submittedThisRun) {
     submittedThisRun = true;
-    window.ZIziLeaderboards?.bluecrowd?.openSubmit(finalScore);
+    window.ZIziLeaderboards?.tangsprint?.openSubmit(finalScore, { levelId: currentLevel.id });
   }
   const detail = won
     ? `Score submitted: ${finalScore}. / 分数已准备提交：${finalScore}。`
@@ -460,6 +478,9 @@ function updateCrowdInstances(time) {
     const bob = Math.sin(time * 8 + i * 0.7) * 0.025;
     dummy.position.set(crowdX + offset.x * scale, 0.38 + bob, crowdZ + offset.z * scale);
     dummy.rotation.set(0, Math.sin(time * 4 + i) * 0.08, 0);
+    dummy.scale.setScalar(1.18);
+    dummy.updateMatrix();
+    runnerOutline.setMatrixAt(i, dummy.matrix);
     dummy.scale.setScalar(1);
     dummy.updateMatrix();
     blueCrowd.setMatrixAt(i, dummy.matrix);
@@ -467,8 +488,10 @@ function updateCrowdInstances(time) {
   for (let i = visible; i < MAX_RENDER_CROWD; i += 1) {
     dummy.position.set(0, -100, 0);
     dummy.updateMatrix();
+    runnerOutline.setMatrixAt(i, dummy.matrix);
     blueCrowd.setMatrixAt(i, dummy.matrix);
   }
+  runnerOutline.instanceMatrix.needsUpdate = true;
   blueCrowd.instanceMatrix.needsUpdate = true;
   crowdLabel.position.set(crowdX, 2.35, crowdZ - 0.25);
 }
@@ -611,7 +634,7 @@ function onKeyUp(event) {
 startButton.addEventListener("click", () => startGame(0));
 restartButton.addEventListener("click", () => startGame(currentLevelIndex));
 nextButton.addEventListener("click", () => startGame(currentLevelIndex + 1));
-leaderboardButton.addEventListener("click", () => window.ZIziLeaderboards?.bluecrowd?.open());
+leaderboardButton.addEventListener("click", () => window.ZIziLeaderboards?.tangsprint?.open());
 pauseButton.addEventListener("click", () => {
   if (gameState === "running") pauseGame();
   else if (gameState === "paused") resumeGame();
