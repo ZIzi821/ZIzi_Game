@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-02T15:00:31.632Z",
+  "updatedAt": "2026-06-02T15:03:59.933Z",
   "leaderboards": {
     "starfall": [
       {
@@ -58,7 +58,15 @@
           "sourceRegion": ""
         }
       ],
-      "level2": []
+      "level2": [
+        {
+          "id": "5Ly8NEiwsBwCuFmUBILP",
+          "nickname": "chen",
+          "score": 97112920,
+          "createdAt": "2026-06-02T14:59:34.598Z",
+          "sourceRegion": "web"
+        }
+      ]
     },
     "chomp": {
       "level1": [
@@ -82,6 +90,13 @@
           "score": 7336,
           "createdAt": "2026-06-02T12:16:49.705Z",
           "sourceRegion": ""
+        },
+        {
+          "id": "gDQvU6t5a5cacjsiezCx",
+          "nickname": "chen",
+          "score": 6035,
+          "createdAt": "2026-06-02T15:02:42.962Z",
+          "sourceRegion": "web"
         },
         {
           "id": "Dyl1uHLicRY67lDKkR4l",
