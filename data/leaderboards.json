@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-02T10:55:54.204Z",
+  "updatedAt": "2026-06-02T14:46:20.737Z",
   "leaderboards": {
     "starfall": [
       {
@@ -35,11 +35,40 @@
     ],
     "bluecrowd": [],
     "tangsprint": {
-      "level1": [],
+      "level1": [
+        {
+          "id": "QV1oD7I98QJO2kH8kbKm",
+          "nickname": "靠",
+          "score": 1,
+          "createdAt": "2026-06-02T12:04:03.451Z",
+          "sourceRegion": ""
+        }
+      ],
       "level2": []
     },
     "chomp": {
       "level1": [
+        {
+          "id": "Xgz9p9oeC2sRbJI1XOoV",
+          "nickname": "bot",
+          "score": 10930,
+          "createdAt": "2026-06-02T12:21:28.276Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "N3PSEZGNAQ9zfLaUO9Sg",
+          "nickname": "西伯利亚肥美多汁大野逼",
+          "score": 10124,
+          "createdAt": "2026-06-02T12:13:57.499Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "c0u1oF05sRZpSXx6DKMD",
+          "nickname": "李元庆",
+          "score": 7336,
+          "createdAt": "2026-06-02T12:16:49.705Z",
+          "sourceRegion": ""
+        },
         {
           "id": "Dyl1uHLicRY67lDKkR4l",
           "nickname": "zzz",
@@ -89,6 +118,13 @@
       ],
       "level4": [
         {
+          "id": "zGozY9RVoTkp7MxUht7x",
+          "nickname": "西伯利亚肥美多汁大野逼",
+          "score": 16331,
+          "createdAt": "2026-06-02T12:18:19.300Z",
+          "sourceRegion": ""
+        },
+        {
           "id": "1rKctI7HRkaSIZjJnYFe",
           "nickname": "ou",
           "score": 12808,
@@ -108,6 +144,20 @@
           "score": 10602,
           "createdAt": "2026-06-01T06:26:07.533Z",
           "sourceRegion": "web"
+        },
+        {
+          "id": "7KjKsZqaLwNc3mF81QYs",
+          "nickname": "ao",
+          "score": 5767,
+          "createdAt": "2026-06-02T14:44:11.060Z",
+          "sourceRegion": "web"
+        },
+        {
+          "id": "g9gl5wbH678jPp5UtnV1",
+          "nickname": "顶顶顶",
+          "score": 3812,
+          "createdAt": "2026-06-02T12:06:53.968Z",
+          "sourceRegion": ""
         },
         {
           "id": "39d1zClBCatY5N4sWFyR",
