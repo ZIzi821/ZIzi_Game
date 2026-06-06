@@ -260,9 +260,8 @@ p {
 
 .moscow-card {
   --game-bg:
-    repeating-linear-gradient(30deg, rgba(117, 89, 66, 0.2) 0 2px, transparent 2px 22px),
-    linear-gradient(120deg, rgba(98, 129, 82, 0.3) 0 28%, transparent 29% 56%, rgba(122, 62, 56, 0.18) 57%),
-    linear-gradient(135deg, rgba(235, 227, 205, 0.92), rgba(151, 176, 126, 0.7) 52%, rgba(171, 107, 87, 0.48));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.86)),
+    linear-gradient(135deg, rgba(215, 221, 218, 0.92), rgba(161, 176, 181, 0.66) 48%, rgba(225, 218, 204, 0.72));
 }
 
 .game-visual {
@@ -431,39 +430,36 @@ p {
 
 .moscow-visual {
   background:
-    radial-gradient(circle at 74% 30%, rgba(154, 50, 44, 0.75) 0 7px, transparent 8px),
-    radial-gradient(circle at 28% 62%, rgba(49, 92, 170, 0.62) 0 7px, transparent 8px),
-    repeating-linear-gradient(30deg, rgba(94, 114, 81, 0.28) 0 2px, transparent 2px 24px),
-    linear-gradient(135deg, rgba(240, 232, 207, 0.94), rgba(167, 188, 135, 0.76));
+    linear-gradient(180deg, rgba(12, 17, 23, 0.02), rgba(12, 17, 23, 0.2)),
+    url("game-art/operation-typhoon-1.png") center / cover;
+  border-color: rgba(38, 48, 68, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 0 -42px 70px rgba(12, 17, 23, 0.22);
 }
 
 .moscow-visual::before {
   content: "";
   position: absolute;
-  inset: 22px 28px;
+  inset: 0;
   background:
-    linear-gradient(30deg, transparent 0 47%, rgba(38, 48, 68, 0.38) 48% 52%, transparent 53%),
-    linear-gradient(-28deg, transparent 0 46%, rgba(122, 62, 56, 0.36) 47% 51%, transparent 52%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0 2px, transparent 2px 32px);
-  border: 2px solid rgba(83, 101, 135, 0.18);
-  border-radius: 10px;
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3), transparent 26%, transparent 72%, rgba(0, 0, 0, 0.18)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 18px);
+  mix-blend-mode: screen;
 }
 
 .moscow-visual::after {
   content: "";
   position: absolute;
-  left: 44px;
-  top: 44px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #315caa;
-  box-shadow:
-    46px 30px 0 -2px #315caa,
-    96px 2px 0 -1px #9a322c,
-    138px 58px 0 -2px #9a322c,
-    182px 18px 0 -3px #315caa;
-  filter: drop-shadow(0 10px 12px rgba(35, 48, 68, 0.18));
+  right: 14px;
+  bottom: 12px;
+  width: min(42%, 150px);
+  aspect-ratio: 1.42;
+  border: 5px solid rgba(255, 255, 255, 0.92);
+  border-radius: 5px;
+  background: url("game-art/operation-typhoon-2.png") center / cover;
+  box-shadow: 0 14px 24px rgba(12, 17, 23, 0.3);
+  transform: rotate(-3deg);
 }
 
 .game strong {
