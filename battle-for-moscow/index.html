@@ -1,0 +1,307 @@
+<html>
+  <!--
+* PyWebCopy Engine [version 7.1]
+* Copyright 2020; Raja Tomar
+* File mirrored from [https://oberlabs.com/b4m/]
+* At UTC datetime: [2026-06-03 13:51:25.301860]
+--><head>
+    <title>Battle for Moscow</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.7, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Web-based version of the Battle for Moscow wargame">
+    <meta property="og:title" content="Battle for Moscow">
+    <meta property="og:description" content="Web-based version of the Battle for Moscow wargame">
+    <meta property="og:image" content="icons/icon-192x192.png">
+    <meta property="og:url" content="./">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#d3cdc9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <!-- Apple-specific meta tags -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Battle for Moscow">
+    <!-- Apple touch icons -->
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
+    <link rel="stylesheet" type="text/css" href="vendor/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="css/b4m.css">
+    <script src="js/honeycomb.min.js"></script>
+    <script src="js/b4m.min.js"></script>
+  </head>
+  <body style="overflow: hidden;">
+    <!-- Splash screen -->
+    <div id="splash_background"></div>
+    <div id="splash_title">
+      <img src="img/b4m.png" style="width: 100%;">
+      <div id="next_start">
+        <img id="rotate" src="img/rotate.gif" style="width: 100px; display: none; margin: auto; margin-bottom: 60px;">
+        <p>
+          "Battle for Moscow" is a game originally designed by Frank Chadwick in 1986 to introduce players to wargaming (<a href="https://oberlabs.com/b4m/rules.html" target="_blank" style="color: lightgray;">rules</a>). The graphics for this version are based on the 2009 reprint by Victory Point Games. All rights are reserved.<br>
+          For any question or feedback, please email <a href="javascript:window.location.href%20=%20'mailto:'%20+%20['olivier','oberlabs.com'].join('@')" target="_blank" style="color: lightgray;">olivier<!---->@<!---->oberlabs.com</a>.
+        </p>
+        <div id="next_continue_button" style="display: none;">Continue Game</div>
+        <div id="next_solitaire_button">Solitaire / Hotseat</div>
+        <br>
+        <div id="next_human_vs_soviet_button"><img src="img/german_marker.png" style="height: 20px; vertical-align: text-top;"> <i class="fa fa-user" style="margin-right: 20px;" aria-hidden="true"></i> vs <i class="fa fa-laptop" style="margin-left: 20px;" aria-hidden="true"></i> <img src="img/soviet_marker.png" style="height: 20px; vertical-align: text-top;"></div>
+        <div id="next_human_vs_german_button"><img src="img/soviet_marker.png" style="height: 20px; vertical-align: text-top;"> <i class="fa fa-user" style="margin-right: 20px;" aria-hidden="true"></i> vs <i class="fa fa-laptop" style="margin-left: 20px;" aria-hidden="true"></i> <img src="img/german_marker.png" style="height: 20px; vertical-align: text-top;"></div>
+        <p style="margin-top: 30px;">
+          <input type="checkbox" id="tournament_mode" name="tournament_mode" value="tournament_mode">
+          <label for="tournament_mode"> Play with <a href="https://oberlabs.com/b4m/tournamentrules.html" target="_blank" style="color: lightgray;">Tournament Rules</a></label><br></p>
+      </div>
+    </div>
+    <!-- Image assets -->
+    <img id="soviets" src="img/soviets.png" style="display: none;">
+    <img id="germans" src="img/germans.png" style="display: none;">
+    <img id="frame" src="img/frame.png" style="display: none;">
+    <img id="delete_counter" src="img/delete_counter.png" style="display: none;">
+    <img id="check_counter" src="img/check_counter.png" style="display: none;">
+    <img id="arrows_counter" src="img/arrows_counter.png" style="display: none;">
+    <img id="soviet_marker" src="img/soviet_marker.png" style="display: none;">
+    <img id="german_marker" src="img/german_marker.png" style="display: none;">
+    <!-- Map and canvas -->
+    <img id="map" src="assets/map.png">
+    <canvas id="hex_highlights"></canvas>
+    <canvas id="board"></canvas>
+    <canvas id="counters_highlights"></canvas>
+    <!-- Status bar -->
+    <div id="turn_info" style="display: none;">
+      <span id="turn_info_title"></span>
+      <div id="turn_report" style="display: none;"></div>
+    </div>
+    <!-- HUDs -->
+    <div class="hud_content">
+      <div class="hud_container">
+        <!-- Help -->
+        <span id="help_menu" style="display: none;">
+          <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </span>
+        <!-- HUD for the initial German setup phase -->
+        <div id="step_0" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/german_turn.png">
+            <span>Setting Up</span>
+          </div>
+          <p id="step_0_tip"></p>
+          <canvas id="canvas_step_0"></canvas>
+          <div id="next_step_0" class="next" style="display: none;">
+            <span id="next_step_0_button">
+              To Combat Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+          <div id="next_step_0_tournament" class="next" style="display: none;">
+            <span id="next_step_0_tournament_button">
+              To Russian Redeployment Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the Russian redeployment phase in tournament mode -->
+        <div id="step_redeployment_tournament" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/soviet_turn.png">
+            <span>Redeployment Phase</span>
+          </div>
+          <p id="step_redeployment_tournament_tip"></p>
+          <p id="skip_redeployment_tournament">
+            <input type="checkbox" id="skip_to_combat_after_redeployment" name="skip_to_combat_after_redeployment" value="skip">
+            <label for="skip_to_combat_after_redeployment"> No more redeployment needed</label>
+          </p>
+          <div id="undo_redeployment_tournament" class="next_battle_button" style="display:none;" onclick="restartPhase();">
+            Undo <i class="fa fa-undo" aria-hidden="true"></i>
+          </div>
+          <div id="next_step_redeployment_tournament" class="next" style="display: none;">
+            <span id="next_step_redeployment_tournament_button">
+              To German Combat Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the combat phase -->
+        <div id="step_combat" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/german_turn.png">
+            <span>Combat Phase</span>
+          </div>
+          <p id="step_combat_tip"></p>
+          <p id="skip_combat">
+            <input type="checkbox" id="skip_to_movement" name="skip_to_movement" value="skip">
+            <label for="skip_to_movement"> Go straight to movement phase</label>
+          </p>
+          <div id="dashboard_combat"></div>
+          <p id="skip_announce" style="display: none;">
+            <input type="checkbox" id="skip_to_resolution" name="skip_to_resolution" value="skip">
+            <label for="skip_to_resolution"> No more battle to announce</label>
+          </p>
+          <div id="next_step_resolve_battles" class="next" style="display: none;">
+            <span id="next_step_resolve_battles_button">
+              To Battles Resolution 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+          <div id="next_step_combat" class="next" style="display: none;">
+            <span id="next_step_combat_button">
+              To Movement Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the movement phase -->
+        <div id="step_movement" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/german_turn.png">
+            <span>Movement Phase</span>
+          </div>
+          <p id="step_movement_tip"></p>
+          <p id="skip_movement" style="display: none;">
+            <input type="checkbox" id="skip_to_other_player" name="skip_to_other_player" value="skip">
+            <label for="skip_to_other_player"> No more movement required</label>
+          </p>
+          <div id="undo_movement" class="next_battle_button" style="display:none;" onclick="restartPhase();">
+            Undo <i class="fa fa-undo" aria-hidden="true"></i>
+          </div>
+          <div id="next_step_movement" class="next" style="display: none;">
+            <span id="next_step_movement_button">
+              To Other Player Turn 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+          <div id="next_step_final" class="next" style="display: none;">
+            <span id="next_step_final_button">
+              To Final Results 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the replacement phase -->
+        <div id="step_replacement" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/soviet_turn.png">
+            <span>Replacement Phase</span>
+          </div>
+          <p id="step_replacement_tip"></p>
+          <canvas id="canvas_step_reinforcement" style="display: none;"></canvas>
+          <p id="step_replacement_count"></p>
+          <p id="skip_replacement" style="display: none;">
+            <input type="checkbox" id="skip_to_special_movement" name="skip_to_special_movement" value="skip">
+            <label for="skip_to_special_movement"> No more replacement needed</label>
+          </p>
+          <div id="undo_replacement" class="next_battle_button" style="display:none;" onclick="restartPhase();">
+            Undo <i class="fa fa-undo" aria-hidden="true"></i>
+          </div>
+          <div id="next_step_reinforcement" class="next" style="display: none;">
+            <span id="next_step_reinforcement_button">
+              To Standard Replacement Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+          <div id="next_step_replacement" class="next" style="display: none;">
+            <span id="next_step_replacement_button">
+              To Special Movement Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the special movement phase -->
+        <div id="step_special_movement" class="hud" style="display: none;">
+          <div class="hud_title">
+            <img src="img/soviet_turn.png">
+            <span>Special Movement Phase</span>
+          </div>
+          <p id="step_special_movement_tip"></p>
+          <p id="skip_special_movement" style="display: none;">
+            <input type="checkbox" id="skip_to_combat" name="skip_to_combat" value="skip">
+            <label for="skip_to_combat"> No more special movement needed</label>
+          </p>
+          <div id="undo_special_movement" class="next_battle_button" style="display:none;" onclick="restartPhase();">
+            Undo <i class="fa fa-undo" aria-hidden="true"></i>
+          </div>
+          <div id="next_step_special_movement" class="next" style="display: none;">
+            <span id="next_step_special_movement_button">
+              To Combat Phase 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+        <!-- HUD for the final results -->
+        <div id="final_results" class="hud" style="display: none;">
+          <div class="hud_title"></div>
+          <p id="final_results_tip"></p>
+          <div class="next" onclick="newGame();">
+            <span>
+              New Game 
+              <span class="next_button">
+                <i class="fa fa-arrow-circle-o-right" aria-hidden="true"></i>
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Help content -->
+    <div id="help_content" style="display: none;">
+      <div id="help_toc">
+        <a href="#help_sequence">Sequence of Play</a> | 
+        <a href="#help_howto">How To...</a> | 
+        <a href="#help_terrain">Terrain Effects Chart</a> | 
+        <a href="#help_crt">Combat Results Table</a> | 
+        <a id="help_close" href="#" style="font-weight: normal; font-style: italic;">Close</a>
+      </div>
+      <div id="help_sequence" class="help_section_title">Sequence of Play</div>
+      <p>Here is a summary of the procedure of each game turn embedded in this implementation of Battle for Moscow. For more details on this and other base characteristics of the game, please consult the <a href="https://oberlabs.com/b4m/rules.html" target="_blank">rules</a>.</p>
+      <h4>German Player Turn</h4>
+      <ol>
+        <li><strong>German Replacement Phase</strong>: the Germans receive replacements (except during turn 1).</li>
+        <li><strong>German (Special) Panzer Movement Phase</strong>: all German armor/panzer units may move.</li>
+        <li><strong>German Combat Phase</strong>: all German units may attack.</li>
+        <li><strong>German Movement Phase</strong>: all German units may move (including panzers that moved in Phase 2).</li>
+      </ol>
+      <h4>Russian Player Turn</h4>
+      <ol start="5">
+        <li><strong>Russian Replacement Phase</strong>: the Russians receive replacements (plus 1 reinforcement during turn 4).</li>
+        <li><strong>Russian (Special) Rail Movement Phase</strong>: all Russian units that begin this Phase on a rail line may move along it.</li>
+        <li><strong>Russian Combat Phase</strong>: all Russian units may attack.</li>
+        <li><strong>Russian Movement Phase</strong>: all Russian units may move (including those that moved by rail in Phase 6).</li>
+      </ol>
+      <div id="help_howto" class="help_section_title">How To...</div>
+      <div style="display: inline-block;">
+        <h4>... Add Battles</h4>
+        <img src="img/help_add_battles.png" style="float: right; padding-left: 10px;">
+        <p>When entering a combat phase, start clicking on defending units that you wish to attack.</p>
+        <p>For each of them,  all available attacking units are highlighted and the corresponding battle odds are automatically calculated and displayed on the dashboard.</p>
+        <p>Click on the <i class="fa fa-plus-circle" aria-hidden="true"></i> sign to add this battle to the list that will be resolved during the next step, and proceed to selecting the next battles of this turn if any.</p>
+      </div>
+      <div style="display: inline-block;">
+        <h4>... View Cities' Control</h4>
+        <img src="img/help_view_cities.png" style="float: right; padding-left: 10px;">
+        <p>Who's controlling cities at the end of the game is a key victory condition: the Germans win if they control Moscow at the end of Game Turn 7. The Russians win if they control Moscow and any one other city. Any other result (i.e., the Germans control every city but Moscow) is a draw.</p>
+        <p>Each city's control is with the army whose units were the last ones to have entered that city.</p>
+        <p>In order to assess which city is under which army's control at any point throughout the game, simply click on the <strong>turn information</strong> bar to open a summary and highlight the cities' current status on the map. Then, click again on the turn information to close the view.</p>
+      </div>
+      <div id="help_terrain" class="help_section_title">Terrain Effects Chart</div>
+      <img id="help_terrain_img" src="assets/terrain.png" class="help_img">
+      <div id="help_crt" class="help_section_title">Combat Results Table</div>
+      <img id="help_crt_img" src="assets/crt.png" class="help_img">
+    </div>
+  </body>
+</html>

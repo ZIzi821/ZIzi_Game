@@ -1,0 +1,21 @@
+{
+  "name": "Battle for Moscow",
+  "short_name": "B4M",
+  "description": "Web-based version of the Battle for Moscow wargame.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "background_color": "#d3cdc9",
+  "theme_color": "#d3cdc9",
+  "icons": [
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

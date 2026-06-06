@@ -1,0 +1,296 @@
+* {
+    font-family: Helvetica, sans-serif;
+}
+
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #d3cdc9;
+    overscroll-behavior: none;
+    height: 100%;
+}
+
+img, div, p {
+    user-select: none;
+}
+
+input[type=checkbox] {
+    cursor: pointer;
+}
+
+#splash_background {
+    position:absolute;
+    width:100%;
+    height: 100%;
+    background-color: rgba(0,0,0, 0.5);
+    z-index: 150;
+}
+
+#splash_title {
+    position:absolute; 
+    width: 50%; 
+    height: 90%;
+    z-index:200; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0; 
+    margin: auto;
+}
+
+#next_start {
+    text-align: center; 
+    margin-top: 30px;
+    color: white;
+} 
+
+#next_solitaire_button, #next_human_vs_soviet_button, #next_human_vs_german_button, #next_continue_button {
+    display: inline-block;
+    cursor: pointer; 
+    border: 1px solid black; 
+    border-radius: 10px 10px 10px 10px; 
+    color: white;
+    background-color: darkred; 
+    margin: 20px 20px 0 20px;
+    padding: 10px 20px; 
+    width: 170px;
+    font-size: 1.1em;
+}
+
+#map {
+    margin-top: 30px;
+}
+
+#board, #hex_highlights, #counters_highlights, #cities_highlights {
+    position: absolute;
+    top: 30px;
+    left: 6px;
+}
+
+#turn_info {
+    cursor: pointer;
+    position: fixed;
+    z-index: 100;
+    top: 0px;
+    left: 0px;
+	right: 0px;
+    width: 230px;
+    margin: auto;
+    text-align: center;
+    border-radius: 5px 5px 30px 30px;
+    background-color: rgb(0, 0, 0, 0.4);
+    border: 1px solid black;
+    color: white;
+    padding: 5px 20px;
+    font-size: 0.8em;
+}
+
+#turn_report img {
+    height: 20px;
+    margin-left: 15px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.hud_content {
+    max-width: 1600px; 
+    position: relative;
+}
+
+.hud_container {
+    position: absolute; 
+    margin-right: 20px; 
+    right: 20px; 
+    width: 300px;
+}
+
+#help_menu {
+    position: fixed;
+    z-index: 110;
+    top: 35px;
+    padding-left: 300px;
+    color: white;
+    font-size: 1.3em;
+    cursor: pointer;
+}
+
+#help_content {
+    position: fixed;
+    z-index: 200;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 70%;
+    max-width: 880px;
+    height: 80%;
+    padding: 10px;
+    background-color: rgb(255, 255, 255, 0.8);
+    border-radius: 10px 10px 10px 10px;
+    border: 2px solid darkgray;
+    color: black;
+    font-size: 0.9em;
+    margin: auto;
+    overflow: scroll;
+}
+
+#help_toc {
+    position: fixed;
+    background-color: white;
+    border-radius: 10px 10px 10px 10px;
+    border: 2px solid darkgray;
+    padding: 5px 0;
+}
+
+#help_toc a {
+    text-decoration: inherit;
+    font-weight: bold;
+    color: inherit;
+    padding: 0 10px;
+}
+
+.help_section_title {
+    padding-top: 50px;
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.help_img {
+    width: 100%;
+    max-width: 780px;
+}
+
+.hud {
+    position: fixed;
+    z-index: 100;
+    top: 30px;
+    width: 300px;
+    padding: 10px;
+    background-color: rgb(0, 0, 0, 0.4);
+    border-radius: 10px 10px 10px 10px;
+    border: 2px solid black;
+    color: white;
+    font-size: 0.9em;
+    overflow: auto;
+}
+
+.hud_title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.hud_title img {
+    vertical-align: middle;
+    padding-right: 10px;;
+}
+
+#canvas_step_0, #canvas_step_reinforcement {
+    width: auto;
+    background-color: rgb(255, 255, 255, 0.7);;
+}
+
+.next {
+    margin-top: 10px;
+    text-align: right;
+}
+
+div.next span { 
+    display: inline-block; 
+    vertical-align: middle;
+}
+
+div.next > span {
+    cursor: pointer;
+    margin-top: 10px;;
+    border-radius: 10px 10px 10px 10px;
+    background-color: rgb(255, 0, 0, 0.3);
+    border: 1px solid darkred;
+    padding: 5px 10px;
+}
+
+.next_button {
+    font-size: 2em;
+}
+
+.next_battle_button {
+    display: inline-block;
+    cursor: pointer;
+    margin-top: 5px;
+    border-radius: 5px 5px 5px 5px;
+    background-color: rgb(0, 0, 255, 0.3);
+    padding: 3px 3px;
+}
+
+.table_battle {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table_battle tr {
+    height: 40px;
+}
+
+.table_battle img {
+    height: 30px;
+    vertical-align: middle;
+}
+
+.cell_attackers, .cell_defender {
+    width: 70px;
+}
+
+.cell_modifiers {
+    width: 80px
+}
+
+.cell_odds {
+    text-align: right;
+    font-size: 1.4em;
+}
+
+.cell_action {
+    text-align: right;
+    cursor: pointer;
+}
+
+.table_battle_odds {
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.8em;
+    margin: 10px 0 5px;
+}
+
+img.die_roll {
+    position: absolute;
+    right: 40px;
+    margin-top: 45px;
+    width: 50px;
+    height: auto;
+}
+
+.table_battle_odds tr {
+    height: auto;
+}
+
+.table_battle_odds td {
+    width: 30px;
+}
+
+.table_battle_odds td {
+    text-align: center;
+}
+
+.explosion {
+    position: absolute;
+    z-index: 50;
+    width: 150px;
+    height: 150px;
+    background: url('./explosion.png');
+    animation: animatedExplosion 0.6s steps(7);
+}
+
+@keyframes animatedExplosion {
+    100% {background-position: -1050px;}
+}
