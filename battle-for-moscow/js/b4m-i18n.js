@@ -215,7 +215,9 @@
       acceptNode(node) {
         const parent = node.parentElement;
         if (!parent || ["SCRIPT", "STYLE", "TEXTAREA"].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
-        return /[A-Za-z]/.test(node.nodeValue || "") ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        return originalText.has(node) || /[A-Za-z]/.test(node.nodeValue || "")
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
       }
     });
     const nodes = [];
