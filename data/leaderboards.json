@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-07T04:55:27.933Z",
+  "updatedAt": "2026-06-08T05:00:54.215Z",
   "leaderboards": {
     "starfall": [
       {
@@ -14,6 +14,13 @@
         "nickname": "ziiiii",
         "score": 49015,
         "createdAt": "2026-06-02T15:08:17.533Z",
+        "sourceRegion": ""
+      },
+      {
+        "id": "yuBCWDG97k74J7ZeCBfk",
+        "nickname": "Lesley2",
+        "score": 44573,
+        "createdAt": "2026-06-07T15:36:33.158Z",
         "sourceRegion": ""
       },
       {
@@ -36,6 +43,13 @@
         "score": 19873,
         "createdAt": "2026-05-28T12:45:59.499Z",
         "sourceRegion": ""
+      },
+      {
+        "id": "C9QeppZIOe4q2mJdnY3d",
+        "nickname": "Lesley1",
+        "score": 19582,
+        "createdAt": "2026-06-07T15:26:33.088Z",
+        "sourceRegion": ""
       }
     ],
     "sentinel": [
@@ -56,6 +70,20 @@
           "score": 346294,
           "createdAt": "2026-06-02T14:53:18.709Z",
           "sourceRegion": "web"
+        },
+        {
+          "id": "ApGQQhmzj6R6aBHZMMD9",
+          "nickname": "Bruce",
+          "score": 114166,
+          "createdAt": "2026-06-07T15:45:22.677Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "WlqssDWyEtxBkPwoFUqY",
+          "nickname": "Lesley",
+          "score": 10513,
+          "createdAt": "2026-06-07T15:38:18.946Z",
+          "sourceRegion": ""
         },
         {
           "id": "IQ5FaOBvOGRCviHAIBcU",
@@ -81,10 +109,38 @@
           "sourceRegion": "web"
         },
         {
+          "id": "6BNDljk0QI1rgCOW0zps",
+          "nickname": "Bruce",
+          "score": 62253600,
+          "createdAt": "2026-06-07T15:49:03.332Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "1jT9qiurCrkKy7QT6msS",
+          "nickname": "Lesley2d'd'd",
+          "score": 34170634,
+          "createdAt": "2026-06-07T15:43:09.964Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "ljPEOk5RxgY9c5d8ZVC6",
+          "nickname": "Bruce",
+          "score": 31358972,
+          "createdAt": "2026-06-07T15:47:10.097Z",
+          "sourceRegion": ""
+        },
+        {
           "id": "DR9IWv62GjIqgUSX5OC0",
           "nickname": "ZIzi",
           "score": 16171540,
           "createdAt": "2026-06-02T15:41:42.056Z",
+          "sourceRegion": ""
+        },
+        {
+          "id": "sk9v6jNFuMHhUJ4CqkcL",
+          "nickname": "Lesley2",
+          "score": 11291198,
+          "createdAt": "2026-06-07T15:40:14.815Z",
           "sourceRegion": ""
         }
       ]
@@ -127,6 +183,13 @@
           "sourceRegion": ""
         },
         {
+          "id": "LB2WESRMmo3kQwBb7D3m",
+          "nickname": "Lesley",
+          "score": 3032,
+          "createdAt": "2026-06-07T15:20:04.983Z",
+          "sourceRegion": ""
+        },
+        {
           "id": "gbAuSuJancHbxt6vz51W",
           "nickname": "都是发的",
           "score": 101,
@@ -135,6 +198,13 @@
         }
       ],
       "level2": [
+        {
+          "id": "0z5JHD0GukPiNw22cucf",
+          "nickname": "Leslety",
+          "score": 2831,
+          "createdAt": "2026-06-07T15:21:41.442Z",
+          "sourceRegion": ""
+        },
         {
           "id": "x8qIJ5LirQEGFxCA8Pkj",
           "nickname": "请输入昵称 / Please enter",
