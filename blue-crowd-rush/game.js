@@ -315,9 +315,9 @@ const materials = {
   lane: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.62 }),
   side: new THREE.MeshStandardMaterial({ color: 0x7ad7c6, roughness: 0.5 }),
   finish: new THREE.MeshStandardMaterial({ color: 0x263044, roughness: 0.42 }),
-  blue: new THREE.MeshStandardMaterial({ color: 0x101623, roughness: 0.44, metalness: 0.02, emissive: 0x02040a, emissiveIntensity: 0.18 }),
-  runnerOutline: new THREE.MeshBasicMaterial({ color: 0xfff36a }),
-  hero: new THREE.MeshBasicMaterial({ color: 0x05070d, depthTest: false, depthWrite: false }),
+  blue: new THREE.MeshStandardMaterial({ color: 0x2fd1c3, roughness: 0.38, metalness: 0.04, emissive: 0x063a48, emissiveIntensity: 0.18 }),
+  runnerOutline: new THREE.MeshBasicMaterial({ color: 0xc9fff6, transparent: true, opacity: 0.36, depthWrite: false }),
+  hero: new THREE.MeshStandardMaterial({ color: 0x1f8fff, roughness: 0.34, metalness: 0.05, emissive: 0x063a76, emissiveIntensity: 0.2 }),
   red: new THREE.MeshStandardMaterial({ color: 0xff4258, roughness: 0.48, metalness: 0.02 }),
   hazard: new THREE.MeshStandardMaterial({ color: 0x2b2233, roughness: 0.5, emissive: 0xaa1630, emissiveIntensity: 0.18 }),
   hazardStripe: new THREE.MeshStandardMaterial({ color: 0xffd166, roughness: 0.42, emissive: 0x7a3200, emissiveIntensity: 0.12 }),
@@ -325,6 +325,7 @@ const materials = {
   sweeper: new THREE.MeshStandardMaterial({ color: 0xe02f4f, roughness: 0.36, metalness: 0.05, emissive: 0x7f0018, emissiveIntensity: 0.28 }),
   warning: new THREE.MeshBasicMaterial({ color: 0xff304f, transparent: true, opacity: 0.18 }),
   gold: new THREE.MeshStandardMaterial({ color: 0xffcf5d, roughness: 0.4, emissive: 0x6b3b00, emissiveIntensity: 0.16 }),
+  playerGuide: new THREE.MeshBasicMaterial({ color: 0x74e8ff, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }),
   gateLeft: new THREE.MeshStandardMaterial({ color: 0x21c7ad, transparent: true, opacity: 0.28, roughness: 0.25 }),
   gateRight: new THREE.MeshStandardMaterial({ color: 0x5b8def, transparent: true, opacity: 0.28, roughness: 0.25 }),
   gateFrame: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.36, emissive: 0x77d9ff, emissiveIntensity: 0.15 }),
@@ -333,7 +334,20 @@ const materials = {
 
 const crowdGeometry = new THREE.CapsuleGeometry(0.18, 0.42, 4, 8);
 const heroGeometry = new THREE.CapsuleGeometry(0.24, 0.62, 5, 10);
-const ringGeometry = new THREE.RingGeometry(0.8, 1.35, 48);
+const ringGeometry = new THREE.RingGeometry(0.92, 1.16, 64);
+const runnerPalette = [
+  new THREE.Color(0x2fd1c3),
+  new THREE.Color(0x35a7ff),
+  new THREE.Color(0x4ee7a8),
+  new THREE.Color(0x7a8cff),
+  new THREE.Color(0x28c4de)
+];
+const heroPalette = [
+  new THREE.MeshStandardMaterial({ color: 0x1f8fff, roughness: 0.34, metalness: 0.05, emissive: 0x063a76, emissiveIntensity: 0.22 }),
+  new THREE.MeshStandardMaterial({ color: 0x2fd1c3, roughness: 0.34, metalness: 0.05, emissive: 0x053f39, emissiveIntensity: 0.2 }),
+  new THREE.MeshStandardMaterial({ color: 0x6e7bff, roughness: 0.36, metalness: 0.04, emissive: 0x20246f, emissiveIntensity: 0.18 }),
+  new THREE.MeshStandardMaterial({ color: 0x53e4a6, roughness: 0.34, metalness: 0.05, emissive: 0x06422d, emissiveIntensity: 0.18 })
+];
 const runnerOutline = new THREE.InstancedMesh(crowdGeometry, materials.runnerOutline, MAX_RENDER_CROWD);
 runnerOutline.renderOrder = 1;
 scene.add(runnerOutline);
@@ -345,15 +359,17 @@ blueCrowd.renderOrder = 2;
 scene.add(blueCrowd);
 
 const heroRunnerGroup = new THREE.Group();
-const heroRunners = Array.from({ length: HERO_RUNNER_COUNT }, () => {
-  const runner = new THREE.Mesh(heroGeometry, materials.hero);
+const heroRunners = Array.from({ length: HERO_RUNNER_COUNT }, (_, index) => {
+  const runner = new THREE.Mesh(heroGeometry, heroPalette[index % heroPalette.length]);
+  runner.castShadow = true;
+  runner.receiveShadow = true;
   runner.renderOrder = 12;
   heroRunnerGroup.add(runner);
   return runner;
 });
 scene.add(heroRunnerGroup);
 
-const playerRing = new THREE.Mesh(ringGeometry, materials.gold);
+const playerRing = new THREE.Mesh(ringGeometry, materials.playerGuide);
 playerRing.rotation.x = -Math.PI / 2;
 playerRing.position.y = 0.08;
 scene.add(playerRing);
@@ -418,6 +434,7 @@ class MusicSystem {
     this.step = 0;
     this.enabled = true;
     this.playing = false;
+    this.ready = false;
     this.tempo = 138;
     this.updateButton();
   }
@@ -428,7 +445,7 @@ class MusicSystem {
     if (!AudioContext) {
       this.enabled = false;
       this.button.disabled = true;
-      this.button.textContent = "×";
+      this.button.textContent = "No Audio";
       return;
     }
     this.context = new AudioContext();
@@ -442,13 +459,30 @@ class MusicSystem {
     this.init();
     if (!this.context) return;
     await this.context.resume();
+    this.ready = true;
     this.playing = true;
-    this.nextTime = Math.max(this.nextTime, this.context.currentTime + 0.03);
+    this.nextTime = this.context.currentTime + 0.03;
     this.master.gain.cancelScheduledValues(this.context.currentTime);
     this.master.gain.linearRampToValueAtTime(0.16, this.context.currentTime + 0.35);
     if (!this.timer) {
       this.timer = window.setInterval(() => this.schedule(), 90);
     }
+    this.schedule();
+    this.updateButton();
+  }
+
+  async prime() {
+    if (!this.enabled) this.enabled = true;
+    this.init();
+    if (!this.context) return;
+    await this.context.resume();
+    this.ready = true;
+    const now = this.context.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setValueAtTime(0.08, now);
+    this.master.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    this.tone(523.25, now + 0.01, 0.12, "triangle", 0.06);
+    this.tone(659.25, now + 0.13, 0.16, "triangle", 0.045);
     this.updateButton();
   }
 
@@ -466,16 +500,30 @@ class MusicSystem {
   }
 
   toggle() {
-    this.enabled = !this.enabled;
-    if (this.enabled && gameState === "running") startMusic();
-    else this.pause();
+    if (this.playing) {
+      this.enabled = false;
+      this.pause();
+    } else {
+      this.enabled = true;
+      if (gameState === "running") startMusic();
+      else {
+        this.prime().catch((error) => {
+          console.warn("[Tang Sprint] Music prime failed:", error);
+          this.pause();
+        });
+      }
+    }
     this.updateButton();
   }
 
   updateButton() {
     if (!this.button) return;
-    this.button.textContent = this.enabled ? "♪" : "×";
+    if (!this.enabled) this.button.textContent = "Music Off";
+    else if (this.playing) this.button.textContent = "Music Playing";
+    else if (this.ready) this.button.textContent = "Music Ready";
+    else this.button.textContent = "Music On";
     this.button.setAttribute("aria-pressed", String(this.enabled));
+    this.button.setAttribute("aria-label", this.enabled ? "Music is on" : "Music is off");
   }
 
   schedule() {
@@ -1080,12 +1128,13 @@ function updateCrowdInstances(time) {
     const bob = Math.sin(time * 8 + i * 0.7) * 0.025;
     dummy.position.set(crowdX + offset.x * scale, 0.38 + bob, crowdZ + offset.z * scale);
     dummy.rotation.set(0, Math.sin(time * 4 + i) * 0.08, 0);
-    dummy.scale.setScalar(1.18);
+    dummy.scale.setScalar(1.08);
     dummy.updateMatrix();
     runnerOutline.setMatrixAt(i, dummy.matrix);
     dummy.scale.setScalar(1);
     dummy.updateMatrix();
     blueCrowd.setMatrixAt(i, dummy.matrix);
+    blueCrowd.setColorAt(i, runnerPalette[i % runnerPalette.length]);
   }
   for (let i = visible; i < MAX_RENDER_CROWD; i += 1) {
     dummy.position.set(0, -100, 0);
@@ -1095,6 +1144,7 @@ function updateCrowdInstances(time) {
   }
   runnerOutline.instanceMatrix.needsUpdate = true;
   blueCrowd.instanceMatrix.needsUpdate = true;
+  if (blueCrowd.instanceColor) blueCrowd.instanceColor.needsUpdate = true;
   updateHeroRunners(time);
   crowdLabel.position.set(crowdX, 2.35, crowdZ - 0.25);
   const ringScale = clamp(Math.sqrt(Math.max(visible, 1)) * 0.16 + 0.72, 1.0, 2.45);
