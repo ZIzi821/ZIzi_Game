@@ -66,7 +66,7 @@
         <div class="section-head">
           <div>
             <h2>排行榜总览 / Leaderboard Overview</h2>
-            <p class="intro">展示每个游戏的 Top 5。唐人冲刺显示 Level 1、Level 2 两个榜单，Chomp 显示四个独立榜单。</p>
+            <p class="intro">展示每个游戏的 Top 5。唐人冲刺和 Chomp 都显示四个独立关卡榜单。</p>
           </div>
           <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
         </div>
@@ -89,6 +89,14 @@
               <section class="chomp-level">
                 <h4>Level 2 / 远路极限</h4>
                 <div class="lb-list" id="lb-tangsprint-level2"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 3 / Decision Divide</h4>
+                <div class="lb-list" id="lb-tangsprint-level3"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 4 / Arithmetic Storm</h4>
+                <div class="lb-list" id="lb-tangsprint-level4"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
             </div>
           </article>
@@ -124,6 +132,8 @@
         sentinel: document.getElementById("lb-sentinel"),
         tangLevel1: document.getElementById("lb-tangsprint-level1"),
         tangLevel2: document.getElementById("lb-tangsprint-level2"),
+        tangLevel3: document.getElementById("lb-tangsprint-level3"),
+        tangLevel4: document.getElementById("lb-tangsprint-level4"),
         chompLevel1: document.getElementById("lb-chomp-level1"),
         chompLevel2: document.getElementById("lb-chomp-level2"),
         chompLevel3: document.getElementById("lb-chomp-level3"),
@@ -156,11 +166,13 @@
       async function loadOverview() {
         try {
           const module = await import("./assets/leaderboard.js");
-          const [starfall, sentinel, tangLevel1, tangLevel2, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
+          const [starfall, sentinel, tangLevel1, tangLevel2, tangLevel3, tangLevel4, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
             module.fetchLeaderboardRows({ gameId: "starfall", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "sentinel", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level2", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level3", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level4", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 }),
@@ -170,6 +182,8 @@
           renderRows(boards.sentinel, sentinel);
           renderRows(boards.tangLevel1, tangLevel1);
           renderRows(boards.tangLevel2, tangLevel2);
+          renderRows(boards.tangLevel3, tangLevel3);
+          renderRows(boards.tangLevel4, tangLevel4);
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);

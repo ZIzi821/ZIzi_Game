@@ -8,7 +8,7 @@ import {
 
 const LEVEL_GAME_LEVELS = {
   chomp: ["level1", "level2", "level3", "level4"],
-  tangsprint: ["level1", "level2"]
+  tangsprint: ["level1", "level2", "level3", "level4"]
 };
 const LEVEL_GAME_SETS = Object.fromEntries(
   Object.entries(LEVEL_GAME_LEVELS).map(([gameId, levels]) => [gameId, new Set(levels)])

@@ -32,7 +32,9 @@ service cloud.firestore {
     function validTangSprintLevel(levelId) {
       return levelId in [
         'level1',
-        'level2'
+        'level2',
+        'level3',
+        'level4'
       ];
     }
 

@@ -55,6 +55,8 @@ Supported Tang people sprint level IDs:
 ```text
 level1
 level2
+level3
+level4
 ```
 
 Supported Chomp level IDs:

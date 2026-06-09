@@ -11,6 +11,7 @@ const HERO_RUNNER_COUNT = 4;
 const PLAYER_SPEED = 10;
 const SIDE_SPEED = 8.2;
 const POINTER_SCALE = 0.018;
+const UNLOCK_STORAGE_KEY = "ziziTangSprintUnlockedLevel";
 
 const levels = [
   {
@@ -141,6 +142,121 @@ const levels = [
       { z: 932, count: 1150, amplitude: 3.55, speed: 4.55, phase: 1.0 },
       { z: 1002, count: 1500, amplitude: 3.55, speed: 4.8, phase: 4.1 }
     ]
+  },
+  {
+    id: "level3",
+    name: "Level 3 / Decision Divide",
+    length: 920,
+    startCount: 180,
+    speed: 11.8,
+    gates: [
+      { z: 34, left: "+80", right: "-35" },
+      { z: 92, left: "/2", right: "x3" },
+      { z: 154, left: "-110", right: "+160" },
+      { z: 218, left: "x2", right: "/3" },
+      { z: 286, left: "+240", right: "-180" },
+      { z: 356, left: "/2", right: "+420" },
+      { z: 430, left: "x3", right: "-360" },
+      { z: 512, left: "-520", right: "/4" },
+      { z: 600, left: "+780", right: "x2" },
+      { z: 690, left: "/3", right: "+980" },
+      { z: 786, left: "x4", right: "-1250" },
+      { z: 870, left: "+1600", right: "/2" }
+    ],
+    enemies: [
+      { z: 68, x: -2.7, count: 95 },
+      { z: 128, x: 2.7, count: 140 },
+      { z: 202, x: -0.2, count: 260 },
+      { z: 266, x: -3.0, count: 340 },
+      { z: 326, x: 2.9, count: 470 },
+      { z: 392, x: 0.3, count: 650 },
+      { z: 478, x: -2.8, count: 880 },
+      { z: 566, x: 2.9, count: 1180 },
+      { z: 640, x: 0, count: 1500 },
+      { z: 736, x: -3.0, count: 2100 },
+      { z: 842, x: 2.8, count: 3200 }
+    ],
+    hazards: [
+      { z: 118, x: 0.4, width: 3.2, loss: 0.28, label: "-28%" },
+      { z: 252, x: 2.3, width: 2.4, loss: 180, label: "-180" },
+      { z: 468, x: -1.8, width: 3.4, loss: 0.4, label: "-40%" },
+      { z: 624, x: 2.1, width: 3.0, loss: 520, label: "-520" },
+      { z: 808, x: -0.5, width: 4.2, loss: 0.5, label: "-50%" }
+    ],
+    pickups: [
+      { z: 176, x: 3.35, count: 120 },
+      { z: 338, x: -3.35, count: 210 },
+      { z: 548, x: 3.25, count: 420 },
+      { z: 718, x: -3.25, count: 680 },
+      { z: 888, x: 0.2, count: 980 }
+    ],
+    sweepers: [
+      { z: 300, count: 240, amplitude: 3.45, speed: 3.5, phase: 0.8 },
+      { z: 450, count: 520, amplitude: 3.55, speed: 4.0, phase: 2.7 },
+      { z: 674, count: 900, amplitude: 3.55, speed: 4.4, phase: 4.2 },
+      { z: 820, count: 1500, amplitude: 3.6, speed: 4.8, phase: 1.6 }
+    ]
+  },
+  {
+    id: "level4",
+    name: "Level 4 / Arithmetic Storm",
+    length: 1220,
+    startCount: 240,
+    speed: 12.6,
+    gates: [
+      { z: 40, left: "/2", right: "+150" },
+      { z: 106, left: "x4", right: "-120" },
+      { z: 174, left: "-260", right: "/3" },
+      { z: 246, left: "+480", right: "x2" },
+      { z: 324, left: "/4", right: "+720" },
+      { z: 404, left: "x3", right: "-760" },
+      { z: 490, left: "+1250", right: "/2" },
+      { z: 582, left: "-1600", right: "x4" },
+      { z: 674, left: "/3", right: "+2200" },
+      { z: 770, left: "x2", right: "-2800" },
+      { z: 872, left: "+3600", right: "/5" },
+      { z: 980, left: "-4200", right: "x3" },
+      { z: 1088, left: "/2", right: "+5200" },
+      { z: 1162, left: "x4", right: "-6500" }
+    ],
+    enemies: [
+      { z: 78, x: 2.7, count: 160 },
+      { z: 146, x: -2.9, count: 260 },
+      { z: 220, x: 0.2, count: 430 },
+      { z: 302, x: 2.8, count: 620 },
+      { z: 376, x: -2.7, count: 880 },
+      { z: 462, x: 0.2, count: 1200 },
+      { z: 548, x: 3.0, count: 1700 },
+      { z: 640, x: -3.0, count: 2400 },
+      { z: 732, x: 0, count: 3400 },
+      { z: 836, x: 2.9, count: 4600 },
+      { z: 934, x: -2.8, count: 6400 },
+      { z: 1038, x: 0.3, count: 8600 },
+      { z: 1136, x: 2.8, count: 11200 }
+    ],
+    hazards: [
+      { z: 132, x: -0.4, width: 3.6, loss: 0.32, label: "-32%" },
+      { z: 354, x: 2.1, width: 2.8, loss: 560, label: "-560" },
+      { z: 520, x: -2.1, width: 3.0, loss: 0.42, label: "-42%" },
+      { z: 704, x: 1.8, width: 3.4, loss: 1500, label: "-1500" },
+      { z: 900, x: -0.8, width: 4.2, loss: 0.55, label: "-55%" },
+      { z: 1104, x: 2.0, width: 3.4, loss: 3200, label: "-3200" }
+    ],
+    pickups: [
+      { z: 190, x: 3.35, count: 240 },
+      { z: 438, x: -3.35, count: 580 },
+      { z: 616, x: 3.25, count: 1050 },
+      { z: 812, x: -3.25, count: 1800 },
+      { z: 1016, x: 3.25, count: 3000 },
+      { z: 1180, x: -0.15, count: 4200 }
+    ],
+    sweepers: [
+      { z: 274, count: 420, amplitude: 3.5, speed: 3.8, phase: 0.4 },
+      { z: 564, count: 1050, amplitude: 3.6, speed: 4.25, phase: 2.2 },
+      { z: 758, count: 1900, amplitude: 3.6, speed: 4.7, phase: 4.8 },
+      { z: 962, count: 3200, amplitude: 3.65, speed: 5.0, phase: 1.4 },
+      { z: 1126, count: 5200, amplitude: 3.65, speed: 5.2, phase: 3.3 }
+    ]
   }
 ];
 
@@ -148,6 +264,7 @@ const canvas = document.getElementById("gameCanvas");
 const overlay = document.getElementById("overlay");
 const overlayTitle = document.getElementById("overlayTitle");
 const overlayText = document.getElementById("overlayText");
+const levelSelect = document.getElementById("levelSelect");
 const startButton = document.getElementById("startButton");
 const restartButton = document.getElementById("restartButton");
 const nextButton = document.getElementById("nextButton");
@@ -270,6 +387,7 @@ const sweeperGeometry = new THREE.BoxGeometry(2.25, 0.34, 0.58);
 const warningGeometry = new THREE.PlaneGeometry(1, 4.8);
 
 let currentLevelIndex = 0;
+let selectedLevelIndex = 0;
 let currentLevel = levels[0];
 let gameState = "menu";
 let crowdCount = currentLevel.startCount;
@@ -448,6 +566,59 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function getUnlockedLevelIndex() {
+  const stored = Number(window.localStorage.getItem(UNLOCK_STORAGE_KEY) || 0);
+  return clamp(Number.isFinite(stored) ? Math.floor(stored) : 0, 0, levels.length - 1);
+}
+
+function setUnlockedLevelIndex(index) {
+  const nextIndex = clamp(index, 0, levels.length - 1);
+  window.localStorage.setItem(UNLOCK_STORAGE_KEY, String(nextIndex));
+}
+
+function unlockNextLevel() {
+  const unlocked = getUnlockedLevelIndex();
+  if (currentLevelIndex >= unlocked && currentLevelIndex < levels.length - 1) {
+    setUnlockedLevelIndex(currentLevelIndex + 1);
+  }
+}
+
+function getLevelFlavor(index) {
+  if (index < 2) return "Classic route: addition and multiplication gates keep the old leaderboard balance.";
+  if (index === 2) return "New route: subtraction and division gates punish lazy choices but can open safer lanes.";
+  return "Final route: arithmetic traps are brutal, and the best score comes from choosing when to grow and when to shrink.";
+}
+
+function renderLevelSelect(mode = "menu") {
+  if (!levelSelect) return;
+  levelSelect.replaceChildren();
+  const unlocked = getUnlockedLevelIndex();
+  levelSelect.hidden = mode === "paused";
+  levels.forEach((level, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "level-card";
+    button.dataset.levelId = level.id;
+    const locked = index > unlocked;
+    const selected = index === selectedLevelIndex;
+    button.disabled = locked;
+    button.setAttribute("aria-pressed", String(selected));
+    button.innerHTML = `
+      <span class="level-number">${index + 1}</span>
+      <span class="level-name">${level.name}</span>
+      <span class="level-flavor">${locked ? "Locked: complete the previous level first." : getLevelFlavor(index)}</span>
+      <span class="level-status">${locked ? "Locked" : selected ? "Selected" : "Playable"}</span>
+    `;
+    button.addEventListener("click", () => {
+      selectedLevelIndex = index;
+      currentLevelIndex = index;
+      currentLevel = levels[index];
+      renderLevelSelect(mode);
+    });
+    levelSelect.append(button);
+  });
+}
+
 function resize() {
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -505,9 +676,11 @@ function roundRect(context, x, y, width, height, radius) {
 }
 
 function applyGateFormula(value, formula) {
-  const clean = String(formula).trim().toLowerCase().replace("×", "x");
+  const clean = String(formula).trim().toLowerCase().replace("×", "x").replace("÷", "/");
   if (clean.startsWith("+")) return value + Number(clean.slice(1) || 0);
+  if (clean.startsWith("-")) return value - Number(clean.slice(1) || 0);
   if (clean.startsWith("x")) return value * Math.max(1, Number(clean.slice(1) || 1));
+  if (clean.startsWith("/")) return Math.floor(value / Math.max(1, Number(clean.slice(1) || 1)));
   return value;
 }
 
@@ -753,11 +926,12 @@ function setOverlay(mode, details = "") {
   overlay.hidden = false;
   startButton.hidden = mode !== "menu";
   restartButton.hidden = mode === "menu";
-  nextButton.hidden = mode !== "win" || currentLevelIndex >= levels.length - 1;
+  nextButton.hidden = mode !== "win" || currentLevelIndex >= getUnlockedLevelIndex() || currentLevelIndex >= levels.length - 1;
   leaderboardButton.hidden = mode === "menu";
+  renderLevelSelect(mode);
   if (mode === "menu") {
     overlayTitle.textContent = GAME_NAME;
-    overlayText.textContent = "Two stages are now brutal: pick the correct gates, grab rescue boosts, avoid traps, dodge moving sweepers, and keep yourself alive in the gold ring.";
+    overlayText.textContent = "Choose a level. Levels 3 and 4 add subtraction and division choices with separate leaderboards, so the old Level 1 and Level 2 scores stay fair.";
   } else if (mode === "paused") {
     overlayTitle.textContent = "Paused / 已暂停";
     overlayText.textContent = "Press P or Esc to keep running. / 按 P 或 Esc 继续冲刺。";
@@ -776,6 +950,7 @@ function hideOverlay() {
 
 function resetLevel(index = currentLevelIndex) {
   currentLevelIndex = clamp(index, 0, levels.length - 1);
+  selectedLevelIndex = currentLevelIndex;
   currentLevel = levels[currentLevelIndex];
   crowdCount = currentLevel.startCount;
   crowdX = 0;
@@ -828,6 +1003,7 @@ function endGame(won) {
     submittedThisRun = true;
     window.ZIziLeaderboards?.tangsprint?.openSubmit(finalScore, { levelId: currentLevel.id });
   }
+  if (won) unlockNextLevel();
   const detail = won
     ? `Score submitted: ${finalScore}. / 分数已准备提交：${finalScore}。`
     : `Distance: ${Math.round(progress * 100)}%. Score: ${finalScore}. / 距离：${Math.round(progress * 100)}%。分数：${finalScore}。`;
@@ -1143,7 +1319,7 @@ function onKeyUp(event) {
   if (key === "arrowright" || key === "d") keys.right = false;
 }
 
-startButton.addEventListener("click", () => startGame(0));
+startButton.addEventListener("click", () => startGame(selectedLevelIndex));
 restartButton.addEventListener("click", () => startGame(currentLevelIndex));
 nextButton.addEventListener("click", () => startGame(currentLevelIndex + 1));
 leaderboardButton.addEventListener("click", () => window.ZIziLeaderboards?.tangsprint?.open());
