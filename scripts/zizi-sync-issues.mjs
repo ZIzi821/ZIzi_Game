@@ -10,7 +10,7 @@ const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
 const LEVEL_GAMES = {
   chomp: new Set(["level1", "level2", "level3", "level4"]),
-  tangsprint: new Set(["level1", "level2"])
+  tangsprint: new Set(["level1", "level2", "level3", "level4", "level5", "level6"])
 };
 const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", ...Object.keys(LEVEL_GAMES)]);
 const SYNC_RE = /ZIZI-SYNC:([A-Za-z0-9+/=_-]+)/;
@@ -97,6 +97,10 @@ async function scoreExists(db, syncId) {
     db.collection("leaderboards").doc("bluecrowd").collection("scores"),
     db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores"),
     db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level3").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level4").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level5").collection("scores"),
+    db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level6").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level2").collection("scores"),
     db.collection("leaderboards").doc("chomp").collection("levels").doc("level3").collection("scores"),
@@ -186,7 +190,11 @@ async function exportLeaderboards(db) {
     bluecrowd: await exportScorePath(db.collection("leaderboards").doc("bluecrowd").collection("scores")),
     tangsprint: {
       level1: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores")),
-      level2: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores"))
+      level2: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores")),
+      level3: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level3").collection("scores")),
+      level4: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level4").collection("scores")),
+      level5: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level5").collection("scores")),
+      level6: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level6").collection("scores"))
     },
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),

@@ -4,7 +4,7 @@ const MAX_MESSAGE = 300;
 const MAX_SCORE = 999999999;
 const LEVEL_GAMES = {
   chomp: new Set(["level1", "level2", "level3", "level4"]),
-  tangsprint: new Set(["level1", "level2"])
+  tangsprint: new Set(["level1", "level2", "level3", "level4", "level5", "level6"])
 };
 const VALID_GAMES = new Set(["starfall", "sentinel", "bluecrowd", ...Object.keys(LEVEL_GAMES)]);
 const ISSUE_URL = "https://github.com/ZIzi821/ZIzi_Game/issues/new";

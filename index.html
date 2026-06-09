@@ -10,7 +10,7 @@
     <main>
       <header class="hero">
         <p class="eyebrow">ZIzi Game Collection</p>
-        <h1>选择一个游戏开始 / Choose a Game</h1>
+        <h1>ZIzi 游戏乐园 / ZIzi Game Arcade</h1>
         <p class="intro">挑一个小世界进去玩吧。排行榜会在游戏入口之后慢慢加载，就算网络有点慢，主页也会先稳稳打开。</p>
         <p class="intro">Pick a little world and jump in. Leaderboards load after the game cards, so the page stays ready even when the network is slow.</p>
         <div class="hero-actions">
@@ -66,7 +66,7 @@
         <div class="section-head">
           <div>
             <h2>排行榜总览 / Leaderboard Overview</h2>
-            <p class="intro">展示每个游戏的 Top 5。唐人冲刺和 Chomp 都显示四个独立关卡榜单。</p>
+            <p class="intro">展示每个游戏的 Top 5。唐人冲刺显示六个独立关卡榜单，Chomp 显示四个独立关卡榜单。</p>
           </div>
           <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
         </div>
@@ -97,6 +97,14 @@
               <section class="chomp-level">
                 <h4>Level 4 / Arithmetic Storm</h4>
                 <div class="lb-list" id="lb-tangsprint-level4"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 5 / Golden Switchbacks</h4>
+                <div class="lb-list" id="lb-tangsprint-level5"><p class="lb-empty">加载中 / Loading...</p></div>
+              </section>
+              <section class="chomp-level">
+                <h4>Level 6 / Final Rush</h4>
+                <div class="lb-list" id="lb-tangsprint-level6"><p class="lb-empty">加载中 / Loading...</p></div>
               </section>
             </div>
           </article>
@@ -134,6 +142,8 @@
         tangLevel2: document.getElementById("lb-tangsprint-level2"),
         tangLevel3: document.getElementById("lb-tangsprint-level3"),
         tangLevel4: document.getElementById("lb-tangsprint-level4"),
+        tangLevel5: document.getElementById("lb-tangsprint-level5"),
+        tangLevel6: document.getElementById("lb-tangsprint-level6"),
         chompLevel1: document.getElementById("lb-chomp-level1"),
         chompLevel2: document.getElementById("lb-chomp-level2"),
         chompLevel3: document.getElementById("lb-chomp-level3"),
@@ -166,13 +176,15 @@
       async function loadOverview() {
         try {
           const module = await import("./assets/leaderboard.js");
-          const [starfall, sentinel, tangLevel1, tangLevel2, tangLevel3, tangLevel4, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
+          const [starfall, sentinel, tangLevel1, tangLevel2, tangLevel3, tangLevel4, tangLevel5, tangLevel6, chompLevel1, chompLevel2, chompLevel3, chompLevel4] = await Promise.all([
             module.fetchLeaderboardRows({ gameId: "starfall", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "sentinel", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level3", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level4", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level5", limit: 5 }),
+            module.fetchLeaderboardRows({ gameId: "tangsprint", levelId: "level6", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level1", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level2", limit: 5 }),
             module.fetchLeaderboardRows({ gameId: "chomp", levelId: "level3", limit: 5 }),
@@ -184,6 +196,8 @@
           renderRows(boards.tangLevel2, tangLevel2);
           renderRows(boards.tangLevel3, tangLevel3);
           renderRows(boards.tangLevel4, tangLevel4);
+          renderRows(boards.tangLevel5, tangLevel5);
+          renderRows(boards.tangLevel6, tangLevel6);
           renderRows(boards.chompLevel1, chompLevel1);
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);

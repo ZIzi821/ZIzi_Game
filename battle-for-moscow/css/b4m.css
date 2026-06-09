@@ -18,6 +18,25 @@ input[type=checkbox] {
     cursor: pointer;
 }
 
+#b4m_home_link {
+    position: fixed;
+    z-index: 260;
+    top: 10px;
+    left: 10px;
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 11px;
+    border: 1px solid rgba(0, 0, 0, 0.45);
+    border-radius: 8px;
+    color: darkred;
+    background-color: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    text-decoration: none;
+    font-weight: bold;
+}
+
 #b4m_lang_switch {
     position: fixed;
     z-index: 260;

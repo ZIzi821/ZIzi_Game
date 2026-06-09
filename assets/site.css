@@ -46,7 +46,7 @@ select {
 }
 
 main {
-  width: min(1120px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
   padding: clamp(26px, 5vw, 68px) 0;
 }
@@ -151,7 +151,7 @@ p {
 
 .home-page .hero h1 {
   max-width: 760px;
-  font-size: clamp(38px, 6vw, 68px);
+  font-size: clamp(36px, 5.4vw, 62px);
 }
 
 .home-page .hero .intro {
@@ -189,17 +189,17 @@ p {
 
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(18px, 3vw, 26px);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: clamp(14px, 2.2vw, 22px);
 }
 
 .game {
-  min-height: 340px;
+  min-height: 296px;
   display: grid;
   grid-template-rows: auto auto auto auto;
   align-content: start;
-  gap: 12px;
-  padding: 26px;
+  gap: 10px;
+  padding: clamp(18px, 2.4vw, 24px);
   color: inherit;
   overflow: hidden;
   position: relative;
@@ -268,7 +268,7 @@ p {
   position: relative;
   display: block;
   width: 100%;
-  height: clamp(128px, 15vw, 168px);
+  height: clamp(112px, 12vw, 148px);
   margin-bottom: 6px;
   overflow: hidden;
   border: 1px solid rgba(83, 101, 135, 0.12);
@@ -490,7 +490,7 @@ p {
 }
 
 .home-page .leaderboard-overview {
-  margin-top: clamp(30px, 5vw, 54px);
+  margin-top: clamp(24px, 4vw, 42px);
 }
 
 .section-head {
@@ -515,8 +515,8 @@ p {
 
 .lb-cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(16px, 2.5vw, 24px);
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: clamp(14px, 2vw, 20px);
 }
 
 .lb-card {
@@ -527,14 +527,15 @@ p {
   padding: 18px;
 }
 
+.lb-card[data-board="tangsprint"],
 .lb-card[data-board="chomp"] {
   grid-column: 1 / -1;
 }
 
 .chomp-levels {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
 }
 
 .chomp-level h4 {
@@ -675,6 +676,64 @@ select:focus {
 .profile-grid {
   display: grid;
   gap: 18px;
+}
+
+.developer-page main,
+.forum-page main {
+  width: min(1240px, calc(100% - 32px));
+}
+
+.developer-page .hero,
+.forum-page .hero {
+  margin-bottom: clamp(20px, 3.6vw, 34px);
+}
+
+.developer-page .profile-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.developer-page .profile-card:first-child,
+.developer-page .profile-card.full {
+  grid-column: 1 / -1;
+}
+
+.developer-page .profile-card:not(.full) {
+  grid-template-columns: minmax(128px, 0.36fr) 1fr;
+}
+
+.developer-page .portrait {
+  max-height: 320px;
+}
+
+.developer-page .friends,
+.developer-page .charging {
+  gap: 12px;
+}
+
+.forum-page form {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.34fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.forum-page form label:nth-child(2),
+.forum-page .form-row {
+  grid-column: 1 / -1;
+}
+
+.forum-page textarea {
+  min-height: 126px;
+}
+
+.forum-page .messages {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.forum-page .message {
+  min-height: 132px;
 }
 
 .profile-card {
@@ -823,9 +882,20 @@ select:focus {
   .game-grid,
   .lb-cards,
   .chomp-levels,
+  .developer-page .profile-grid,
   .profile-card,
+  .forum-page form,
   .charging,
   .friends {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-page form label:nth-child(2),
+  .forum-page .form-row {
+    grid-column: auto;
+  }
+
+  .developer-page .profile-card:not(.full) {
     grid-template-columns: 1fr;
   }
 

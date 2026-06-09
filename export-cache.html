@@ -64,7 +64,7 @@
       }
       async function generate() {
         status.textContent = "Reading Firebase...";
-        const [comments, starfall, sentinel, bluecrowd, tangLevel1, tangLevel2, tangLevel3, tangLevel4, level1, level2, level3, level4] = await Promise.all([
+        const [comments, starfall, sentinel, bluecrowd, tangLevel1, tangLevel2, tangLevel3, tangLevel4, tangLevel5, tangLevel6, level1, level2, level3, level4] = await Promise.all([
           readComments(),
           readScores(["leaderboards", "starfall", "scores"]),
           readScores(["leaderboards", "sentinel", "scores"]),
@@ -73,13 +73,15 @@
           readScores(["leaderboards", "tangsprint", "levels", "level2", "scores"]),
           readScores(["leaderboards", "tangsprint", "levels", "level3", "scores"]),
           readScores(["leaderboards", "tangsprint", "levels", "level4", "scores"]),
+          readScores(["leaderboards", "tangsprint", "levels", "level5", "scores"]),
+          readScores(["leaderboards", "tangsprint", "levels", "level6", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level1", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level2", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level3", "scores"]),
           readScores(["leaderboards", "chomp", "levels", "level4", "scores"])
         ]);
         commentsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), comments }, null, 2);
-        leaderboardsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), leaderboards: { starfall, sentinel, bluecrowd, tangsprint: { level1: tangLevel1, level2: tangLevel2, level3: tangLevel3, level4: tangLevel4 }, chomp: { level1, level2, level3, level4 } } }, null, 2);
+        leaderboardsOutput.value = JSON.stringify({ updatedAt: new Date().toISOString(), leaderboards: { starfall, sentinel, bluecrowd, tangsprint: { level1: tangLevel1, level2: tangLevel2, level3: tangLevel3, level4: tangLevel4, level5: tangLevel5, level6: tangLevel6 }, chomp: { level1, level2, level3, level4 } } }, null, 2);
         status.textContent = "Generated.";
       }
       function download(name, text) {

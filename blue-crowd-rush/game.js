@@ -257,6 +257,138 @@ const levels = [
       { z: 962, count: 3200, amplitude: 3.65, speed: 5.0, phase: 1.4 },
       { z: 1126, count: 5200, amplitude: 3.65, speed: 5.2, phase: 3.3 }
     ]
+  },
+  {
+    id: "level5",
+    name: "Level 5 / Golden Switchbacks",
+    length: 1380,
+    startCount: 320,
+    speed: 13.0,
+    gates: [
+      { z: 44, left: "+260", right: "x2" },
+      { z: 118, left: "-220", right: "x4" },
+      { z: 196, left: "/3", right: "+760" },
+      { z: 278, left: "x3", right: "-900" },
+      { z: 362, left: "+1400", right: "/2" },
+      { z: 450, left: "x2", right: "+1800" },
+      { z: 540, left: "-2400", right: "x4" },
+      { z: 632, left: "+3200", right: "/3" },
+      { z: 728, left: "x3", right: "-4200" },
+      { z: 828, left: "/2", right: "+5600" },
+      { z: 928, left: "+7600", right: "x2" },
+      { z: 1032, left: "-9800", right: "x4" },
+      { z: 1140, left: "+12800", right: "/3" },
+      { z: 1250, left: "x3", right: "-16000" },
+      { z: 1330, left: "+22000", right: "x2" }
+    ],
+    enemies: [
+      { z: 88, x: -2.9, count: 260 },
+      { z: 164, x: 2.8, count: 520 },
+      { z: 248, x: 0.1, count: 920 },
+      { z: 332, x: -2.8, count: 1450 },
+      { z: 414, x: 2.9, count: 2100 },
+      { z: 504, x: 0, count: 3000 },
+      { z: 596, x: -3.0, count: 4300 },
+      { z: 690, x: 3.0, count: 6100 },
+      { z: 790, x: -0.2, count: 8400 },
+      { z: 894, x: -2.8, count: 11600 },
+      { z: 994, x: 2.9, count: 15400 },
+      { z: 1104, x: 0.2, count: 20500 },
+      { z: 1214, x: -3.0, count: 27800 },
+      { z: 1312, x: 2.8, count: 36000 }
+    ],
+    hazards: [
+      { z: 142, x: -0.6, width: 3.8, loss: 0.34, label: "-34%" },
+      { z: 318, x: 2.2, width: 3.0, loss: 900, label: "-900" },
+      { z: 486, x: -2.1, width: 3.2, loss: 0.44, label: "-44%" },
+      { z: 672, x: 1.8, width: 3.4, loss: 2500, label: "-2500" },
+      { z: 862, x: -0.9, width: 4.4, loss: 0.56, label: "-56%" },
+      { z: 1068, x: 2.0, width: 3.6, loss: 7200, label: "-7200" },
+      { z: 1268, x: -1.6, width: 3.8, loss: 0.62, label: "-62%" }
+    ],
+    pickups: [
+      { z: 222, x: -3.35, count: 520 },
+      { z: 396, x: 3.35, count: 1100 },
+      { z: 612, x: -3.25, count: 2100 },
+      { z: 778, x: 3.25, count: 3600 },
+      { z: 1018, x: -3.25, count: 6800 },
+      { z: 1198, x: 3.25, count: 9800 },
+      { z: 1354, x: 0.15, count: 15000 }
+    ],
+    sweepers: [
+      { z: 256, count: 760, amplitude: 3.55, speed: 4.0, phase: 0.9 },
+      { z: 574, count: 2100, amplitude: 3.65, speed: 4.55, phase: 2.6 },
+      { z: 746, count: 3600, amplitude: 3.7, speed: 4.9, phase: 4.5 },
+      { z: 952, count: 7000, amplitude: 3.7, speed: 5.2, phase: 1.8 },
+      { z: 1160, count: 12000, amplitude: 3.72, speed: 5.45, phase: 3.4 },
+      { z: 1290, count: 18000, amplitude: 3.72, speed: 5.7, phase: 5.1 }
+    ]
+  },
+  {
+    id: "level6",
+    name: "Level 6 / Final Rush",
+    length: 1500,
+    startCount: 420,
+    speed: 13.4,
+    gates: [
+      { z: 48, left: "x3", right: "-380" },
+      { z: 128, left: "+900", right: "/2" },
+      { z: 214, left: "x4", right: "-1400" },
+      { z: 304, left: "/3", right: "+2400" },
+      { z: 398, left: "-3600", right: "x3" },
+      { z: 492, left: "+5200", right: "/4" },
+      { z: 590, left: "x2", right: "+7800" },
+      { z: 690, left: "-10800", right: "x4" },
+      { z: 794, left: "+15000", right: "/3" },
+      { z: 902, left: "x3", right: "-21000" },
+      { z: 1014, left: "/2", right: "+30000" },
+      { z: 1128, left: "-42000", right: "x4" },
+      { z: 1242, left: "+58000", right: "/5" },
+      { z: 1360, left: "x3", right: "-76000" },
+      { z: 1450, left: "+99000", right: "x2" }
+    ],
+    enemies: [
+      { z: 92, x: 2.8, count: 380 },
+      { z: 178, x: -2.9, count: 900 },
+      { z: 268, x: 0.1, count: 1700 },
+      { z: 358, x: 2.9, count: 3000 },
+      { z: 452, x: -2.8, count: 4800 },
+      { z: 548, x: 0, count: 7600 },
+      { z: 648, x: 3.0, count: 11200 },
+      { z: 752, x: -3.0, count: 16800 },
+      { z: 858, x: 0.2, count: 24000 },
+      { z: 970, x: 2.9, count: 34000 },
+      { z: 1082, x: -2.8, count: 48000 },
+      { z: 1200, x: 0.2, count: 66000 },
+      { z: 1320, x: 3.0, count: 88000 },
+      { z: 1426, x: -2.8, count: 120000 }
+    ],
+    hazards: [
+      { z: 154, x: 0.4, width: 4.2, loss: 0.36, label: "-36%" },
+      { z: 336, x: -2.2, width: 3.2, loss: 1800, label: "-1800" },
+      { z: 526, x: 2.1, width: 3.4, loss: 0.48, label: "-48%" },
+      { z: 720, x: -1.8, width: 3.6, loss: 6800, label: "-6800" },
+      { z: 930, x: 0.8, width: 4.6, loss: 0.6, label: "-60%" },
+      { z: 1148, x: -2.0, width: 3.8, loss: 19000, label: "-19000" },
+      { z: 1378, x: 1.4, width: 4.0, loss: 0.68, label: "-68%" }
+    ],
+    pickups: [
+      { z: 238, x: 3.35, count: 900 },
+      { z: 424, x: -3.35, count: 2200 },
+      { z: 620, x: 3.25, count: 4600 },
+      { z: 836, x: -3.25, count: 9000 },
+      { z: 1046, x: 3.25, count: 16000 },
+      { z: 1262, x: -3.25, count: 30000 },
+      { z: 1472, x: 0.1, count: 50000 }
+    ],
+    sweepers: [
+      { z: 282, count: 1200, amplitude: 3.62, speed: 4.25, phase: 0.5 },
+      { z: 582, count: 4200, amplitude: 3.7, speed: 4.8, phase: 2.2 },
+      { z: 812, count: 9000, amplitude: 3.72, speed: 5.2, phase: 4.0 },
+      { z: 1038, count: 18000, amplitude: 3.72, speed: 5.55, phase: 1.5 },
+      { z: 1248, count: 32000, amplitude: 3.74, speed: 5.85, phase: 3.2 },
+      { z: 1408, count: 52000, amplitude: 3.74, speed: 6.1, phase: 5.4 }
+    ]
   }
 ];
 
@@ -641,7 +773,9 @@ function unlockNextLevel() {
 function getLevelFlavor(index) {
   if (index < 2) return "Classic route: addition and multiplication gates keep the old leaderboard balance.";
   if (index === 2) return "New route: subtraction and division gates punish lazy choices but can open safer lanes.";
-  return "Final route: arithmetic traps are brutal, and the best score comes from choosing when to grow and when to shrink.";
+  if (index === 3) return "Storm route: arithmetic traps are brutal, and the best score comes from careful shrink choices.";
+  if (index === 4) return "Golden route: longer lanes and faster sweepers reward clean side switches.";
+  return "Final route: every gate matters, and late mistakes can erase a giant crowd.";
 }
 
 function renderLevelSelect(mode = "menu") {
@@ -665,6 +799,10 @@ function renderLevelSelect(mode = "menu") {
       <span class="level-status">${locked ? "Locked" : selected ? "Selected" : "Playable"}</span>
     `;
     button.addEventListener("click", () => {
+      if (mode !== "menu") {
+        startGame(index);
+        return;
+      }
       selectedLevelIndex = index;
       currentLevelIndex = index;
       currentLevel = levels[index];
@@ -986,7 +1124,7 @@ function setOverlay(mode, details = "") {
   renderLevelSelect(mode);
   if (mode === "menu") {
     overlayTitle.textContent = GAME_NAME;
-    overlayText.textContent = "Choose a level. Levels 3 and 4 add subtraction and division choices with separate leaderboards, so the old Level 1 and Level 2 scores stay fair.";
+    overlayText.textContent = "Choose a level. Levels 3 to 6 add subtraction, division, faster sweepers, and separate leaderboards, so each route stays fair.";
   } else if (mode === "paused") {
     overlayTitle.textContent = "Paused / 已暂停";
     overlayText.textContent = "Press P or Esc to keep running. / 按 P 或 Esc 继续冲刺。";

@@ -8,7 +8,7 @@ import {
 
 const LEVEL_GAME_LEVELS = {
   chomp: ["level1", "level2", "level3", "level4"],
-  tangsprint: ["level1", "level2", "level3", "level4"]
+  tangsprint: ["level1", "level2", "level3", "level4", "level5", "level6"]
 };
 const LEVEL_GAME_SETS = Object.fromEntries(
   Object.entries(LEVEL_GAME_LEVELS).map(([gameId, levels]) => [gameId, new Set(levels)])
@@ -179,9 +179,22 @@ function injectStyles() {
     .zizi-lb-button { position: fixed; right: clamp(14px, 3vw, 28px); bottom: clamp(14px, 3vw, 28px); z-index: 80; border: 1px solid rgba(91, 141, 239, 0.24); border-radius: 999px; padding: 12px 18px; color: #ffffff; background: linear-gradient(135deg, #18a999, #5b8def); box-shadow: 0 14px 30px rgba(77, 89, 121, 0.24); font: 800 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; cursor: pointer; letter-spacing: 0; }
     .zizi-lb-button:hover, .zizi-lb-button:focus-visible { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(77, 89, 121, 0.28); }
     .zizi-lb-button.is-inline { position: static; display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; padding: 10px 13px; font-size: 13px; }
-    .zizi-lb-modal { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 18px; background: rgba(249, 244, 232, 0.68); backdrop-filter: blur(14px); }
-    .zizi-lb-modal[hidden], .zizi-lb-form[hidden], .zizi-lb-note[hidden], .zizi-lb-pending[hidden] { display: none; }
+    .zizi-lb-modal, .zizi-lb-settle { position: fixed; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(249, 244, 232, 0.68); backdrop-filter: blur(14px); }
+    .zizi-lb-modal { z-index: 120; }
+    .zizi-lb-settle { z-index: 130; overflow: hidden; }
+    .zizi-lb-modal[hidden], .zizi-lb-settle[hidden], .zizi-lb-form[hidden], .zizi-lb-note[hidden], .zizi-lb-pending[hidden] { display: none; }
     .zizi-lb-panel { width: min(760px, 100%); max-height: min(780px, 92vh); overflow: auto; border: 1px solid rgba(83, 101, 135, 0.18); border-radius: 20px; color: #263044; background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 255, 0.9)); box-shadow: 0 24px 70px rgba(77, 89, 121, 0.28); }
+    .zizi-lb-settle-panel { position: relative; width: min(560px, 100%); overflow: hidden; border: 1px solid rgba(83, 101, 135, 0.16); border-radius: 24px; padding: clamp(22px, 5vw, 36px); color: #263044; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,249,255,0.94)); box-shadow: 0 28px 80px rgba(77, 89, 121, 0.32); text-align: center; animation: ziziSettleIn 360ms ease both; }
+    .zizi-lb-settle-panel::before { content: ""; position: absolute; inset: -40% -20% auto; height: 70%; background: radial-gradient(circle, rgba(24,169,153,0.18), transparent 58%); transform: rotate(-8deg); pointer-events: none; }
+    .zizi-lb-settle-kicker { position: relative; margin: 0 0 8px; color: #18a999; font-size: 13px; font-weight: 900; }
+    .zizi-lb-settle-title { position: relative; margin: 0; color: #263044; font-size: clamp(30px, 7vw, 48px); line-height: 1.05; letter-spacing: 0; }
+    .zizi-lb-settle-game { position: relative; margin: 10px auto 0; max-width: 34rem; color: #657186; line-height: 1.55; font-weight: 750; }
+    .zizi-lb-settle-score { position: relative; display: grid; gap: 4px; margin: 22px auto; padding: 18px; border-radius: 20px; background: linear-gradient(135deg, rgba(24,169,153,0.13), rgba(91,141,239,0.14)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.75); }
+    .zizi-lb-settle-score span { color: #657186; font-size: 13px; font-weight: 900; }
+    .zizi-lb-settle-score strong { color: #a46800; font-size: clamp(42px, 12vw, 72px); line-height: 1; font-weight: 950; }
+    .zizi-lb-settle-note { position: relative; margin: 0 0 16px; color: #34425c; line-height: 1.55; }
+    .zizi-lb-settle-continue { position: relative; min-height: 44px; border: 0; border-radius: 999px; padding: 12px 18px; color: #fff; background: linear-gradient(135deg, #18a999, #5b8def); box-shadow: 0 14px 30px rgba(77, 89, 121, 0.2); cursor: pointer; font: 900 14px/1.1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; }
+    @keyframes ziziSettleIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .zizi-lb-head { display: flex; gap: 12px; align-items: start; justify-content: space-between; padding: 22px 22px 14px; border-bottom: 1px solid rgba(83, 101, 135, 0.12); }
     .zizi-lb-head h2 { margin: 0; color: #263044; font-size: clamp(24px, 4vw, 36px); letter-spacing: 0; }
     .zizi-lb-head p, .zizi-lb-note, .zizi-lb-status { margin: 6px 0 0; color: #34425c; font-size: 13px; line-height: 1.45; }
@@ -372,8 +385,57 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
   body.append(form, note, status, list, pendingPanel);
   panel.append(head, body);
   modal.appendChild(panel);
+
+  const settlement = document.createElement("section");
+  settlement.className = "zizi-lb-settle";
+  settlement.hidden = true;
+  settlement.setAttribute("role", "dialog");
+  settlement.setAttribute("aria-modal", "true");
+  const settlementPanel = document.createElement("div");
+  settlementPanel.className = "zizi-lb-settle-panel";
+  const settlementKicker = document.createElement("p");
+  settlementKicker.className = "zizi-lb-settle-kicker";
+  settlementKicker.textContent = "结算完成 / Run Complete";
+  const settlementTitle = document.createElement("h2");
+  settlementTitle.className = "zizi-lb-settle-title";
+  settlementTitle.textContent = "准备参与排行 / Ready for Ranking";
+  const settlementGame = document.createElement("p");
+  settlementGame.className = "zizi-lb-settle-game";
+  const settlementScore = document.createElement("div");
+  settlementScore.className = "zizi-lb-settle-score";
+  const settlementScoreLabel = document.createElement("span");
+  settlementScoreLabel.textContent = "本次得分 / Final Score";
+  const settlementScoreValue = document.createElement("strong");
+  settlementScoreValue.textContent = "0";
+  settlementScore.append(settlementScoreLabel, settlementScoreValue);
+  const settlementNote = document.createElement("p");
+  settlementNote.className = "zizi-lb-settle-note";
+  settlementNote.textContent = "点击继续后填写昵称并提交成绩。键盘会在结算动画关闭后恢复。 / Click to continue, then enter your nickname and submit.";
+  const settlementContinue = document.createElement("button");
+  settlementContinue.className = "zizi-lb-settle-continue";
+  settlementContinue.type = "button";
+  settlementContinue.textContent = "继续提交 / Continue";
+  settlementPanel.append(settlementKicker, settlementTitle, settlementGame, settlementScore, settlementNote, settlementContinue);
+  settlement.appendChild(settlementPanel);
+
   (buttonContainer || document.body).appendChild(button);
   document.body.appendChild(modal);
+  document.body.appendChild(settlement);
+
+  let settlementNext = null;
+  let settlementFrame = 0;
+
+  function blockSettlementKeyboard(event) {
+    if (settlement.hidden) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  function setSettlementKeyboardLock(locked) {
+    ["keydown", "keyup", "keypress", "beforeinput"].forEach((type) => {
+      document[locked ? "addEventListener" : "removeEventListener"](type, blockSettlementKeyboard, true);
+    });
+  }
 
   function setStatus(text, isError = false) {
     status.textContent = text;
@@ -438,7 +500,37 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
     loadScores();
   }
 
+  function showSettlement(next) {
+    settlementNext = next;
+    settlement.hidden = false;
+    settlementGame.textContent = getBoardName();
+    settlementScoreValue.textContent = "0";
+    setSettlementKeyboardLock(true);
+    cancelAnimationFrame(settlementFrame);
+    const target = pendingScore || 0;
+    const started = performance.now();
+    const duration = 850;
+    const tick = (now) => {
+      const progress = Math.min(1, (now - started) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      settlementScoreValue.textContent = formatScore(Math.round(target * eased));
+      if (progress < 1) settlementFrame = requestAnimationFrame(tick);
+    };
+    settlementFrame = requestAnimationFrame(tick);
+  }
+
+  function closeSettlement() {
+    if (settlement.hidden) return;
+    settlement.hidden = true;
+    setSettlementKeyboardLock(false);
+    cancelAnimationFrame(settlementFrame);
+    const next = settlementNext;
+    settlementNext = null;
+    if (typeof next === "function") next();
+  }
+
   button.addEventListener("click", () => open(false));
+  settlementContinue.addEventListener("click", closeSettlement);
   close.addEventListener("click", () => {
     modal.hidden = true;
   });
@@ -512,12 +604,18 @@ export function setupLeaderboard({ gameId, gameName, scoreFormatter, levels, get
       pendingScore = normalizeScore(score);
       const explicitLevelId = typeof options === "string" ? options : options?.levelId;
       pendingLevelId = hasLevels ? resolveLevelId(explicitLevelId || getCurrentLevelId()) : "";
+      if (hasLevels && pendingLevelId) {
+        selectedLevelId = pendingLevelId;
+        levelSelect.value = selectedLevelId;
+      }
       scoreInput.value = formatScore(pendingScore);
-      open(true);
+      showSettlement(() => open(true));
     },
     destroy() {
       button.remove();
       modal.remove();
+      settlement.remove();
+      setSettlementKeyboardLock(false);
     }
   };
 }

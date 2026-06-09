@@ -79,7 +79,9 @@ export async function exportLeaderboards(db) {
       level1: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level1").collection("scores")),
       level2: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level2").collection("scores")),
       level3: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level3").collection("scores")),
-      level4: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level4").collection("scores"))
+      level4: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level4").collection("scores")),
+      level5: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level5").collection("scores")),
+      level6: await exportScorePath(db.collection("leaderboards").doc("tangsprint").collection("levels").doc("level6").collection("scores"))
     },
     chomp: {
       level1: await exportScorePath(db.collection("leaderboards").doc("chomp").collection("levels").doc("level1").collection("scores")),
