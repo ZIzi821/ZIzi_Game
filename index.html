@@ -8,22 +8,34 @@
   </head>
   <body class="home-page">
     <main>
-      <header class="hero">
-        <p class="eyebrow">ZIzi Game Collection</p>
-        <h1>ZIzi 游戏乐园 / ZIzi Game Arcade</h1>
-        <p class="intro">挑一个小世界进去玩吧。排行榜会在游戏入口之后慢慢加载，就算网络有点慢，主页也会先稳稳打开。</p>
-        <p class="intro">Pick a little world and jump in. Leaderboards load after the game cards, so the page stays ready even when the network is slow.</p>
-        <div class="hero-actions">
-          <a class="button" href="updates.html">更新日志 / Updates</a>
-          <a class="button primary" href="forum.html">社区留言板 / Community Board</a>
-          <a class="button" href="developer.html">开发者简介 / Developer Profile</a>
-        </div>
+      <header class="hero home-hero">
+        <section class="hero-copy" aria-label="ZIzi Game Collection">
+          <p class="eyebrow">ZIzi Game Collection</p>
+          <h1>ZIzi Game Index</h1>
+          <p class="intro">一个持续更新的浏览器游戏档案库：轻量、可直接进入、带排行榜与更新记录。</p>
+          <p class="intro">A focused archive of browser games: playable builds, live scoreboards, and a clear trail of updates.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#games">进入游戏库 / Browse Games</a>
+            <a class="button" href="updates.html">更新日志 / Updates</a>
+            <a class="button" href="developer.html">开发者简介 / Developers</a>
+            <a class="button" href="forum.html">社区留言板 / Community Board</a>
+          </div>
+        </section>
+        <aside class="hero-terminal" aria-label="Collection status">
+          <div class="terminal-bar">
+            <span></span><span></span><span></span>
+          </div>
+          <p><b>status</b><span>online</span></p>
+          <p><b>builds</b><span>playable in browser</span></p>
+          <p><b>scores</b><span>Firebase leaderboard cache</span></p>
+          <p><b>latest</b><span>Tang Sprint expanded to 6 levels</span></p>
+        </aside>
       </header>
 
-      <section class="game-grid" aria-label="游戏入口 / Game list">
+      <section id="games" class="game-grid" aria-label="游戏入口 / Game list">
         <a class="game starfall-card" href="aetherfall-protocol/">
           <span class="game-visual starfall-visual" aria-hidden="true"><span></span></span>
-          <strong>Starfall / 星陨</strong>
+          <strong>Starfall / 星坠</strong>
           <span>守住能量核心，在一波波追击里升级、闪避、冲出高分。</span>
           <span>Guard the energy core, dodge through waves, and chase a bright new score.</span>
           <b>开始游戏 / Play</b>
@@ -33,22 +45,22 @@
           <span class="game-visual sentinel-visual" aria-hidden="true"><span></span></span>
           <strong>Sentinel / 哨兵防线</strong>
           <span>摆好防线，守住核心，把每一波敌人拦在门外。</span>
-          <span>Build a cozy but stubborn defense and hold the line.</span>
+          <span>Build a steady defense and hold the line.</span>
           <b>开始游戏 / Play</b>
         </a>
 
         <a class="game bluecrowd-card" href="blue-crowd-rush/">
           <span class="game-visual bluecrowd-visual" aria-hidden="true"><span></span></span>
           <strong>唐人冲刺 / Tang people sprint</strong>
-          <span>带领金色冲刺队穿过超长增益路线，躲开密集敌人，每关都有独立榜单。</span>
-          <span>Lead a golden sprint team through long boost lanes and climb each level board.</span>
+          <span>穿过运算门、陷阱和敌阵，六个关卡各自记录排行榜。</span>
+          <span>Run through arithmetic gates, traps, and rival crowds across six ranked levels.</span>
           <b>开始游戏 / Play</b>
         </a>
 
         <a class="game moscow-card" href="battle-for-moscow/">
           <span class="game-visual moscow-visual" aria-hidden="true"><span></span></span>
           <strong>台风行动 / Operation Typhoon</strong>
-          <span>纯静态战棋游戏入口，暂时不接入 Firebase 排行榜。</span>
+          <span>静态战棋游戏入口，暂时不接入 Firebase 排行榜。</span>
           <span>Play the static wargame build, with no Firebase backend connected for now.</span>
           <b>开始游戏 / Play</b>
         </a>
@@ -56,7 +68,7 @@
         <a class="game chomp-card" href="pacman-odyssey/">
           <span class="game-visual chomp-visual" aria-hidden="true"><span></span></span>
           <strong>Chomp / 大口吃</strong>
-          <span>穿过迷宫、收集核心、甩开追击者，每一关都有自己的榜单。</span>
+          <span>穿过迷宫、收集核心、甩开追击者，每一关都有独立榜单。</span>
           <span>Dash through mazes, collect cores, and climb each level board.</span>
           <b>开始游戏 / Play</b>
         </a>

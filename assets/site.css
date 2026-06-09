@@ -158,6 +158,80 @@ p {
   max-width: 710px;
 }
 
+.home-hero {
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  align-items: end;
+  padding: clamp(22px, 4vw, 38px);
+  border: 1px solid rgba(83, 101, 135, 0.16);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(238, 248, 255, 0.72)),
+    linear-gradient(90deg, rgba(24, 169, 153, 0.08), rgba(91, 141, 239, 0.08));
+  box-shadow: var(--shadow);
+}
+
+.hero-copy {
+  display: grid;
+  gap: 16px;
+}
+
+.home-page .home-hero h1 {
+  max-width: 840px;
+  font-size: clamp(44px, 7vw, 82px);
+  letter-spacing: -0.02em;
+}
+
+.hero-terminal {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(38, 48, 68, 0.18);
+  border-radius: 16px;
+  background: rgba(20, 28, 43, 0.92);
+  color: #dffbf4;
+  box-shadow: 0 18px 38px rgba(20, 28, 43, 0.18);
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+.terminal-bar {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.terminal-bar span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff6b7a;
+}
+
+.terminal-bar span:nth-child(2) {
+  background: #f3c04d;
+}
+
+.terminal-bar span:nth-child(3) {
+  background: #36d399;
+}
+
+.hero-terminal p {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  color: #9ee8dc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hero-terminal b {
+  color: #ffffff;
+}
+
+.hero-terminal span {
+  text-align: right;
+}
+
 .hero h1 + .intro,
 .hero h2 + .intro {
   margin-top: 4px;
@@ -683,27 +757,119 @@ select:focus {
   width: min(1240px, calc(100% - 32px));
 }
 
+.developer-page {
+  --ink: #e9fff7;
+  --muted: #9bb6ad;
+  --panel: rgba(6, 16, 19, 0.82);
+  --panel-strong: rgba(8, 22, 26, 0.94);
+  --line: rgba(76, 255, 204, 0.18);
+  --shadow: 0 24px 54px rgba(0, 0, 0, 0.32);
+  --soft-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+  background:
+    linear-gradient(90deg, rgba(76, 255, 204, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(76, 255, 204, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 20% 10%, rgba(24, 169, 153, 0.18), transparent 28rem),
+    radial-gradient(circle at 90% 30%, rgba(91, 141, 239, 0.15), transparent 30rem),
+    #071015;
+  background-size: 28px 28px, 28px 28px, auto, auto, auto;
+}
+
+.developer-page .back,
+.developer-page .button {
+  border-color: rgba(76, 255, 204, 0.22);
+  background: rgba(8, 22, 26, 0.88);
+  color: #9effdf;
+  box-shadow: 0 0 0 1px rgba(76, 255, 204, 0.04), 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+.developer-page .back:hover,
+.developer-page .button:hover {
+  border-color: rgba(76, 255, 204, 0.46);
+  box-shadow: 0 0 24px rgba(76, 255, 204, 0.12), 0 18px 34px rgba(0, 0, 0, 0.28);
+}
+
+.developer-page .hero {
+  padding: clamp(20px, 4vw, 34px);
+  border: 1px solid rgba(76, 255, 204, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(8, 22, 26, 0.94), rgba(6, 16, 19, 0.78)),
+    repeating-linear-gradient(0deg, rgba(76, 255, 204, 0.06) 0 1px, transparent 1px 18px);
+  box-shadow: var(--shadow);
+}
+
 .developer-page .hero,
 .forum-page .hero {
   margin-bottom: clamp(20px, 3.6vw, 34px);
 }
 
 .developer-page .profile-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
 }
 
-.developer-page .profile-card:first-child,
 .developer-page .profile-card.full {
   grid-column: 1 / -1;
 }
 
 .developer-page .profile-card:not(.full) {
-  grid-template-columns: minmax(128px, 0.36fr) 1fr;
+  grid-template-columns: 1fr;
 }
 
 .developer-page .portrait {
-  max-height: 320px;
+  width: 100%;
+  height: clamp(240px, 28vw, 320px);
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.08);
+}
+
+.developer-page .profile-card {
+  border-color: rgba(76, 255, 204, 0.16);
+  background:
+    linear-gradient(180deg, rgba(8, 22, 26, 0.92), rgba(5, 13, 16, 0.86)),
+    radial-gradient(circle at 90% 0%, rgba(76, 255, 204, 0.12), transparent 14rem);
+  color: #dffbf4;
+}
+
+.developer-page .hacker-card {
+  min-height: 100%;
+  align-content: start;
+}
+
+.developer-page .hacker-card h2,
+.developer-page .terminal-panel h2 {
+  color: #e9fff7;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+.terminal-label {
+  color: #64ffcf;
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.developer-page .name,
+.developer-page .caption {
+  color: #64ffcf;
+}
+
+.developer-page .mail {
+  color: #8db8ff;
+}
+
+.developer-page .support-card {
+  background:
+    linear-gradient(180deg, rgba(11, 22, 18, 0.94), rgba(8, 15, 12, 0.88)),
+    radial-gradient(circle at 90% 0%, rgba(243, 167, 18, 0.1), transparent 16rem);
+}
+
+.developer-page .support-toggle summary {
+  border-color: rgba(76, 255, 204, 0.28);
+  background: rgba(7, 18, 21, 0.86);
+  color: #9effdf;
 }
 
 .developer-page .friends,
@@ -879,6 +1045,19 @@ select:focus {
 }
 
 @media (max-width: 900px) {
+  .home-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-terminal p {
+    display: grid;
+    gap: 4px;
+  }
+
+  .hero-terminal span {
+    text-align: left;
+  }
+
   .game-grid,
   .lb-cards,
   .chomp-levels,

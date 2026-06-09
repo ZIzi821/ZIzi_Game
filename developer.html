@@ -12,72 +12,75 @@
         <a class="back" href="./">返回主页 / Back Home</a>
       </nav>
 
-      <header class="hero">
-        <p class="eyebrow">Developer Profile</p>
-        <h1>开发者简介 / Developer Profile</h1>
-        <p class="intro">这里是 ZIzi Game Collection 背后的小小制作角。代码、图片、朋友的支持和一点点奇怪的灵感，都放在这里。</p>
-        <p class="intro">A small behind-the-scenes corner for the people, photos, support, and odd sparks that keep the game collection growing.</p>
+      <header class="hero dev-hero">
+        <p class="eyebrow">./developer-profile</p>
+        <h1>开发者终端 / Developer Terminal</h1>
+        <p class="intro">三位开发者维护这个游戏集合：写代码、修页面、做测试，也把一些奇怪但有用的想法放进版本里。</p>
+        <p class="intro">A compact log of the people behind the builds: code, UI, testing, and the occasional strange idea that survives review.</p>
       </header>
 
-      <div class="profile-grid">
-        <section class="profile-card" aria-label="ZIzi personal profile">
-          <img class="portrait" src="assets/developer/zizi-photo.jpg" alt="ZIzi 的照片 / Photo of ZIzi" />
+      <div class="profile-grid hacker-grid">
+        <section class="profile-card hacker-card" aria-label="ZIzi personal profile">
+          <img class="portrait" src="assets/developer/zizi-photo.jpg" alt="Photo of ZIzi" />
           <div class="meta">
+            <p class="terminal-label">user@zizi-game:~$ whoami</p>
             <h2>ZIzi</h2>
             <p class="name">Hi, I'm ZIzi.</p>
-            <p>邮箱 / Email: <span class="mail">yzhu0246@student.monash.edu</span></p>
-            <p>这个网站最早是从一个小小的吃豆人游戏开始的。把游戏打包发给朋友玩之后，我发现做一个真正能分享、能更新、能留言的网站会更有趣。</p>
-            <p>This site began with a small maze game. After sharing the first build with friends, it slowly grew into a place for games, updates, leaderboards, and community notes.</p>
-            <p>项目会继续慢慢更新。欢迎通过邮箱或社区留言板分享想法，也欢迎大家试玩、留言、提出建议。</p>
+            <p>Email: <span class="mail">yzhu0246@student.monash.edu</span></p>
+            <p>Started the collection, keeps the builds moving, and keeps turning small playable ideas into pages people can actually open.</p>
           </div>
         </section>
 
-        <section class="profile-card" aria-label="Mark developer profile">
-          <img class="portrait" src="assets/developer/dr-mark.jpg" alt="Mark 的照片 / Photo of Mark" />
+        <section class="profile-card hacker-card" aria-label="Mark developer profile">
+          <img class="portrait" src="assets/developer/dr-mark.jpg" alt="Photo of Mark" />
           <div class="meta">
+            <p class="terminal-label">user@zizi-game:~$ whoami</p>
             <h2>Mark</h2>
             <p class="name">Hi, I'm Mark.</p>
-            <p>邮箱 / Email: <span class="mail">mhan0096@student.monash.edu</span></p>
+            <p>Email: <span class="mail">mhan0096@student.monash.edu</span></p>
             <p>Code may crash, but the vibe must stay online.</p>
           </div>
         </section>
 
-        <section class="profile-card" aria-label="Jason developer profile">
-          <img class="portrait" src="assets/developer/jason-liangliyuan.png" alt="Jason 的照片 / Photo of Jason" />
+        <section class="profile-card hacker-card" aria-label="Jason developer profile">
+          <img class="portrait" src="assets/developer/jason-liangliyuan.png" alt="Photo of Jason" />
           <div class="meta">
+            <p class="terminal-label">user@zizi-game:~$ whoami</p>
             <h2>Jason</h2>
             <p class="name">Hi, I'm Jason.</p>
-            <p>邮箱 / Email: <span class="mail">llia0031@student.monash.edu</span></p>
+            <p>Email: <span class="mail">llia0031@student.monash.edu</span></p>
             <p>Developer passionate about building, learning, and solving problems.</p>
           </div>
         </section>
 
-        <section class="profile-card full" aria-label="Technical support friends">
+        <section class="profile-card full terminal-panel" aria-label="Technical support friends">
           <div class="meta">
+            <p class="terminal-label">system.log</p>
             <h2>技术支持 / Technical Support</h2>
             <p class="muted">朋友们提供了测试、灵感、吐槽，以及一些非常有辨识度的精神支持。</p>
           </div>
           <div class="friends">
             <article class="friend">
-              <img class="fun-photo" src="assets/developer/barry-fun.png" alt="Barry 的搞怪照片 / Barry fun photo" />
+              <img class="fun-photo" src="assets/developer/barry-fun.png" alt="Barry fun photo" />
               <p><span class="name">Barry</span>: 我要做世界上最辣的 Nasi lemak 给 Strong man，不辣的给 weak man。</p>
             </article>
             <article class="friend">
-              <img class="fun-photo" src="assets/developer/lay-image.jpg" alt="Lay 的照片 / Photo of Lay" />
+              <img class="fun-photo" src="assets/developer/lay-image.jpg" alt="Photo of Lay" />
               <p><span class="name">Lay</span>: Sperm Bank</p>
             </article>
             <article class="friend">
-              <img class="fun-photo" src="assets/developer/junqi-chen.jpg" alt="Junqi Chen 的照片 / Photo of Junqi Chen" />
-              <p><span class="name">Junqi Chen</span>: 何意味</p>
+              <img class="fun-photo" src="assets/developer/junqi-chen.jpg" alt="Photo of Junqi Chen" />
+              <p><span class="name">Junqi Chen</span>: 何意味?</p>
             </article>
           </div>
         </section>
 
-        <section class="profile-card full developer-tools-card" aria-label="Developer tools">
+        <section class="profile-card full terminal-panel developer-tools-card" aria-label="Developer tools">
           <div class="meta">
+            <p class="terminal-label">maintenance</p>
             <h2>开发者工具 / Developer Tools</h2>
-            <p class="muted">普通玩家不需要使用这些页面。它们是给网站维护者在同步失败、缓存导出或临时维护时备用的工具。</p>
-            <p class="muted">Regular players do not need these pages. They are backup tools for site maintainers when sync, cache export, or temporary maintenance is needed.</p>
+            <p class="muted">这些页面给网站维护者使用，用于同步、缓存导出和临时维护。</p>
+            <p class="muted">Maintenance pages for sync, cache export, and emergency site checks.</p>
           </div>
           <div class="actions">
             <a class="button" href="sync.html">同步工具 / Sync Tool</a>
@@ -85,27 +88,28 @@
           </div>
         </section>
 
-        <section class="profile-card full support-card" aria-label="Support the project">
+        <section class="profile-card full terminal-panel support-card" aria-label="Support the project">
           <div class="meta">
-            <h2>小小补给站 / Support the Project</h2>
-            <p class="muted">这个网站是兴趣项目，会继续慢慢更新。如果你喜欢这个小网站，可以自愿支持一下；当然，只是试玩、留言、分享建议也已经很有帮助。</p>
-            <p class="muted">This site is a hobby project and will keep growing little by little. Support is completely optional; playing, leaving a message, or sharing ideas already helps a lot.</p>
+            <p class="terminal-label">support</p>
+            <h2>支持项目 / Support the Project</h2>
+            <p class="muted">这个网站是兴趣项目。试玩、留言、反馈、分享想法都已经很有帮助；打赏完全自愿。</p>
+            <p class="muted">This is a hobby project. Playing, leaving notes, and sharing ideas already helps; donations are optional.</p>
           </div>
           <details class="support-toggle">
             <summary>展开支持二维码 / Show support QR codes</summary>
             <p class="muted support-note">二维码仅作为静态图片展示，本页面不会收集付款信息。扫码前请自行确认账号与金额。</p>
-            <p class="muted support-note">These QR codes are static images only. This page does not collect payment information. Please check the account and amount before scanning.</p>
+            <p class="muted support-note">These QR codes are static images only. This page does not collect payment information.</p>
             <div class="charging">
               <div class="qr-card">
-                <img class="qr" src="assets/developer/wechat.png" alt="微信支持二维码 / WeChat support QR code" />
+                <img class="qr" src="assets/developer/wechat.png" alt="WeChat support QR code" />
                 <div class="caption">微信 / WeChat</div>
               </div>
               <div class="qr-card">
-                <img class="qr" src="assets/developer/alipay.jpg" alt="支付宝支持二维码 / Alipay support QR code" />
+                <img class="qr" src="assets/developer/alipay.jpg" alt="Alipay support QR code" />
                 <div class="caption">支付宝 / Alipay</div>
               </div>
               <div class="qr-card">
-                <img class="qr" src="assets/developer/tng.jpg" alt="TNG 支持二维码 / TNG support QR code" />
+                <img class="qr" src="assets/developer/tng.jpg" alt="TNG support QR code" />
                 <div class="caption">TNG</div>
               </div>
             </div>
