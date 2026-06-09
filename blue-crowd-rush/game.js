@@ -429,6 +429,7 @@ class MusicSystem {
     this.button = button;
     this.context = null;
     this.master = null;
+    this.compressor = null;
     this.timer = 0;
     this.nextTime = 0;
     this.step = 0;
@@ -451,7 +452,13 @@ class MusicSystem {
     this.context = new AudioContext();
     this.master = this.context.createGain();
     this.master.gain.value = 0;
-    this.master.connect(this.context.destination);
+    this.compressor = this.context.createDynamicsCompressor();
+    this.compressor.threshold.value = -18;
+    this.compressor.knee.value = 18;
+    this.compressor.ratio.value = 3;
+    this.compressor.attack.value = 0.006;
+    this.compressor.release.value = 0.18;
+    this.master.connect(this.compressor).connect(this.context.destination);
   }
 
   async play() {
@@ -463,7 +470,7 @@ class MusicSystem {
     this.playing = true;
     this.nextTime = this.context.currentTime + 0.03;
     this.master.gain.cancelScheduledValues(this.context.currentTime);
-    this.master.gain.linearRampToValueAtTime(0.16, this.context.currentTime + 0.35);
+    this.master.gain.linearRampToValueAtTime(0.42, this.context.currentTime + 0.35);
     if (!this.timer) {
       this.timer = window.setInterval(() => this.schedule(), 90);
     }
@@ -479,10 +486,10 @@ class MusicSystem {
     this.ready = true;
     const now = this.context.currentTime;
     this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setValueAtTime(0.08, now);
+    this.master.gain.setValueAtTime(0.22, now);
     this.master.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-    this.tone(523.25, now + 0.01, 0.12, "triangle", 0.06);
-    this.tone(659.25, now + 0.13, 0.16, "triangle", 0.045);
+    this.tone(523.25, now + 0.01, 0.12, "triangle", 0.1);
+    this.tone(659.25, now + 0.13, 0.16, "triangle", 0.08);
     this.updateButton();
   }
 
@@ -540,12 +547,12 @@ class MusicSystem {
     const bass = [82.41, 98, 110, 146.83];
     const lead = [392, 440, 523.25, 587.33, 659.25, 587.33, 523.25, 440];
     if (step % 4 === 0) {
-      this.tone(bass[Math.floor(step / 8) % bass.length], time, 0.28, "sawtooth", 0.11);
+      this.tone(bass[Math.floor(step / 8) % bass.length], time, 0.28, "sawtooth", 0.16);
       this.kick(time);
     }
     if (step % 2 === 1) this.hat(time);
     if ([2, 5, 10, 13, 18, 21, 26, 29].includes(step)) {
-      this.tone(lead[step % lead.length], time, 0.16, "triangle", 0.045);
+      this.tone(lead[step % lead.length], time, 0.16, "triangle", 0.085);
     }
   }
 
@@ -568,7 +575,7 @@ class MusicSystem {
     osc.type = "sine";
     osc.frequency.setValueAtTime(92, time);
     osc.frequency.exponentialRampToValueAtTime(38, time + 0.16);
-    gain.gain.setValueAtTime(0.12, time);
+    gain.gain.setValueAtTime(0.22, time);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
     osc.connect(gain).connect(this.master);
     osc.start(time);
@@ -584,7 +591,7 @@ class MusicSystem {
     const source = this.context.createBufferSource();
     const gain = this.context.createGain();
     source.buffer = buffer;
-    gain.gain.setValueAtTime(0.018, time);
+    gain.gain.setValueAtTime(0.045, time);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
     source.connect(gain).connect(this.master);
     source.start(time);
