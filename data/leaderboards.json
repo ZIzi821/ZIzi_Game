@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-09T04:33:04.336Z",
+  "updatedAt": "2026-06-10T04:46:48.927Z",
   "leaderboards": {
     "starfall": [
       {
@@ -64,6 +64,13 @@
     "bluecrowd": [],
     "tangsprint": {
       "level1": [
+        {
+          "id": "nKAxVKIPxUeWEea12jNS",
+          "nickname": "zizi",
+          "score": 347206,
+          "createdAt": "2026-06-09T08:12:27.777Z",
+          "sourceRegion": ""
+        },
         {
           "id": "VjCPTRHkncRz73VrpIji",
           "nickname": "chen",
@@ -145,7 +152,15 @@
         }
       ],
       "level3": [],
-      "level4": [],
+      "level4": [
+        {
+          "id": "DmYCmqnIIKkXecS8N32B",
+          "nickname": "ZIzi",
+          "score": 1283320,
+          "createdAt": "2026-06-09T09:33:59.762Z",
+          "sourceRegion": ""
+        }
+      ],
       "level5": [],
       "level6": []
     },
