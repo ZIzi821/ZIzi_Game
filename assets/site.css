@@ -338,6 +338,13 @@ p {
     linear-gradient(135deg, rgba(215, 221, 218, 0.92), rgba(161, 176, 181, 0.66) 48%, rgba(225, 218, 204, 0.72));
 }
 
+.mapbuilder-card {
+  --game-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.86)),
+    radial-gradient(circle at 26% 26%, rgba(47, 146, 117, 0.5), transparent 30%),
+    linear-gradient(135deg, rgba(201, 157, 52, 0.42), rgba(36, 102, 95, 0.35) 48%, rgba(159, 34, 40, 0.2));
+}
+
 .game-visual {
   position: relative;
   display: block;
@@ -534,6 +541,58 @@ p {
   background: url("game-art/operation-typhoon-2.png") center / cover;
   box-shadow: 0 14px 24px rgba(12, 17, 23, 0.3);
   transform: rotate(-3deg);
+}
+
+.mapbuilder-visual {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(25, 31, 38, 0.16)),
+    #d0c8bd;
+  border-color: rgba(36, 102, 95, 0.24);
+}
+
+.mapbuilder-visual::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.mapbuilder-visual::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 18px;
+  width: 58px;
+  height: 50px;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent 45%),
+    #dce7c9;
+  box-shadow:
+    50px 0 0 #7fc39b,
+    100px 0 0 #c5c9c2,
+    25px 43px 0 #cfdcc3,
+    75px 43px 0 #8fbfa8,
+    125px 43px 0 #b8bbbb;
+  border: 1px solid rgba(24, 31, 38, 0.32);
+}
+
+.mapbuilder-visual span {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 86px;
+  height: 64px;
+  border: 2px solid rgba(36, 43, 52, 0.34);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, transparent 45%, rgba(36, 43, 52, 0.56) 46% 49%, transparent 50%),
+    linear-gradient(25deg, transparent 40%, rgba(36, 43, 52, 0.56) 41% 44%, transparent 45%),
+    linear-gradient(150deg, transparent 38%, rgba(36, 43, 52, 0.56) 39% 42%, transparent 43%);
+  opacity: 0.85;
 }
 
 .game strong {
