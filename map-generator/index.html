@@ -214,6 +214,10 @@
         gap: 10px;
       }
 
+      .field-grid.single-column {
+        grid-template-columns: 1fr;
+      }
+
       .field-control {
         display: grid;
         gap: 6px;
@@ -392,7 +396,6 @@
         <div class="toolbar" aria-label="地图操作 / Map actions">
           <button type="button" id="undoBtn" title="撤销 / Undo">↶ 撤销 / Undo</button>
           <button type="button" id="redoBtn" title="重做 / Redo">↷ 重做 / Redo</button>
-          <button type="button" id="sampleBtn">示例 / Sample</button>
           <button type="button" id="clearBtn">清空 / Clear</button>
           <button type="button" id="pngBtn" class="primary">导出 PNG / Export PNG</button>
         </div>
@@ -417,9 +420,8 @@
                 <input id="rowsInput" type="number" min="4" max="18" value="10" />
               </div>
             </div>
-            <div class="field-grid">
+            <div class="field-grid single-column">
               <button type="button" id="resizeBtn">调整尺寸 / Resize</button>
-              <button type="button" id="fillBtn">填满所选 / Fill Selected</button>
             </div>
           </section>
 
@@ -697,10 +699,10 @@
       }
 
       function drawTexture(tile, cx, cy) {
-        const radius = state.size;
+        const radius = state.size + 1;
         const hexHeight = Math.sqrt(3) * radius;
         ctx.save();
-        hexPath(cx, cy, radius - 1);
+        hexPath(cx, cy, radius);
         ctx.clip();
         ctx.fillStyle = tile.color;
         ctx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
@@ -867,7 +869,12 @@
             const tile = tileById[state.board[r][q]] || tileById.open;
             const center = hexCenter(q, r);
             drawTexture(tile, center.x, center.y);
-            hexPath(center.x, center.y, state.size - 0.5);
+          }
+        }
+        for (let r = 0; r < state.rows; r += 1) {
+          for (let q = 0; q < state.cols; q += 1) {
+            const center = hexCenter(q, r);
+            hexPath(center.x, center.y, state.size);
             ctx.strokeStyle = "rgba(20, 24, 28, 0.68)";
             ctx.lineWidth = 1.2;
             ctx.stroke();
@@ -950,24 +957,6 @@
         draw();
       }
 
-      function sampleMap() {
-        const sample = makeBoard(state.cols, state.rows, "open");
-        for (let r = 0; r < state.rows; r += 1) {
-          for (let q = 0; q < state.cols; q += 1) {
-            if ((q + r) % 6 === 0) sample[r][q] = "forest";
-            if (q === 4 && r > 1 && r < state.rows - 2) sample[r][q] = "river";
-            if ((q === 2 || q === 8) && r > 0 && r < state.rows - 1) sample[r][q] = "rail";
-            if ((q === 6 && r === 3) || (q === 10 && r === 5)) sample[r][q] = "city";
-            if (q === state.cols - 3 && r === 2) sample[r][q] = "major-city";
-            if (q === 7 && r === 1) sample[r][q] = "fort";
-            if ((q === 1 && r === 2) || (q === 3 && r === 6) || (q === 11 && r === 4)) sample[r][q] = "setup";
-          }
-        }
-        state.board = sample;
-        updateJson();
-        draw();
-      }
-
       canvas.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         const point = canvasPoint(event);
@@ -1024,18 +1013,6 @@
         const rows = Math.min(18, Math.max(4, Number(rowsInput.value) || state.rows));
         pushHistory();
         resizeBoard(cols, rows);
-      });
-
-      document.getElementById("fillBtn").addEventListener("click", () => {
-        pushHistory();
-        state.board = makeBoard(state.cols, state.rows, state.selected);
-        updateJson();
-        draw();
-      });
-
-      document.getElementById("sampleBtn").addEventListener("click", () => {
-        pushHistory();
-        sampleMap();
       });
 
       document.getElementById("clearBtn").addEventListener("click", () => {
@@ -1100,7 +1077,8 @@
       state.board = makeBoard(state.cols, state.rows, "open");
       resizeCanvas();
       setSelected("open");
-      sampleMap();
+      updateJson();
+      draw();
       updateHistoryButtons();
     </script>
   </body>
