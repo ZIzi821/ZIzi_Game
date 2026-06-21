@@ -138,6 +138,79 @@
         cursor: not-allowed;
       }
 
+      .export-menu {
+        position: relative;
+        z-index: 45;
+      }
+
+      .export-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .export-chevron {
+        display: inline-block;
+        transition: transform 220ms ease;
+      }
+
+      .export-menu[data-open="true"] .export-chevron {
+        transform: rotate(180deg);
+      }
+
+      .export-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: min(300px, calc(100vw - 28px));
+        display: grid;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-10px);
+        transform-origin: top right;
+        transition:
+          grid-template-rows 240ms ease,
+          opacity 180ms ease,
+          transform 240ms ease,
+          visibility 0s linear 240ms;
+      }
+
+      .export-menu[data-open="true"] .export-panel {
+        grid-template-rows: 1fr;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+        transition-delay: 0s;
+      }
+
+      .export-panel-inner {
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .export-panel-surface {
+        display: grid;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(250, 248, 243, 0.98);
+        box-shadow: 0 18px 45px rgba(24, 31, 38, 0.2);
+        backdrop-filter: blur(14px);
+      }
+
+      .toolbar .export-panel button {
+        width: 100%;
+        justify-content: flex-start;
+        background: white;
+        color: var(--ink);
+        white-space: normal;
+      }
+
       .workspace {
         display: grid;
         grid-template-columns: minmax(270px, 330px) 1fr;
@@ -427,8 +500,16 @@
           white-space: normal;
         }
 
-        .toolbar button.primary {
+        .export-menu {
           grid-column: 1 / -1;
+        }
+
+        .export-toggle {
+          width: 100%;
+        }
+
+        .export-panel {
+          width: 100%;
         }
 
         .file-button {
@@ -449,7 +530,19 @@
           <button type="button" id="undoBtn" title="撤销 / Undo">↶ 撤销 / Undo</button>
           <button type="button" id="redoBtn" title="重做 / Redo">↷ 重做 / Redo</button>
           <button type="button" id="clearBtn">清空 / Clear</button>
-          <button type="button" id="pngBtn" class="primary">导出 PNG / Export PNG</button>
+          <div class="export-menu" id="exportMenu" data-open="false">
+            <button type="button" id="exportBtn" class="primary export-toggle" aria-expanded="false" aria-controls="exportPanel">
+              <span>导出 / Export</span><span class="export-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div class="export-panel" id="exportPanel" aria-hidden="true">
+              <div class="export-panel-inner">
+                <div class="export-panel-surface">
+                  <button type="button" id="pngBtn">导出 PNG / Export PNG</button>
+                  <button type="button" id="downloadJsonBtn">导出地图数据 / Export Map Data</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -494,7 +587,6 @@
             <textarea id="jsonBox" class="json-box" spellcheck="false"></textarea>
             <div class="field-grid">
               <button type="button" id="copyBtn">复制 / Copy</button>
-              <button type="button" id="downloadJsonBtn">导出地图数据 / Export Map Data</button>
               <label class="file-button" for="importFile">导入 / Import</label>
               <button type="button" id="applyJsonBtn">应用 JSON / Apply JSON</button>
             </div>
@@ -540,6 +632,9 @@
       const rowsInput = document.getElementById("rowsInput");
       const undoBtn = document.getElementById("undoBtn");
       const redoBtn = document.getElementById("redoBtn");
+      const exportMenu = document.getElementById("exportMenu");
+      const exportBtn = document.getElementById("exportBtn");
+      const exportPanel = document.getElementById("exportPanel");
 
       const tileTypes = [
         {
@@ -680,6 +775,28 @@
         undoBtn.disabled = state.undo.length === 0;
         redoBtn.disabled = state.redo.length === 0;
       }
+
+      function setExportMenu(open) {
+        exportMenu.dataset.open = String(open);
+        exportBtn.setAttribute("aria-expanded", String(open));
+        exportPanel.setAttribute("aria-hidden", String(!open));
+      }
+
+      exportBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setExportMenu(exportMenu.dataset.open !== "true");
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!exportMenu.contains(event.target)) setExportMenu(false);
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          setExportMenu(false);
+          exportBtn.focus();
+        }
+      });
 
       function tileLabel(tile) {
         return `${tile.zh} / ${tile.name}`;
@@ -1350,6 +1467,7 @@
         link.download = "wargame-map.png";
         link.href = canvas.toDataURL("image/png");
         link.click();
+        setExportMenu(false);
       });
 
       document.getElementById("copyBtn").addEventListener("click", async () => {
@@ -1363,6 +1481,7 @@
         link.href = URL.createObjectURL(blob);
         link.click();
         URL.revokeObjectURL(link.href);
+        setExportMenu(false);
       });
 
       document.getElementById("applyJsonBtn").addEventListener("click", () => {
