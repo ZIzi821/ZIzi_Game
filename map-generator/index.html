@@ -71,6 +71,7 @@
       }
 
       .brand {
+        min-width: 0;
         display: grid;
         gap: 2px;
       }
@@ -79,6 +80,7 @@
         margin: 0;
         font-size: clamp(20px, 2.2vw, 30px);
         letter-spacing: 0;
+        overflow-wrap: anywhere;
       }
 
       .brand span {
@@ -201,11 +203,34 @@
       .tile-copy strong {
         font-size: 13px;
         line-height: 1.15;
+        overflow-wrap: anywhere;
       }
 
       .tile-copy span {
         color: var(--muted);
         font-size: 11px;
+      }
+
+      .tile-copy span.pending {
+        color: #9f2228;
+        font-weight: 800;
+      }
+
+      .river-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding-top: 2px;
+      }
+
+      .river-controls[hidden] {
+        display: none;
+      }
+
+      .river-controls button[aria-pressed="true"] {
+        border-color: rgba(24, 119, 151, 0.62);
+        background: rgba(224, 246, 250, 0.98);
+        color: #155a72;
       }
 
       .field-grid {
@@ -264,6 +289,9 @@
 
       .status-row b {
         color: var(--ink);
+        max-width: 62%;
+        text-align: right;
+        line-height: 1.3;
       }
 
       .json-box {
@@ -374,11 +402,35 @@
       }
 
       @media (max-width: 560px) {
+        .topbar,
+        .workspace,
+        .side-panel {
+          min-width: 0;
+          max-width: 100%;
+        }
+
         .palette {
+          grid-template-columns: 1fr;
+          overflow-x: visible;
+        }
+
+        .toolbar {
+          width: 100%;
+          display: grid;
           grid-template-columns: 1fr 1fr;
         }
 
-        .toolbar button,
+        .toolbar button {
+          width: 100%;
+          min-width: 0;
+          padding: 0 6px;
+          white-space: normal;
+        }
+
+        .toolbar button.primary {
+          grid-column: 1 / -1;
+        }
+
         .file-button {
           flex: 1 1 auto;
         }
@@ -406,6 +458,10 @@
           <section class="panel-block" aria-label="地块面板 / Terrain palette">
             <h2 class="panel-title">地块 / Terrain</h2>
             <div class="palette" id="palette"></div>
+            <div class="river-controls" id="riverControls" aria-label="河流模式 / River mode" hidden>
+              <button type="button" data-river-mode="draw" aria-pressed="true">绘制 / Draw</button>
+              <button type="button" data-river-mode="erase" aria-pressed="false">擦除 / Erase</button>
+            </div>
           </section>
 
           <section class="panel-block" aria-label="地图尺寸 / Map size">
@@ -417,7 +473,7 @@
               </div>
               <div class="field-control">
                 <label for="rowsInput">行数 / Rows</label>
-                <input id="rowsInput" type="number" min="4" max="18" value="10" />
+                <input id="rowsInput" type="number" min="4" max="18" value="11" />
               </div>
             </div>
             <div class="field-grid single-column">
@@ -428,7 +484,9 @@
           <section class="status-card" aria-label="当前选择 / Selection">
             <div class="status-row"><span>已选 / Selected</span><b id="selectedLabel">开阔地 / Open</b></div>
             <div class="status-row"><span>指针 / Pointer</span><b id="hoverLabel">--</b></div>
-            <div class="status-row"><span>网格 / Grid</span><b id="gridLabel">14 x 10</b></div>
+            <div class="status-row"><span>移动 / Movement</span><b id="movementLabel">消耗 1 / Cost 1</b></div>
+            <div class="status-row"><span>战斗 / Combat</span><b id="combatLabel">无修正 / No effect</b></div>
+            <div class="status-row"><span>网格 / Grid</span><b id="gridLabel">14 x 11</b></div>
           </section>
 
           <section class="panel-block" aria-label="地图 JSON / Map JSON">
@@ -436,7 +494,7 @@
             <textarea id="jsonBox" class="json-box" spellcheck="false"></textarea>
             <div class="field-grid">
               <button type="button" id="copyBtn">复制 / Copy</button>
-              <button type="button" id="downloadJsonBtn">下载 / Download</button>
+              <button type="button" id="downloadJsonBtn">导出地图数据 / Export Map Data</button>
               <label class="file-button" for="importFile">导入 / Import</label>
               <button type="button" id="applyJsonBtn">应用 JSON / Apply JSON</button>
             </div>
@@ -462,7 +520,9 @@
       </main>
     </div>
 
+    <script src="../assets/operation-typhoon-map.js"></script>
     <script>
+      const MapContract = window.OperationTyphoonMap;
       const terrainImage = new Image();
       terrainImage.src = "../battle-for-moscow/assets/terrain.png";
 
@@ -471,7 +531,10 @@
       const palette = document.getElementById("palette");
       const selectedLabel = document.getElementById("selectedLabel");
       const hoverLabel = document.getElementById("hoverLabel");
+      const movementLabel = document.getElementById("movementLabel");
+      const combatLabel = document.getElementById("combatLabel");
       const gridLabel = document.getElementById("gridLabel");
+      const riverControls = document.getElementById("riverControls");
       const jsonBox = document.getElementById("jsonBox");
       const colsInput = document.getElementById("colsInput");
       const rowsInput = document.getElementById("rowsInput");
@@ -485,6 +548,8 @@
           zh: "开阔地",
           color: "#dce7c9",
           crop: { x: 28, y: 108, w: 102, h: 103 },
+          movement: "消耗 1 / Cost 1",
+          combat: "无修正 / No effect",
         },
         {
           id: "forest",
@@ -492,6 +557,8 @@
           zh: "森林",
           color: "#72b997",
           crop: { x: 28, y: 226, w: 102, h: 97 },
+          movement: "消耗 2；俄军铁路 1 / Cost 2; Soviet rail 1",
+          combat: "赔率左移 1 栏 / Shift odds 1 column",
         },
         {
           id: "city",
@@ -499,6 +566,8 @@
           zh: "城市",
           color: "#cfd3c8",
           crop: { x: 26, y: 340, w: 106, h: 101 },
+          movement: "消耗 1 / Cost 1",
+          combat: "无修正 / No effect",
         },
         {
           id: "major-city",
@@ -506,6 +575,8 @@
           zh: "大城市",
           color: "#c4c8c1",
           crop: { x: 25, y: 452, w: 108, h: 99 },
+          movement: "消耗 1 / Cost 1",
+          combat: "左移 1 栏；撤退改为损失 / Shift 1; retreat becomes loss",
         },
         {
           id: "fort",
@@ -513,6 +584,9 @@
           zh: "筑垒",
           color: "#b9bbbb",
           crop: { x: 27, y: 563, w: 105, h: 96 },
+          movement: "规则待实现 / Rules pending",
+          combat: "规则待实现 / Rules pending",
+          pending: true,
         },
         {
           id: "river",
@@ -520,6 +594,9 @@
           zh: "河流",
           color: "#c7ddca",
           crop: { x: 27, y: 665, w: 106, h: 105 },
+          movement: "无修正 / No effect",
+          combat: "全部跨河时左移 1 栏 / Shift 1 if all cross",
+          edgeTool: true,
         },
         {
           id: "rail",
@@ -527,6 +604,9 @@
           zh: "铁路",
           color: "#cedcc5",
           crop: { x: 27, y: 780, w: 106, h: 100 },
+          movement: "规则待实现 / Rules pending",
+          combat: "规则待实现 / Rules pending",
+          pending: true,
         },
         {
           id: "setup",
@@ -534,6 +614,9 @@
           zh: "部署标记",
           color: "#cfdcc3",
           crop: { x: 27, y: 891, w: 106, h: 100 },
+          movement: "规则待实现 / Rules pending",
+          combat: "规则待实现 / Rules pending",
+          pending: true,
         },
       ];
 
@@ -541,11 +624,15 @@
 
       const state = {
         cols: 14,
-        rows: 10,
+        rows: 11,
         size: 42,
         selected: "open",
-        hover: null,
+        riverMode: "draw",
+        rivers: new Set(),
+        hoverHex: null,
+        hoverEdge: null,
         painting: false,
+        strokeEdges: new Set(),
         board: [],
         undo: [],
         redo: [],
@@ -559,8 +646,29 @@
         return board.map((row) => row.slice());
       }
 
+      function snapshotState() {
+        return {
+          cols: state.cols,
+          rows: state.rows,
+          board: cloneBoard(),
+          rivers: [...state.rivers],
+        };
+      }
+
+      function restoreSnapshot(snapshot) {
+        state.cols = snapshot.cols;
+        state.rows = snapshot.rows;
+        state.board = snapshot.board.map((row) => row.slice());
+        state.rivers = new Set(snapshot.rivers);
+        colsInput.value = state.cols;
+        rowsInput.value = state.rows;
+        resizeCanvas();
+        updateJson();
+        draw();
+      }
+
       function pushHistory() {
-        state.undo.push(cloneBoard());
+        state.undo.push(snapshotState());
         if (state.undo.length > 80) {
           state.undo.shift();
         }
@@ -583,10 +691,18 @@
 
       function setSelected(id) {
         state.selected = id;
-        selectedLabel.textContent = tileLabel(tileById[id]);
+        const tile = tileById[id];
+        selectedLabel.textContent = tileLabel(tile);
+        movementLabel.textContent = tile.movement;
+        combatLabel.textContent = tile.combat;
+        riverControls.hidden = !tile.edgeTool;
+        state.hoverHex = null;
+        state.hoverEdge = null;
+        hoverLabel.textContent = "--";
         [...palette.querySelectorAll("button")].forEach((button) => {
           button.setAttribute("aria-pressed", button.dataset.tile === id ? "true" : "false");
         });
+        draw();
       }
 
       function buildPalette() {
@@ -604,9 +720,14 @@
 
           const copy = document.createElement("span");
           copy.className = "tile-copy";
+          const detail = tile.edgeTool
+            ? "边工具 / Edge tool"
+            : tile.pending
+              ? "规则待实现 / Rules pending"
+              : "规则已连接 / Rules ready";
           copy.innerHTML = `
             <strong>${tileLabel(tile)}</strong>
-            <span>原版地块 / Original tile</span>
+            <span${tile.pending ? ' class="pending"' : ""}>${detail}</span>
           `;
 
           button.append(swatch, copy);
@@ -615,6 +736,15 @@
           drawPaletteSwatch(swatch, tile);
         });
       }
+
+      riverControls.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-river-mode]");
+        if (!button) return;
+        state.riverMode = button.dataset.riverMode;
+        [...riverControls.querySelectorAll("button")].forEach((item) => {
+          item.setAttribute("aria-pressed", item === button ? "true" : "false");
+        });
+      });
 
       function resizeCanvas() {
         const s = state.size;
@@ -682,6 +812,104 @@
           if (found) break;
         }
         return found;
+      }
+
+      const edgeVertices = Object.freeze({
+        NE: [5, 0],
+        SE: [0, 1],
+        S: [1, 2],
+        SW: [2, 3],
+        NW: [3, 4],
+        N: [4, 5],
+      });
+
+      function inBounds(q, r, cols = state.cols, rows = state.rows) {
+        return q >= 0 && q < cols && r >= 0 && r < rows;
+      }
+
+      function hexCorners(q, r) {
+        const center = hexCenter(q, r);
+        return Array.from({ length: 6 }, (_, index) => {
+          const angle = (Math.PI / 180) * (60 * index);
+          return {
+            x: center.x + state.size * Math.cos(angle),
+            y: center.y + state.size * Math.sin(angle),
+          };
+        });
+      }
+
+      function coordinateBefore(a, b) {
+        return a.x < b.x || (a.x === b.x && a.y <= b.y);
+      }
+
+      function riverEdgeKey(q, r, direction, cols = state.cols, rows = state.rows) {
+        const neighbor = MapContract.neighborOf(q, r, direction);
+        if (!inBounds(neighbor.x, neighbor.y, cols, rows)) return `${q},${r},${direction}`;
+        if (coordinateBefore({ x: q, y: r }, neighbor)) return `${q},${r},${direction}`;
+        return `${neighbor.x},${neighbor.y},${MapContract.OPPOSITE[direction]}`;
+      }
+
+      function decodeRiverEdge(key) {
+        const [q, r, direction] = key.split(",");
+        return { q: Number(q), r: Number(r), direction };
+      }
+
+      function riverSegment(q, r, direction) {
+        const vertices = edgeVertices[direction];
+        const corners = hexCorners(q, r);
+        return {
+          q,
+          r,
+          direction,
+          key: riverEdgeKey(q, r, direction),
+          a: corners[vertices[0]],
+          b: corners[vertices[1]],
+        };
+      }
+
+      function riverSegments() {
+        return [...state.rivers].map((key) => {
+          const edge = decodeRiverEdge(key);
+          return { ...riverSegment(edge.q, edge.r, edge.direction), key };
+        });
+      }
+
+      function pointToSegmentDistance(point, a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const lengthSquared = dx * dx + dy * dy;
+        const amount = lengthSquared
+          ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared))
+          : 0;
+        const x = a.x + amount * dx;
+        const y = a.y + amount * dy;
+        return Math.hypot(point.x - x, point.y - y);
+      }
+
+      function edgeAtPoint(x, y) {
+        const point = { x, y };
+        const seen = new Set();
+        let closest = null;
+        for (let q = 0; q < state.cols; q += 1) {
+          for (let r = 0; r < state.rows; r += 1) {
+            for (const direction of MapContract.DIRECTIONS) {
+              const key = riverEdgeKey(q, r, direction);
+              if (seen.has(key)) continue;
+              seen.add(key);
+              const segment = riverSegment(q, r, direction);
+              segment.key = key;
+              const distance = pointToSegmentDistance(point, segment.a, segment.b);
+              if (distance <= 11 && (!closest || distance < closest.distance)) {
+                closest = { ...segment, distance };
+              }
+            }
+          }
+        }
+        return closest;
+      }
+
+      function riverDirectionsForHex(q, r) {
+        return MapContract.DIRECTIONS.filter((direction) => state.rivers.has(riverEdgeKey(q, r, direction)));
       }
 
       function drawImageCover(image, crop, left, top, width, height) {
@@ -860,6 +1088,29 @@
         ctx.fillText(`${String(q + 1).padStart(2, "0")}${String(r + 1).padStart(2, "0")}`, cx, cy - 25);
       }
 
+      function strokeSegments(segments, color, width) {
+        if (!segments.length) return;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (const segment of segments) {
+          ctx.moveTo(segment.a.x, segment.a.y);
+          ctx.lineTo(segment.b.x, segment.b.y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawRivers() {
+        const segments = riverSegments();
+        strokeSegments(segments, "rgba(18, 64, 84, 0.92)", 11);
+        strokeSegments(segments, "rgba(45, 151, 190, 0.98)", 7);
+        strokeSegments(segments, "rgba(183, 235, 244, 0.62)", 2);
+      }
+
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d0c8be";
@@ -878,40 +1129,88 @@
             ctx.strokeStyle = "rgba(20, 24, 28, 0.68)";
             ctx.lineWidth = 1.2;
             ctx.stroke();
+          }
+        }
+        drawRivers();
+        for (let r = 0; r < state.rows; r += 1) {
+          for (let q = 0; q < state.cols; q += 1) {
+            const center = hexCenter(q, r);
             drawCoordinate(q, r, center.x, center.y);
           }
         }
-        if (state.hover) {
-          const center = hexCenter(state.hover.q, state.hover.r);
+        if (state.hoverHex && state.selected !== "river") {
+          const center = hexCenter(state.hoverHex.q, state.hoverHex.r);
           hexPath(center.x, center.y, state.size - 2);
           ctx.strokeStyle = "rgba(159, 34, 40, 0.92)";
           ctx.lineWidth = 4;
           ctx.stroke();
         }
+        if (state.hoverEdge && state.selected === "river") {
+          const active = state.rivers.has(state.hoverEdge.key);
+          const color = state.riverMode === "erase" || active
+            ? "rgba(176, 38, 46, 0.96)"
+            : "rgba(22, 126, 159, 0.96)";
+          strokeSegments([state.hoverEdge], color, 13);
+        }
       }
 
       function paintHex(hex) {
-        if (!hex) return;
+        if (!hex || state.selected === "river") return;
         if (state.board[hex.r][hex.q] === state.selected) return;
         state.board[hex.r][hex.q] = state.selected;
         updateJson();
         draw();
       }
 
-      function updateHover(hex) {
-        state.hover = hex;
-        hoverLabel.textContent = hex ? `${hex.q + 1}, ${hex.r + 1}` : "--";
+      function paintRiverEdge(edge) {
+        if (!edge || state.strokeEdges.has(edge.key)) return;
+        state.strokeEdges.add(edge.key);
+        if (state.riverMode === "erase") state.rivers.delete(edge.key);
+        else state.rivers.add(edge.key);
+        updateJson();
+        draw();
+      }
+
+      function updateHover(hex, edge) {
+        state.hoverHex = hex;
+        state.hoverEdge = edge;
+        hoverLabel.textContent = edge
+          ? `${edge.q + 1}, ${edge.r + 1} ${edge.direction}`
+          : hex
+            ? `${hex.q + 1}, ${hex.r + 1}`
+            : "--";
         draw();
       }
 
       function currentDocument() {
+        const hexes = [];
+        for (let r = 0; r < state.rows; r += 1) {
+          for (let q = 0; q < state.cols; q += 1) {
+            const visual = state.board[r][q] || "open";
+            const definition = MapContract.visualDefinition(visual);
+            hexes.push({
+              x: q,
+              y: r,
+              visual,
+              terrain: definition.terrain,
+              city: definition.city,
+              river: riverDirectionsForHex(q, r),
+            });
+          }
+        }
         return {
-          version: 1,
+          version: MapContract.VERSION,
+          format: MapContract.FORMAT,
+          ruleset: MapContract.RULESET,
           source: "ZIzi_Game map-generator",
           terrainSheet: "battle-for-moscow/assets/terrain.png",
-          cols: state.cols,
-          rows: state.rows,
-          tiles: cloneBoard(),
+          grid: {
+            cols: state.cols,
+            rows: state.rows,
+            orientation: "flat",
+            offset: 1,
+          },
+          hexes,
         };
       }
 
@@ -921,37 +1220,49 @@
       }
 
       function loadDocument(doc) {
-        if (!doc || !Array.isArray(doc.tiles)) {
-          throw new Error("缺少 tiles 数组 / Missing tiles array");
-        }
-        const rows = Math.min(18, Math.max(4, Number(doc.rows || doc.tiles.length)));
-        const cols = Math.min(24, Math.max(4, Number(doc.cols || doc.tiles[0]?.length || 14)));
-        state.rows = rows;
-        state.cols = cols;
-        state.board = makeBoard(cols, rows);
-        for (let r = 0; r < rows; r += 1) {
-          for (let q = 0; q < cols; q += 1) {
-            const id = doc.tiles[r]?.[q];
-            state.board[r][q] = tileById[id] ? id : "open";
+        const normalized = MapContract.normalizeMap(doc);
+        state.rows = normalized.grid.rows;
+        state.cols = normalized.grid.cols;
+        state.board = makeBoard(state.cols, state.rows);
+        state.rivers = new Set();
+        for (const hex of normalized.hexes) {
+          const visual = tileById[hex.visual] && hex.visual !== "river" ? hex.visual : "open";
+          state.board[hex.y][hex.x] = visual;
+          for (const direction of hex.river) {
+            state.rivers.add(riverEdgeKey(hex.x, hex.y, direction));
           }
         }
-        rowsInput.value = rows;
-        colsInput.value = cols;
+        rowsInput.value = state.rows;
+        colsInput.value = state.cols;
         resizeCanvas();
         updateJson();
         draw();
       }
 
       function resizeBoard(cols, rows) {
+        const oldCols = state.cols;
+        const oldRows = state.rows;
         const next = makeBoard(cols, rows);
         for (let r = 0; r < rows; r += 1) {
           for (let q = 0; q < cols; q += 1) {
             next[r][q] = state.board[r]?.[q] || "open";
           }
         }
+        const nextRivers = new Set();
+        for (const key of state.rivers) {
+          const edge = decodeRiverEdge(key);
+          const neighbor = MapContract.neighborOf(edge.q, edge.r, edge.direction);
+          const wasBoundary = !inBounds(neighbor.x, neighbor.y, oldCols, oldRows);
+          const sourceRemains = inBounds(edge.q, edge.r, cols, rows);
+          const targetRemains = inBounds(neighbor.x, neighbor.y, cols, rows);
+          if (sourceRemains && (wasBoundary ? !targetRemains : targetRemains)) {
+            nextRivers.add(riverEdgeKey(edge.q, edge.r, edge.direction, cols, rows));
+          }
+        }
         state.cols = cols;
         state.rows = rows;
         state.board = next;
+        state.rivers = nextRivers;
         resizeCanvas();
         updateJson();
         draw();
@@ -960,26 +1271,40 @@
       canvas.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         const point = canvasPoint(event);
-        const hex = hexAtPoint(point.x, point.y);
-        if (!hex) return;
+        const edge = state.selected === "river" ? edgeAtPoint(point.x, point.y) : null;
+        const hex = state.selected === "river" ? null : hexAtPoint(point.x, point.y);
+        if (!edge && !hex) return;
+        if (edge) {
+          const exists = state.rivers.has(edge.key);
+          if ((state.riverMode === "draw" && exists) || (state.riverMode === "erase" && !exists)) return;
+        }
         pushHistory();
         state.painting = true;
+        state.strokeEdges = new Set();
         canvas.setPointerCapture(event.pointerId);
-        paintHex(hex);
+        if (edge) paintRiverEdge(edge);
+        else paintHex(hex);
       });
 
       canvas.addEventListener("pointermove", (event) => {
         const point = canvasPoint(event);
-        const hex = hexAtPoint(point.x, point.y);
+        const edge = state.selected === "river" ? edgeAtPoint(point.x, point.y) : null;
+        const hex = state.selected === "river" ? null : hexAtPoint(point.x, point.y);
         if (state.painting) {
-          paintHex(hex);
-        } else if (!state.hover || state.hover.q !== hex?.q || state.hover.r !== hex?.r) {
-          updateHover(hex);
+          if (edge) paintRiverEdge(edge);
+          else paintHex(hex);
+        } else if (
+          state.hoverEdge?.key !== edge?.key
+          || state.hoverHex?.q !== hex?.q
+          || state.hoverHex?.r !== hex?.r
+        ) {
+          updateHover(hex, edge);
         }
       });
 
       canvas.addEventListener("pointerup", (event) => {
         state.painting = false;
+        state.strokeEdges = new Set();
         if (canvas.hasPointerCapture(event.pointerId)) {
           canvas.releasePointerCapture(event.pointerId);
         }
@@ -987,25 +1312,22 @@
 
       canvas.addEventListener("pointerleave", () => {
         state.painting = false;
-        updateHover(null);
+        state.strokeEdges = new Set();
+        updateHover(null, null);
       });
 
       undoBtn.addEventListener("click", () => {
         if (!state.undo.length) return;
-        state.redo.push(cloneBoard());
-        state.board = state.undo.pop();
+        state.redo.push(snapshotState());
+        restoreSnapshot(state.undo.pop());
         updateHistoryButtons();
-        updateJson();
-        draw();
       });
 
       redoBtn.addEventListener("click", () => {
         if (!state.redo.length) return;
-        state.undo.push(cloneBoard());
-        state.board = state.redo.pop();
+        state.undo.push(snapshotState());
+        restoreSnapshot(state.redo.pop());
         updateHistoryButtons();
-        updateJson();
-        draw();
       });
 
       document.getElementById("resizeBtn").addEventListener("click", () => {
@@ -1018,6 +1340,7 @@
       document.getElementById("clearBtn").addEventListener("click", () => {
         pushHistory();
         state.board = makeBoard(state.cols, state.rows, "open");
+        state.rivers = new Set();
         updateJson();
         draw();
       });
@@ -1036,7 +1359,7 @@
       document.getElementById("downloadJsonBtn").addEventListener("click", () => {
         const blob = new Blob([jsonBox.value], { type: "application/json" });
         const link = document.createElement("a");
-        link.download = "wargame-map.json";
+        link.download = "operation-typhoon-map.json";
         link.href = URL.createObjectURL(blob);
         link.click();
         URL.revokeObjectURL(link.href);
@@ -1044,8 +1367,9 @@
 
       document.getElementById("applyJsonBtn").addEventListener("click", () => {
         try {
+          const normalized = MapContract.normalizeMap(JSON.parse(jsonBox.value));
           pushHistory();
-          loadDocument(JSON.parse(jsonBox.value));
+          loadDocument(normalized);
         } catch (error) {
           alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
         }
@@ -1056,9 +1380,9 @@
         if (!file) return;
         try {
           const text = await file.text();
-          jsonBox.value = text;
+          const normalized = MapContract.normalizeMap(JSON.parse(text));
           pushHistory();
-          loadDocument(JSON.parse(text));
+          loadDocument(normalized);
         } catch (error) {
           alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
         } finally {
@@ -1075,6 +1399,7 @@
       buildPalette();
       drawPaletteSwatches();
       state.board = makeBoard(state.cols, state.rows, "open");
+      state.rivers = new Set();
       resizeCanvas();
       setSelected("open");
       updateJson();
