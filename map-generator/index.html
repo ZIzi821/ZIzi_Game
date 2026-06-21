@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wargame Map Generator</title>
+    <title>兵棋地图生成器 / Wargame Map Generator</title>
     <style>
       :root {
         color-scheme: light;
@@ -187,11 +187,9 @@
       }
 
       .tile-swatch {
-        width: 48px;
-        height: 42px;
-        clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-        border: 1px solid rgba(22, 26, 31, 0.34);
-        background: var(--field);
+        width: 54px;
+        height: 48px;
+        display: block;
       }
 
       .tile-copy {
@@ -386,76 +384,76 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="back-link" href="../">← ZIzi Game Index</a>
+        <a class="back-link" href="../">&larr; 返回首页 / ZIzi Game Index</a>
         <div class="brand">
           <h1>兵棋地图生成器 / Wargame Map Generator</h1>
-          <span>Operation Typhoon terrain sheet prototype</span>
+          <span>台风行动原版地块原型 / Operation Typhoon terrain sheet prototype</span>
         </div>
-        <div class="toolbar" aria-label="Map actions">
-          <button type="button" id="undoBtn" title="Undo">↶ Undo</button>
-          <button type="button" id="redoBtn" title="Redo">↷ Redo</button>
-          <button type="button" id="sampleBtn">Sample</button>
-          <button type="button" id="clearBtn">Clear</button>
-          <button type="button" id="pngBtn" class="primary">PNG</button>
+        <div class="toolbar" aria-label="地图操作 / Map actions">
+          <button type="button" id="undoBtn" title="撤销 / Undo">↶ 撤销 / Undo</button>
+          <button type="button" id="redoBtn" title="重做 / Redo">↷ 重做 / Redo</button>
+          <button type="button" id="sampleBtn">示例 / Sample</button>
+          <button type="button" id="clearBtn">清空 / Clear</button>
+          <button type="button" id="pngBtn" class="primary">导出 PNG / Export PNG</button>
         </div>
       </header>
 
       <main class="workspace">
         <aside class="side-panel">
-          <section class="panel-block" aria-label="Terrain palette">
-            <h2 class="panel-title">Terrain</h2>
+          <section class="panel-block" aria-label="地块面板 / Terrain palette">
+            <h2 class="panel-title">地块 / Terrain</h2>
             <div class="palette" id="palette"></div>
           </section>
 
-          <section class="panel-block" aria-label="Map size">
-            <h2 class="panel-title">Map Size</h2>
+          <section class="panel-block" aria-label="地图尺寸 / Map size">
+            <h2 class="panel-title">地图尺寸 / Map Size</h2>
             <div class="field-grid">
               <div class="field-control">
-                <label for="colsInput">Columns</label>
+                <label for="colsInput">列数 / Columns</label>
                 <input id="colsInput" type="number" min="4" max="24" value="14" />
               </div>
               <div class="field-control">
-                <label for="rowsInput">Rows</label>
+                <label for="rowsInput">行数 / Rows</label>
                 <input id="rowsInput" type="number" min="4" max="18" value="10" />
               </div>
             </div>
             <div class="field-grid">
-              <button type="button" id="resizeBtn">Resize</button>
-              <button type="button" id="fillBtn">Fill Selected</button>
+              <button type="button" id="resizeBtn">调整尺寸 / Resize</button>
+              <button type="button" id="fillBtn">填满所选 / Fill Selected</button>
             </div>
           </section>
 
-          <section class="status-card" aria-label="Selection">
-            <div class="status-row"><span>Selected</span><b id="selectedLabel">Open</b></div>
-            <div class="status-row"><span>Pointer</span><b id="hoverLabel">--</b></div>
-            <div class="status-row"><span>Grid</span><b id="gridLabel">14 × 10</b></div>
+          <section class="status-card" aria-label="当前选择 / Selection">
+            <div class="status-row"><span>已选 / Selected</span><b id="selectedLabel">开阔地 / Open</b></div>
+            <div class="status-row"><span>指针 / Pointer</span><b id="hoverLabel">--</b></div>
+            <div class="status-row"><span>网格 / Grid</span><b id="gridLabel">14 x 10</b></div>
           </section>
 
-          <section class="panel-block" aria-label="Map JSON">
-            <h2 class="panel-title">Map JSON</h2>
+          <section class="panel-block" aria-label="地图 JSON / Map JSON">
+            <h2 class="panel-title">地图 JSON / Map JSON</h2>
             <textarea id="jsonBox" class="json-box" spellcheck="false"></textarea>
             <div class="field-grid">
-              <button type="button" id="copyBtn">Copy</button>
-              <button type="button" id="downloadJsonBtn">Download</button>
-              <label class="file-button" for="importFile">Import</label>
-              <button type="button" id="applyJsonBtn">Apply JSON</button>
+              <button type="button" id="copyBtn">复制 / Copy</button>
+              <button type="button" id="downloadJsonBtn">下载 / Download</button>
+              <label class="file-button" for="importFile">导入 / Import</label>
+              <button type="button" id="applyJsonBtn">应用 JSON / Apply JSON</button>
             </div>
             <input class="hidden-input" id="importFile" type="file" accept="application/json,.json" />
           </section>
         </aside>
 
-        <section class="canvas-wrap" aria-label="Hex map editor">
+        <section class="canvas-wrap" aria-label="六边形地图编辑器 / Hex map editor">
           <div class="map-stage">
             <div class="canvas-frame">
               <canvas id="mapCanvas" width="1120" height="820"></canvas>
             </div>
-            <div class="legend" aria-label="Terrain legend">
-              <span><i class="dot"></i>Open</span>
-              <span><i class="dot forest"></i>Forest</span>
-              <span><i class="dot city"></i>City</span>
-              <span><i class="dot water"></i>River</span>
-              <span><i class="dot rail"></i>Railroad</span>
-              <span><i class="dot setup"></i>Setup</span>
+            <div class="legend" aria-label="地块图例 / Terrain legend">
+              <span><i class="dot"></i>开阔地 / Open</span>
+              <span><i class="dot forest"></i>森林 / Forest</span>
+              <span><i class="dot city"></i>城市 / City</span>
+              <span><i class="dot water"></i>河流 / River</span>
+              <span><i class="dot rail"></i>铁路 / Railroad</span>
+              <span><i class="dot setup"></i>部署标记 / Setup</span>
             </div>
           </div>
         </section>
@@ -573,9 +571,17 @@
         redoBtn.disabled = state.redo.length === 0;
       }
 
+      function tileLabel(tile) {
+        return `${tile.zh} / ${tile.name}`;
+      }
+
+      function gridLabelText() {
+        return `${state.cols} x ${state.rows}`;
+      }
+
       function setSelected(id) {
         state.selected = id;
-        selectedLabel.textContent = tileById[id].name;
+        selectedLabel.textContent = tileLabel(tileById[id]);
         [...palette.querySelectorAll("button")].forEach((button) => {
           button.setAttribute("aria-pressed", button.dataset.tile === id ? "true" : "false");
         });
@@ -588,15 +594,23 @@
           button.type = "button";
           button.dataset.tile = tile.id;
           button.setAttribute("aria-pressed", tile.id === state.selected ? "true" : "false");
-          button.innerHTML = `
-            <span class="tile-swatch" style="background:${tile.color}"></span>
-            <span class="tile-copy">
-              <strong>${tile.name}</strong>
-              <span>${tile.zh}</span>
-            </span>
+
+          const swatch = document.createElement("canvas");
+          swatch.className = "tile-swatch";
+          swatch.width = 108;
+          swatch.height = 96;
+
+          const copy = document.createElement("span");
+          copy.className = "tile-copy";
+          copy.innerHTML = `
+            <strong>${tileLabel(tile)}</strong>
+            <span>原版地块 / Original tile</span>
           `;
+
+          button.append(swatch, copy);
           button.addEventListener("click", () => setSelected(tile.id));
           palette.appendChild(button);
+          drawPaletteSwatch(swatch, tile);
         });
       }
 
@@ -607,7 +621,7 @@
         const height = Math.ceil((state.rows + 0.5) * hexHeight + 44);
         canvas.width = width;
         canvas.height = height;
-        gridLabel.textContent = `${state.cols} × ${state.rows}`;
+        gridLabel.textContent = gridLabelText();
       }
 
       function hexCenter(q, r) {
@@ -668,19 +682,88 @@
         return found;
       }
 
+      function drawImageCover(image, crop, left, top, width, height) {
+        const scale = Math.max(width / crop.w, height / crop.h);
+        const drawWidth = crop.w * scale;
+        const drawHeight = crop.h * scale;
+        const drawLeft = left + (width - drawWidth) / 2;
+        const drawTop = top + (height - drawHeight) / 2;
+        ctx.drawImage(image, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
+      }
+
+      function drawTileImage(tile, cx, cy, radius) {
+        const hexHeight = Math.sqrt(3) * radius;
+        drawImageCover(terrainImage, tile.crop, cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
+      }
+
       function drawTexture(tile, cx, cy) {
-        const s = state.size;
-        const c = tile.crop;
+        const radius = state.size;
+        const hexHeight = Math.sqrt(3) * radius;
         ctx.save();
-        hexPath(cx, cy, s - 1);
+        hexPath(cx, cy, radius - 1);
         ctx.clip();
         ctx.fillStyle = tile.color;
-        ctx.fillRect(cx - s, cy - s, s * 2, s * 2);
+        ctx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
         if (terrainImage.complete && terrainImage.naturalWidth > 0) {
-          ctx.drawImage(terrainImage, c.x, c.y, c.w, c.h, cx - s, cy - s * 0.9, s * 2, s * 1.8);
+          drawTileImage(tile, cx, cy, radius);
+        } else {
+          addTileMarks(tile.id, cx, cy);
         }
-        addTileMarks(tile.id, cx, cy);
         ctx.restore();
+      }
+
+      function drawPaletteSwatch(swatch, tile) {
+        const swatchCtx = swatch.getContext("2d");
+        const radius = 42;
+        const cx = swatch.width / 2;
+        const cy = swatch.height / 2;
+        const hexHeight = Math.sqrt(3) * radius;
+        swatchCtx.clearRect(0, 0, swatch.width, swatch.height);
+        swatchCtx.save();
+        swatchCtx.beginPath();
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (Math.PI / 180) * (60 * i);
+          const x = cx + radius * Math.cos(angle);
+          const y = cy + radius * Math.sin(angle);
+          if (i === 0) swatchCtx.moveTo(x, y);
+          else swatchCtx.lineTo(x, y);
+        }
+        swatchCtx.closePath();
+        swatchCtx.clip();
+        swatchCtx.fillStyle = tile.color;
+        swatchCtx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
+        if (terrainImage.complete && terrainImage.naturalWidth > 0) {
+          const crop = tile.crop;
+          const width = radius * 2;
+          const height = hexHeight;
+          const scale = Math.max(width / crop.w, height / crop.h);
+          const drawWidth = crop.w * scale;
+          const drawHeight = crop.h * scale;
+          const drawLeft = cx - radius + (width - drawWidth) / 2;
+          const drawTop = cy - hexHeight / 2 + (height - drawHeight) / 2;
+          swatchCtx.drawImage(terrainImage, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
+        }
+        swatchCtx.restore();
+        swatchCtx.strokeStyle = "rgba(22, 26, 31, 0.42)";
+        swatchCtx.lineWidth = 2;
+        swatchCtx.beginPath();
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (Math.PI / 180) * (60 * i);
+          const x = cx + radius * Math.cos(angle);
+          const y = cy + radius * Math.sin(angle);
+          if (i === 0) swatchCtx.moveTo(x, y);
+          else swatchCtx.lineTo(x, y);
+        }
+        swatchCtx.closePath();
+        swatchCtx.stroke();
+      }
+
+      function drawPaletteSwatches() {
+        [...palette.querySelectorAll("button")].forEach((button) => {
+          const swatch = button.querySelector("canvas");
+          const tile = tileById[button.dataset.tile];
+          if (swatch && tile) drawPaletteSwatch(swatch, tile);
+        });
       }
 
       function addTileMarks(id, cx, cy) {
@@ -827,12 +910,12 @@
 
       function updateJson() {
         jsonBox.value = JSON.stringify(currentDocument(), null, 2);
-        gridLabel.textContent = `${state.cols} × ${state.rows}`;
+        gridLabel.textContent = gridLabelText();
       }
 
       function loadDocument(doc) {
         if (!doc || !Array.isArray(doc.tiles)) {
-          throw new Error("Missing tiles array");
+          throw new Error("缺少 tiles 数组 / Missing tiles array");
         }
         const rows = Math.min(18, Math.max(4, Number(doc.rows || doc.tiles.length)));
         const cols = Math.min(24, Math.max(4, Number(doc.cols || doc.tiles[0]?.length || 14)));
@@ -987,7 +1070,7 @@
           pushHistory();
           loadDocument(JSON.parse(jsonBox.value));
         } catch (error) {
-          alert(`JSON import failed: ${error.message}`);
+          alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
         }
       });
 
@@ -1000,16 +1083,20 @@
           pushHistory();
           loadDocument(JSON.parse(text));
         } catch (error) {
-          alert(`JSON import failed: ${error.message}`);
+          alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
         } finally {
           event.target.value = "";
         }
       });
 
-      terrainImage.addEventListener("load", draw);
+      terrainImage.addEventListener("load", () => {
+        drawPaletteSwatches();
+        draw();
+      });
       terrainImage.addEventListener("error", draw);
 
       buildPalette();
+      drawPaletteSwatches();
       state.board = makeBoard(state.cols, state.rows, "open");
       resizeCanvas();
       setSelected("open");
