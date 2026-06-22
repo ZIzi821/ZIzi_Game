@@ -449,6 +449,372 @@
         display: none;
       }
 
+      /* Tactical command-surface treatment: presentation only. */
+      :root {
+        color-scheme: dark;
+        --ink: #e8eee7;
+        --muted: #94a49d;
+        --line: rgba(151, 184, 164, 0.2);
+        --paper: #09110f;
+        --panel: rgba(18, 29, 25, 0.86);
+        --danger: #d34b4f;
+        --gold: #d7b35c;
+        --accent: #68c29a;
+        --accent-soft: rgba(104, 194, 154, 0.13);
+        --shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
+      }
+
+      html,
+      body {
+        background:
+          radial-gradient(circle at 74% 18%, rgba(54, 113, 87, 0.14), transparent 30%),
+          linear-gradient(rgba(104, 194, 154, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(104, 194, 154, 0.035) 1px, transparent 1px),
+          #09110f;
+        background-size: auto, 32px 32px, 32px 32px, auto;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background: linear-gradient(115deg, transparent 0 48%, rgba(104, 194, 154, 0.025) 50%, transparent 52%);
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .topbar {
+        min-height: 74px;
+        border-bottom-color: rgba(104, 194, 154, 0.22);
+        background: rgba(9, 17, 15, 0.88);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+      }
+
+      .brand h1 {
+        color: #f2f6f1;
+        letter-spacing: -0.025em;
+      }
+
+      .brand span { color: #8fa299; }
+
+      .back-link,
+      .toolbar button,
+      .palette button,
+      .field-control button,
+      .field-grid button,
+      .file-button {
+        border-color: rgba(151, 184, 164, 0.22);
+        background: linear-gradient(180deg, rgba(39, 55, 48, 0.94), rgba(20, 32, 28, 0.94));
+        color: var(--ink);
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.045), 0 8px 18px rgba(0, 0, 0, 0.16);
+        transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+      }
+
+      .back-link:hover,
+      button:not(:disabled):hover,
+      .file-button:hover {
+        border-color: rgba(104, 194, 154, 0.62);
+        background: linear-gradient(180deg, rgba(48, 70, 60, 0.98), rgba(24, 40, 34, 0.98));
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.07), 0 10px 24px rgba(0, 0, 0, 0.22);
+        transform: translateY(-1px);
+      }
+
+      button:not(:disabled):active,
+      .file-button:active {
+        transform: translateY(1px) scale(0.985);
+      }
+
+      .toolbar button.primary {
+        border-color: rgba(117, 220, 174, 0.7);
+        background: linear-gradient(135deg, #287957, #18563e);
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 8px 24px rgba(19, 104, 72, 0.3);
+      }
+
+      .toolbar button:disabled {
+        filter: saturate(0.35);
+        transform: none;
+      }
+
+      .system-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        width: max-content;
+        margin-top: 3px;
+        color: #91bba7;
+        font: 700 10px/1.2 "Cascadia Mono", Consolas, monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .system-state::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #6dd39f;
+        box-shadow: 0 0 12px rgba(109, 211, 159, 0.72);
+        animation: statusPulse 2.4s ease-in-out infinite;
+      }
+
+      .side-panel {
+        align-content: start;
+        border-right-color: rgba(104, 194, 154, 0.18);
+        background: linear-gradient(180deg, rgba(15, 26, 22, 0.9), rgba(10, 19, 16, 0.78));
+        box-shadow: 16px 0 42px rgba(0, 0, 0, 0.13);
+      }
+
+      .panel-block,
+      .status-card {
+        position: relative;
+        padding: 15px;
+        border: 1px solid rgba(151, 184, 164, 0.17);
+        border-radius: 10px;
+        background: linear-gradient(145deg, rgba(29, 44, 37, 0.76), rgba(15, 26, 22, 0.72));
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.035), 0 12px 30px rgba(0, 0, 0, 0.12);
+      }
+
+      .panel-block::after,
+      .status-card::after {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 18px;
+        width: 42px;
+        height: 1px;
+        background: var(--accent);
+        box-shadow: 0 0 10px rgba(104, 194, 154, 0.55);
+      }
+
+      .panel-title {
+        color: #a9c9ba;
+        font-size: 11px;
+        letter-spacing: 0.13em;
+      }
+
+      .palette button {
+        min-height: 88px;
+        background: linear-gradient(145deg, rgba(36, 52, 45, 0.92), rgba(18, 30, 26, 0.96));
+      }
+
+      .palette button[aria-pressed="true"] {
+        border-color: rgba(104, 194, 154, 0.78);
+        outline-color: rgba(104, 194, 154, 0.13);
+        background: linear-gradient(145deg, rgba(43, 70, 58, 0.98), rgba(20, 41, 33, 0.98));
+        box-shadow: inset 3px 0 var(--accent), 0 10px 26px rgba(0, 0, 0, 0.24);
+      }
+
+      .tile-swatch { filter: saturate(1.08) contrast(1.04); }
+      .tile-copy span { color: #8fa299; }
+
+      .field-control input,
+      .json-box {
+        border-color: rgba(151, 184, 164, 0.22);
+        background: rgba(5, 13, 10, 0.68);
+        color: #e7eee9;
+        box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.2);
+        transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
+
+      .field-control input:hover,
+      .json-box:hover { border-color: rgba(151, 184, 164, 0.42); }
+
+      .field-control input:focus,
+      .json-box:focus {
+        border-color: var(--accent);
+        background: rgba(7, 17, 13, 0.9);
+        box-shadow: 0 0 0 3px rgba(104, 194, 154, 0.1), inset 0 1px 8px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      .status-card {
+        background:
+          linear-gradient(120deg, rgba(104, 194, 154, 0.09), transparent 58%),
+          rgba(12, 23, 19, 0.82);
+      }
+
+      .status-row + .status-row {
+        padding-top: 8px;
+        border-top: 1px solid rgba(151, 184, 164, 0.1);
+      }
+
+      .status-row b { color: #c8ddd3; }
+
+      .canvas-wrap {
+        background:
+          radial-gradient(circle at center, rgba(73, 112, 93, 0.08), transparent 48%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.015), transparent 40%);
+      }
+
+      .canvas-frame {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        padding: 24px;
+        border-color: rgba(115, 164, 141, 0.38);
+        border-radius: 12px;
+        background:
+          linear-gradient(90deg, rgba(104, 194, 154, 0.055) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(104, 194, 154, 0.055) 1px, transparent 1px),
+          linear-gradient(145deg, #17231e, #0b1411);
+        background-size: 24px 24px, 24px 24px, auto;
+        box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+      }
+
+      .canvas-frame::before {
+        content: "TACTICAL GRID  //  LIVE EDITOR";
+        position: absolute;
+        top: 7px;
+        left: 24px;
+        z-index: 3;
+        color: rgba(160, 207, 184, 0.72);
+        font: 700 9px/1 "Cascadia Mono", Consolas, monospace;
+        letter-spacing: 0.14em;
+      }
+
+      .canvas-frame::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(4, 14, 10, 0.035) 5px);
+        box-shadow: inset 0 0 55px rgba(0, 0, 0, 0.26);
+      }
+
+      #mapCanvas {
+        border-color: rgba(4, 12, 9, 0.8);
+        border-radius: 8px;
+        background: #c7c1b6;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(138, 188, 163, 0.14);
+        transition: filter 180ms ease, transform 180ms ease, opacity 180ms ease;
+      }
+
+      .canvas-frame.is-busy #mapCanvas {
+        filter: saturate(0.75) brightness(0.68);
+        transform: scale(0.996);
+      }
+
+      .canvas-frame.map-refreshed #mapCanvas { animation: mapReveal 420ms cubic-bezier(.2,.8,.2,1); }
+
+      .map-feedback {
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        display: grid;
+        place-content: center;
+        gap: 12px;
+        text-align: center;
+        color: #dcece4;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        background: rgba(5, 14, 10, 0.22);
+        transition: opacity 150ms ease, visibility 0s linear 150ms;
+      }
+
+      .canvas-frame.is-busy .map-feedback {
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+      }
+
+      .map-feedback-spinner {
+        width: 32px;
+        height: 32px;
+        margin: auto;
+        border: 2px solid rgba(104, 194, 154, 0.22);
+        border-top-color: #78d6aa;
+        border-radius: 50%;
+        box-shadow: 0 0 18px rgba(104, 194, 154, 0.18);
+        animation: spin 700ms linear infinite;
+      }
+
+      .legend span {
+        border-color: rgba(151, 184, 164, 0.18);
+        background: rgba(17, 29, 24, 0.78);
+        color: #9aafa5;
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+      }
+
+      .export-panel-surface {
+        border-color: rgba(151, 184, 164, 0.28);
+        background: rgba(12, 23, 19, 0.97);
+      }
+
+      .toolbar .export-panel button {
+        background: linear-gradient(180deg, rgba(39, 55, 48, 0.98), rgba(20, 32, 28, 0.98));
+        color: var(--ink);
+      }
+
+      .toast-region {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 100;
+        display: grid;
+        gap: 9px;
+        width: min(360px, calc(100vw - 28px));
+        pointer-events: none;
+      }
+
+      .toast {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border: 1px solid rgba(104, 194, 154, 0.34);
+        border-radius: 9px;
+        background: rgba(15, 28, 23, 0.96);
+        color: #dceae3;
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+        backdrop-filter: blur(14px);
+        animation: toastIn 220ms ease both;
+      }
+
+      .toast::before {
+        content: "✓";
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(104, 194, 154, 0.15);
+        color: #77d4a7;
+        font-weight: 900;
+      }
+
+      .toast.error { border-color: rgba(211, 75, 79, 0.52); }
+      .toast.error::before { content: "!"; background: rgba(211, 75, 79, 0.15); color: #f08084; }
+      .toast.is-leaving { animation: toastOut 180ms ease both; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes statusPulse { 50% { opacity: 0.45; transform: scale(0.78); } }
+      @keyframes mapReveal {
+        from { opacity: 0.45; transform: scale(0.985); filter: brightness(1.2) saturate(0.8); }
+        to { opacity: 1; transform: scale(1); filter: none; }
+      }
+      @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } }
+      @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 1ms !important;
+        }
+      }
+
       @media (max-width: 900px) {
         .topbar {
           position: static;
@@ -468,6 +834,13 @@
           border-bottom: 1px solid var(--line);
         }
 
+        .side-panel {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          align-items: start;
+        }
+
+        .panel-block:first-child { grid-column: 1 / -1; }
+
         .palette {
           grid-template-columns: repeat(4, minmax(130px, 1fr));
           overflow-x: auto;
@@ -486,6 +859,14 @@
           grid-template-columns: 1fr;
           overflow-x: visible;
         }
+
+        .side-panel { grid-template-columns: 1fr; }
+
+        .panel-block:first-child { grid-column: auto; }
+
+        .canvas-wrap { padding: 12px; }
+
+        .canvas-frame { padding: 20px 12px 12px; }
 
         .toolbar {
           width: 100%;
@@ -525,6 +906,7 @@
         <div class="brand">
           <h1>兵棋地图生成器 / Wargame Map Generator</h1>
           <span>台风行动原版地块原型 / Operation Typhoon terrain sheet prototype</span>
+          <span class="system-state">系统就绪 / System ready</span>
         </div>
         <div class="toolbar" aria-label="地图操作 / Map actions">
           <button type="button" id="undoBtn" title="撤销 / Undo">↶ 撤销 / Undo</button>
@@ -598,6 +980,10 @@
           <div class="map-stage">
             <div class="canvas-frame">
               <canvas id="mapCanvas" width="1120" height="820"></canvas>
+              <div class="map-feedback" id="mapFeedback" role="status" aria-live="polite">
+                <span class="map-feedback-spinner" aria-hidden="true"></span>
+                <span id="mapFeedbackText">正在生成 / Generating</span>
+              </div>
             </div>
             <div class="legend" aria-label="地块图例 / Terrain legend">
               <span><i class="dot"></i>开阔地 / Open</span>
@@ -611,6 +997,7 @@
         </section>
       </main>
     </div>
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
     <script src="../assets/operation-typhoon-map.js"></script>
     <script>
@@ -635,6 +1022,34 @@
       const exportMenu = document.getElementById("exportMenu");
       const exportBtn = document.getElementById("exportBtn");
       const exportPanel = document.getElementById("exportPanel");
+      const canvasFrame = document.querySelector(".canvas-frame");
+      const mapFeedbackText = document.getElementById("mapFeedbackText");
+      const toastRegion = document.getElementById("toastRegion");
+
+      function showToast(message, type = "success") {
+        const toast = document.createElement("div");
+        toast.className = `toast ${type === "error" ? "error" : ""}`.trim();
+        toast.textContent = message;
+        toastRegion.appendChild(toast);
+        window.setTimeout(() => {
+          toast.classList.add("is-leaving");
+          window.setTimeout(() => toast.remove(), 190);
+        }, 2400);
+      }
+
+      function beginMapFeedback(message = "正在生成 / Generating") {
+        mapFeedbackText.textContent = message;
+        canvasFrame.classList.remove("map-refreshed");
+        canvasFrame.classList.add("is-busy");
+      }
+
+      function finishMapFeedback() {
+        window.setTimeout(() => {
+          canvasFrame.classList.remove("is-busy");
+          canvasFrame.classList.add("map-refreshed");
+          window.setTimeout(() => canvasFrame.classList.remove("map-refreshed"), 460);
+        }, 180);
+      }
 
       const tileTypes = [
         {
@@ -1257,10 +1672,14 @@
         }
         if (state.hoverHex && state.selected !== "river") {
           const center = hexCenter(state.hoverHex.q, state.hoverHex.r);
+          ctx.save();
           hexPath(center.x, center.y, state.size - 2);
-          ctx.strokeStyle = "rgba(159, 34, 40, 0.92)";
-          ctx.lineWidth = 4;
+          ctx.strokeStyle = "rgba(111, 224, 170, 0.96)";
+          ctx.shadowColor = "rgba(67, 202, 139, 0.7)";
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 3;
           ctx.stroke();
+          ctx.restore();
         }
         if (state.hoverEdge && state.selected === "river") {
           const active = state.rivers.has(state.hoverEdge.key);
@@ -1438,6 +1857,7 @@
         state.redo.push(snapshotState());
         restoreSnapshot(state.undo.pop());
         updateHistoryButtons();
+        showToast("已撤销 / Undone");
       });
 
       redoBtn.addEventListener("click", () => {
@@ -1445,13 +1865,25 @@
         state.undo.push(snapshotState());
         restoreSnapshot(state.redo.pop());
         updateHistoryButtons();
+        showToast("已重做 / Redone");
       });
 
       document.getElementById("resizeBtn").addEventListener("click", () => {
-        const cols = Math.min(24, Math.max(4, Number(colsInput.value) || state.cols));
-        const rows = Math.min(18, Math.max(4, Number(rowsInput.value) || state.rows));
+        const rawCols = Number(colsInput.value);
+        const rawRows = Number(rowsInput.value);
+        const cols = Math.min(24, Math.max(4, rawCols || state.cols));
+        const rows = Math.min(18, Math.max(4, rawRows || state.rows));
+        beginMapFeedback("正在调整战术网格 / Updating tactical grid");
         pushHistory();
         resizeBoard(cols, rows);
+        colsInput.value = cols;
+        rowsInput.value = rows;
+        finishMapFeedback();
+        if (cols !== rawCols || rows !== rawRows) {
+          showToast("尺寸已调整到有效范围 / Size adjusted to valid limits", "error");
+        } else {
+          showToast(`地图已更新为 ${cols} × ${rows} / Map updated`);
+        }
       });
 
       document.getElementById("clearBtn").addEventListener("click", () => {
@@ -1460,6 +1892,9 @@
         state.rivers = new Set();
         updateJson();
         draw();
+        beginMapFeedback("正在重置地图 / Resetting map");
+        finishMapFeedback();
+        showToast("地图已清空 / Map cleared");
       });
 
       document.getElementById("pngBtn").addEventListener("click", () => {
@@ -1468,10 +1903,16 @@
         link.href = canvas.toDataURL("image/png");
         link.click();
         setExportMenu(false);
+        showToast("PNG 已导出 / PNG exported");
       });
 
       document.getElementById("copyBtn").addEventListener("click", async () => {
-        await navigator.clipboard.writeText(jsonBox.value);
+        try {
+          await navigator.clipboard.writeText(jsonBox.value);
+          showToast("地图数据已复制 / Map data copied");
+        } catch (error) {
+          showToast("复制失败，请手动选择文本 / Copy failed; select the text manually", "error");
+        }
       });
 
       document.getElementById("downloadJsonBtn").addEventListener("click", () => {
@@ -1482,15 +1923,20 @@
         link.click();
         URL.revokeObjectURL(link.href);
         setExportMenu(false);
+        showToast("地图数据已导出 / Map data exported");
       });
 
       document.getElementById("applyJsonBtn").addEventListener("click", () => {
         try {
           const normalized = MapContract.normalizeMap(JSON.parse(jsonBox.value));
+          beginMapFeedback("正在应用地图数据 / Applying map data");
           pushHistory();
           loadDocument(normalized);
+          finishMapFeedback();
+          showToast("地图数据已应用 / Map data applied");
         } catch (error) {
-          alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
+          canvasFrame.classList.remove("is-busy");
+          showToast(`JSON 无法应用 / JSON could not be applied: ${error.message}`, "error");
         }
       });
 
@@ -1500,10 +1946,14 @@
         try {
           const text = await file.text();
           const normalized = MapContract.normalizeMap(JSON.parse(text));
+          beginMapFeedback("正在导入地图 / Importing map");
           pushHistory();
           loadDocument(normalized);
+          finishMapFeedback();
+          showToast("地图已导入 / Map imported");
         } catch (error) {
-          alert(`JSON 导入失败 / JSON import failed: ${error.message}`);
+          canvasFrame.classList.remove("is-busy");
+          showToast(`JSON 导入失败 / JSON import failed: ${error.message}`, "error");
         } finally {
           event.target.value = "";
         }
