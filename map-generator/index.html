@@ -807,11 +807,11 @@
       @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
 
       .intel-panel {
-        position: absolute;
-        top: clamp(28px, 3vw, 42px);
-        left: clamp(28px, 3vw, 42px);
-        z-index: 12;
-        width: min(330px, calc(100% - 56px));
+        position: fixed;
+        top: 90px;
+        left: 18px;
+        z-index: 19;
+        width: min(300px, calc(100vw - 36px));
         pointer-events: none;
         transition: opacity 140ms ease, transform 160ms ease;
       }
@@ -821,9 +821,10 @@
       .intel-panel.is-pinned { opacity: 1; transform: translateY(0); }
 
       .intel-card {
+        position: relative;
         display: grid;
         gap: 11px;
-        max-height: min(690px, calc(100vh - 150px));
+        max-height: calc(100vh - 108px);
         padding: 14px;
         border: 1px solid rgba(104, 194, 154, 0.28);
         border-radius: 10px;
@@ -970,7 +971,7 @@
       }
 
       @media (max-width: 1180px) {
-        .intel-panel { width: min(310px, calc(100% - 48px)); }
+        .intel-panel { width: min(290px, calc(100vw - 36px)); }
       }
 
       @media (max-width: 900px) {
@@ -991,6 +992,18 @@
           border-right: 0;
           border-bottom: 1px solid var(--line);
         }
+
+        .intel-panel {
+          position: static;
+          width: 100%;
+          margin: 0;
+          padding: 14px;
+        }
+
+        .intel-panel.is-preview,
+        .intel-panel.is-pinned { transform: none; }
+
+        .intel-card { max-height: none; }
 
         .side-panel {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1031,7 +1044,8 @@
         .intel-panel {
           position: static;
           width: 100%;
-          margin-top: 12px;
+          margin: 0;
+          padding: 12px;
           pointer-events: none;
         }
 
@@ -1159,6 +1173,7 @@
               <span><i class="dot setup"></i>部署标记 / Setup</span>
             </div>
           </div>
+        </section>
           <div class="intel-panel" id="tileIntelPanel" aria-label="地块情报 / Tile intel" hidden>
           <section class="intel-card">
             <header class="intel-header">
@@ -1203,7 +1218,6 @@
             </div>
           </section>
           </div>
-        </section>
       </main>
     </div>
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
