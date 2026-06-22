@@ -213,13 +213,11 @@
 
       .workspace {
         display: grid;
-        grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) minmax(280px, 340px);
-        grid-template-areas: "controls map intel";
+        grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
         min-height: calc(100vh - 64px);
       }
 
       .side-panel {
-        grid-area: controls;
         display: grid;
         grid-template-rows: auto auto 1fr auto;
         gap: 18px;
@@ -648,7 +646,6 @@
       .status-row b { color: #c8ddd3; }
 
       .canvas-wrap {
-        grid-area: map;
         background:
           radial-gradient(circle at center, rgba(73, 112, 93, 0.08), transparent 48%),
           linear-gradient(135deg, rgba(255, 255, 255, 0.015), transparent 40%);
@@ -810,25 +807,35 @@
       @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
 
       .intel-panel {
-        grid-area: intel;
-        min-width: 0;
-        padding: 18px;
-        border-left: 1px solid rgba(104, 194, 154, 0.18);
-        background: linear-gradient(180deg, rgba(13, 24, 20, 0.94), rgba(8, 17, 14, 0.86));
-        box-shadow: -16px 0 42px rgba(0, 0, 0, 0.13);
+        position: absolute;
+        top: clamp(28px, 3vw, 42px);
+        left: clamp(28px, 3vw, 42px);
+        z-index: 12;
+        width: min(330px, calc(100% - 56px));
+        pointer-events: none;
+        transition: opacity 140ms ease, transform 160ms ease;
       }
 
+      .intel-panel[hidden] { display: none; }
+      .intel-panel.is-preview { opacity: 0.88; transform: translateY(3px); }
+      .intel-panel.is-pinned { opacity: 1; transform: translateY(0); }
+
       .intel-card {
-        position: sticky;
-        top: 92px;
         display: grid;
-        gap: 16px;
-        padding: 17px;
+        gap: 11px;
+        max-height: min(690px, calc(100vh - 150px));
+        padding: 14px;
         border: 1px solid rgba(104, 194, 154, 0.28);
-        border-radius: 12px;
-        background: linear-gradient(145deg, rgba(30, 48, 40, 0.86), rgba(11, 23, 18, 0.94));
-        box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), 0 20px 44px rgba(0, 0, 0, 0.22);
-        overflow: hidden;
+        border-radius: 10px;
+        background: linear-gradient(145deg, rgba(24, 41, 34, 0.92), rgba(8, 19, 15, 0.94));
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 20px 44px rgba(0, 0, 0, 0.34);
+        overflow: auto;
+        backdrop-filter: blur(15px);
+      }
+
+      .intel-panel.is-pinned .intel-card {
+        border-color: rgba(221, 181, 82, 0.54);
+        box-shadow: inset 3px 0 rgba(221, 181, 82, 0.72), 0 20px 48px rgba(0, 0, 0, 0.38);
       }
 
       .intel-card::before {
@@ -844,8 +851,7 @@
       }
 
       .intel-header,
-      .intel-content,
-      .intel-empty { position: relative; z-index: 1; }
+      .intel-content { position: relative; z-index: 1; }
 
       .intel-kicker {
         display: block;
@@ -855,35 +861,10 @@
         letter-spacing: 0.16em;
       }
 
-      .intel-header h2 { margin: 0; color: #f0f6f2; font-size: 18px; }
-
-      .intel-empty {
-        min-height: 250px;
-        display: grid;
-        place-content: center;
-        justify-items: center;
-        gap: 12px;
-        padding: 28px 12px;
-        color: #91a79c;
-        text-align: center;
-        line-height: 1.55;
-      }
-
-      .intel-empty::before {
-        content: "+";
-        display: grid;
-        place-items: center;
-        width: 58px;
-        height: 58px;
-        border: 1px solid rgba(104, 194, 154, 0.32);
-        border-radius: 50%;
-        color: #74c39e;
-        font: 300 32px/1 "Cascadia Mono", Consolas, monospace;
-        box-shadow: inset 0 0 0 8px rgba(104, 194, 154, 0.035), 0 0 24px rgba(104, 194, 154, 0.08);
-      }
+      .intel-header h2 { margin: 0; color: #f0f6f2; font-size: 16px; }
 
       .intel-content { display: grid; gap: 12px; }
-      .intel-content[hidden], .intel-empty[hidden], .intel-section[hidden] { display: none; }
+      .intel-section[hidden] { display: none; }
 
       .intel-identity {
         display: flex;
@@ -947,6 +928,38 @@
         box-shadow: 0 0 8px rgba(105, 193, 152, 0.55);
       }
 
+      .intel-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-top: 2px;
+      }
+
+      .intel-chip {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+        padding: 5px 7px;
+        border: 1px solid rgba(151, 184, 164, 0.16);
+        border-radius: 999px;
+        background: rgba(6, 15, 11, 0.44);
+        color: #81978c;
+        font-size: 9px;
+      }
+
+      .intel-chip b { color: #c1d3ca; font-weight: 700; }
+
+      .map-size-status {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 8px;
+        border-top: 1px solid rgba(151, 184, 164, 0.12);
+        color: #82978d;
+        font-size: 11px;
+      }
+
+      .map-size-status b { color: #c9d9d1; }
+
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
           scroll-behavior: auto !important;
@@ -957,13 +970,7 @@
       }
 
       @media (max-width: 1180px) {
-        .workspace {
-          grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
-          grid-template-areas: "controls map" "controls intel";
-        }
-
-        .intel-panel { border-top: 1px solid rgba(104, 194, 154, 0.18); border-left: 0; }
-        .intel-card { position: static; }
+        .intel-panel { width: min(310px, calc(100% - 48px)); }
       }
 
       @media (max-width: 900px) {
@@ -978,15 +985,12 @@
 
         .workspace {
           grid-template-columns: 1fr;
-          grid-template-areas: "controls" "map" "intel";
         }
 
         .side-panel {
           border-right: 0;
           border-bottom: 1px solid var(--line);
         }
-
-        .intel-panel { border-top: 1px solid var(--line); }
 
         .side-panel {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1023,6 +1027,18 @@
         .canvas-wrap { padding: 12px; }
 
         .canvas-frame { padding: 20px 12px 12px; }
+
+        .intel-panel {
+          position: static;
+          width: 100%;
+          margin-top: 12px;
+          pointer-events: none;
+        }
+
+        .intel-panel.is-preview,
+        .intel-panel.is-pinned { transform: none; }
+
+        .intel-card { max-height: none; }
 
         .toolbar {
           width: 100%;
@@ -1101,6 +1117,7 @@
             <div class="field-grid single-column">
               <button type="button" id="resizeBtn">调整尺寸 / Resize</button>
             </div>
+            <div class="map-size-status"><span>当前网格 / Current Grid</span><b id="gridLabel">14 x 11</b></div>
           </section>
 
           <section class="panel-block" aria-label="地块面板 / Terrain palette">
@@ -1110,14 +1127,6 @@
               <button type="button" data-river-mode="draw" aria-pressed="true">绘制 / Draw</button>
               <button type="button" data-river-mode="erase" aria-pressed="false">擦除 / Erase</button>
             </div>
-          </section>
-
-          <section class="status-card" aria-label="当前选择 / Selection">
-            <div class="status-row"><span>已选 / Selected</span><b id="selectedLabel">开阔地 / Open</b></div>
-            <div class="status-row"><span>指针 / Pointer</span><b id="hoverLabel">--</b></div>
-            <div class="status-row"><span>移动 / Movement</span><b id="movementLabel">消耗 1 / Cost 1</b></div>
-            <div class="status-row"><span>战斗 / Combat</span><b id="combatLabel">无修正 / No effect</b></div>
-            <div class="status-row"><span>网格 / Grid</span><b id="gridLabel">14 x 11</b></div>
           </section>
 
           <section class="panel-block" aria-label="地图 JSON / Map JSON">
@@ -1150,24 +1159,19 @@
               <span><i class="dot setup"></i>部署标记 / Setup</span>
             </div>
           </div>
-        </section>
-
-        <aside class="intel-panel" aria-label="地块情报 / Tile intel">
+          <div class="intel-panel" id="tileIntelPanel" aria-label="地块情报 / Tile intel" hidden>
           <section class="intel-card">
             <header class="intel-header">
               <span class="intel-kicker">TACTICAL INTELLIGENCE</span>
               <h2>地块情报 / Tile Intel</h2>
             </header>
-            <div class="intel-empty" id="tileIntelEmpty">
-              <span>点击地图上的地块查看详细信息<br />Select a tile to inspect its details</span>
-            </div>
-            <div class="intel-content" id="tileIntelContent" hidden>
+            <div class="intel-content" id="tileIntelContent">
               <div class="intel-identity">
                 <div>
                   <strong id="intelName">--</strong>
                   <span id="intelVisualType">--</span>
                 </div>
-                <span class="intel-badge" id="intelRuleStatus">RULE LINK</span>
+                <span class="intel-badge" id="intelViewStatus">HOVER</span>
               </div>
               <section class="intel-section">
                 <h3>基础信息 / Basic Intel</h3>
@@ -1180,6 +1184,10 @@
               </section>
               <section class="intel-section">
                 <h3>地块规则 / Tile Rules</h3>
+                <dl class="intel-facts">
+                  <div><dt>移动 / Movement</dt><dd id="movementLabel">--</dd></div>
+                  <div><dt>战斗 / Combat</dt><dd id="combatLabel">--</dd></div>
+                </dl>
                 <ul class="intel-rule-list" id="intelRuleList"></ul>
                 <p class="intel-empty-rule" id="intelEmptyRule" hidden>该地块暂无特殊规则 / No special rules for this tile</p>
               </section>
@@ -1187,9 +1195,15 @@
                 <h3>战术提示 / Tactical Notes</h3>
                 <ul class="intel-rule-list" id="intelTacticalList"></ul>
               </section>
+              <footer class="intel-footer">
+                <span class="intel-chip">当前工具 / Tool <b id="selectedLabel">开阔地 / Open</b></span>
+                <span class="intel-chip">指针 / Pointer <b id="hoverLabel">--</b></span>
+                <span class="intel-chip">规则集 / Ruleset <b id="intelRuleLink">--</b></span>
+              </footer>
             </div>
           </section>
-        </aside>
+          </div>
+        </section>
       </main>
     </div>
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
@@ -1220,11 +1234,12 @@
       const canvasFrame = document.querySelector(".canvas-frame");
       const mapFeedbackText = document.getElementById("mapFeedbackText");
       const toastRegion = document.getElementById("toastRegion");
-      const tileIntelEmpty = document.getElementById("tileIntelEmpty");
+      const tileIntelPanel = document.getElementById("tileIntelPanel");
       const tileIntelContent = document.getElementById("tileIntelContent");
       const intelName = document.getElementById("intelName");
       const intelVisualType = document.getElementById("intelVisualType");
-      const intelRuleStatus = document.getElementById("intelRuleStatus");
+      const intelViewStatus = document.getElementById("intelViewStatus");
+      const intelRuleLink = document.getElementById("intelRuleLink");
       const intelCoords = document.getElementById("intelCoords");
       const intelType = document.getElementById("intelType");
       const intelCity = document.getElementById("intelCity");
@@ -1349,6 +1364,7 @@
         setup: "部署区域视觉标记；对应规则仍待实现。 / Setup visual marker; its rules are still pending.",
       };
       let inspectedHex = null;
+      let previewHex = null;
 
       function fillIntelList(list, items) {
         list.replaceChildren(...items.map((text) => {
@@ -1360,17 +1376,18 @@
 
       function resetTileIntel() {
         inspectedHex = null;
-        tileIntelEmpty.hidden = false;
-        tileIntelContent.hidden = true;
+        previewHex = null;
+        tileIntelPanel.hidden = true;
+        tileIntelPanel.classList.remove("is-preview", "is-pinned");
       }
 
-      function renderTileIntel() {
-        if (!inspectedHex || !inBounds(inspectedHex.q, inspectedHex.r)) {
-          resetTileIntel();
+      function renderTileIntel(activeHex = previewHex || inspectedHex, mode = previewHex ? "preview" : "pinned") {
+        if (!activeHex || !inBounds(activeHex.q, activeHex.r)) {
+          tileIntelPanel.hidden = true;
           return;
         }
 
-        const { q, r } = inspectedHex;
+        const { q, r } = activeHex;
         const visual = state.board[r][q] || "open";
         const tile = tileById[visual] || tileById.open;
         const definition = MapContract.visualDefinition(visual);
@@ -1380,20 +1397,20 @@
         const rules = [];
         const tacticalNotes = [];
 
-        tileIntelEmpty.hidden = true;
-        tileIntelContent.hidden = false;
+        tileIntelPanel.hidden = false;
+        tileIntelPanel.classList.toggle("is-preview", mode === "preview");
+        tileIntelPanel.classList.toggle("is-pinned", mode === "pinned");
         intelName.textContent = `${tile.zh} / ${tile.name}`;
         intelVisualType.textContent = `VISUAL: ${tile.id}`;
-        intelRuleStatus.textContent = tile.pending ? "RULES PENDING" : "RULES LINKED";
+        intelViewStatus.textContent = mode === "pinned" ? "已锁定 / PINNED" : "悬停 / HOVER";
+        intelRuleLink.textContent = tile.pending ? "PENDING" : MapContract.RULESET;
         intelCoords.textContent = `${q + 1}, ${r + 1}`;
         intelType.textContent = definition.terrain;
         intelCity.textContent = definition.city;
         intelDescription.textContent = tileDescriptions[visual] || `${tile.zh} / ${tile.name}`;
+        movementLabel.textContent = tile.movement || "规则待实现 / Rules pending";
+        combatLabel.textContent = tile.combat || "规则待实现 / Rules pending";
 
-        if (!tile.pending) {
-          rules.push(`移动消耗 / Movement: ${tile.movement}`);
-          if (tile.combat !== "无修正 / No effect") rules.push(`战斗效果 / Combat: ${tile.combat}`);
-        }
         if (rivers.length) {
           rules.push(`河流边 / River edges: ${rivers.join(", ")}`);
           rules.push(`跨河战斗 / River combat: ${tileById.river.combat}`);
@@ -1417,8 +1434,16 @@
 
       function selectTileIntel(hex) {
         inspectedHex = hex ? { q: hex.q, r: hex.r } : null;
-        renderTileIntel();
+        previewHex = null;
+        renderTileIntel(inspectedHex, "pinned");
         draw();
+      }
+
+      function previewTileIntel(hex) {
+        previewHex = hex ? { q: hex.q, r: hex.r } : null;
+        if (previewHex) renderTileIntel(previewHex, "preview");
+        else if (inspectedHex) renderTileIntel(inspectedHex, "pinned");
+        else tileIntelPanel.hidden = true;
       }
 
       const state = {
@@ -1515,12 +1540,12 @@
         state.selected = id;
         const tile = tileById[id];
         selectedLabel.textContent = tileLabel(tile);
-        movementLabel.textContent = tile.movement;
-        combatLabel.textContent = tile.combat;
         riverControls.hidden = !tile.edgeTool;
         state.hoverHex = null;
         state.hoverEdge = null;
+        previewHex = null;
         hoverLabel.textContent = "--";
+        if (inspectedHex) renderTileIntel(inspectedHex, "pinned");
         [...palette.querySelectorAll("button")].forEach((button) => {
           button.setAttribute("aria-pressed", button.dataset.tile === id ? "true" : "false");
         });
@@ -2020,6 +2045,7 @@
           : hex
             ? `${hex.q + 1}, ${hex.r + 1}`
             : "--";
+        previewTileIntel(hex);
         draw();
       }
 
@@ -2133,17 +2159,18 @@
 
       canvas.addEventListener("pointermove", (event) => {
         const point = canvasPoint(event);
+        const inspectionHex = hexAtPoint(point.x, point.y);
         const edge = state.selected === "river" ? edgeAtPoint(point.x, point.y) : null;
-        const hex = state.selected === "river" ? null : hexAtPoint(point.x, point.y);
+        const hex = state.selected === "river" ? null : inspectionHex;
         if (state.painting) {
           if (edge) paintRiverEdge(edge);
           else paintHex(hex);
         } else if (
           state.hoverEdge?.key !== edge?.key
-          || state.hoverHex?.q !== hex?.q
-          || state.hoverHex?.r !== hex?.r
+          || state.hoverHex?.q !== inspectionHex?.q
+          || state.hoverHex?.r !== inspectionHex?.r
         ) {
-          updateHover(hex, edge);
+          updateHover(inspectionHex, edge);
         }
       });
 
