@@ -213,11 +213,13 @@
 
       .workspace {
         display: grid;
-        grid-template-columns: minmax(270px, 330px) 1fr;
+        grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) minmax(280px, 340px);
+        grid-template-areas: "controls map intel";
         min-height: calc(100vh - 64px);
       }
 
       .side-panel {
+        grid-area: controls;
         display: grid;
         grid-template-rows: auto auto 1fr auto;
         gap: 18px;
@@ -646,6 +648,7 @@
       .status-row b { color: #c8ddd3; }
 
       .canvas-wrap {
+        grid-area: map;
         background:
           radial-gradient(circle at center, rgba(73, 112, 93, 0.08), transparent 48%),
           linear-gradient(135deg, rgba(255, 255, 255, 0.015), transparent 40%);
@@ -806,6 +809,144 @@
       @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } }
       @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
 
+      .intel-panel {
+        grid-area: intel;
+        min-width: 0;
+        padding: 18px;
+        border-left: 1px solid rgba(104, 194, 154, 0.18);
+        background: linear-gradient(180deg, rgba(13, 24, 20, 0.94), rgba(8, 17, 14, 0.86));
+        box-shadow: -16px 0 42px rgba(0, 0, 0, 0.13);
+      }
+
+      .intel-card {
+        position: sticky;
+        top: 92px;
+        display: grid;
+        gap: 16px;
+        padding: 17px;
+        border: 1px solid rgba(104, 194, 154, 0.28);
+        border-radius: 12px;
+        background: linear-gradient(145deg, rgba(30, 48, 40, 0.86), rgba(11, 23, 18, 0.94));
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), 0 20px 44px rgba(0, 0, 0, 0.22);
+        overflow: hidden;
+      }
+
+      .intel-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(90deg, rgba(104, 194, 154, 0.04) 1px, transparent 1px),
+          linear-gradient(rgba(104, 194, 154, 0.04) 1px, transparent 1px);
+        background-size: 22px 22px;
+        mask-image: linear-gradient(to bottom, black, transparent 48%);
+      }
+
+      .intel-header,
+      .intel-content,
+      .intel-empty { position: relative; z-index: 1; }
+
+      .intel-kicker {
+        display: block;
+        margin-bottom: 5px;
+        color: #76bd9b;
+        font: 800 9px/1.2 "Cascadia Mono", Consolas, monospace;
+        letter-spacing: 0.16em;
+      }
+
+      .intel-header h2 { margin: 0; color: #f0f6f2; font-size: 18px; }
+
+      .intel-empty {
+        min-height: 250px;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 12px;
+        padding: 28px 12px;
+        color: #91a79c;
+        text-align: center;
+        line-height: 1.55;
+      }
+
+      .intel-empty::before {
+        content: "+";
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        border: 1px solid rgba(104, 194, 154, 0.32);
+        border-radius: 50%;
+        color: #74c39e;
+        font: 300 32px/1 "Cascadia Mono", Consolas, monospace;
+        box-shadow: inset 0 0 0 8px rgba(104, 194, 154, 0.035), 0 0 24px rgba(104, 194, 154, 0.08);
+      }
+
+      .intel-content { display: grid; gap: 12px; }
+      .intel-content[hidden], .intel-empty[hidden], .intel-section[hidden] { display: none; }
+
+      .intel-identity {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 13px;
+        border-bottom: 1px solid rgba(151, 184, 164, 0.14);
+      }
+
+      .intel-identity strong { display: block; color: #f1f6f3; font-size: 17px; line-height: 1.25; }
+      .intel-identity span { color: #8fa69a; font-size: 11px; }
+
+      .intel-badge {
+        flex: 0 0 auto;
+        padding: 5px 7px;
+        border: 1px solid rgba(104, 194, 154, 0.35);
+        border-radius: 999px;
+        background: rgba(104, 194, 154, 0.09);
+        color: #8dd4b2 !important;
+        font: 800 9px/1 "Cascadia Mono", Consolas, monospace;
+        letter-spacing: 0.08em;
+      }
+
+      .intel-section {
+        display: grid;
+        gap: 9px;
+        padding: 12px;
+        border: 1px solid rgba(151, 184, 164, 0.13);
+        border-radius: 9px;
+        background: rgba(5, 14, 10, 0.38);
+      }
+
+      .intel-section h3 {
+        margin: 0;
+        color: #a9c9ba;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .intel-facts { display: grid; gap: 7px; margin: 0; }
+      .intel-facts div { display: grid; grid-template-columns: minmax(74px, auto) 1fr; gap: 10px; font-size: 12px; }
+      .intel-facts dt { color: #82978d; }
+      .intel-facts dd { margin: 0; color: #d5e2dc; text-align: right; overflow-wrap: anywhere; }
+
+      .intel-description,
+      .intel-empty-rule { margin: 0; color: #aebfb7; font-size: 12px; line-height: 1.55; }
+
+      .intel-rule-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      .intel-rule-list li { position: relative; padding-left: 13px; color: #c9d8d1; font-size: 12px; line-height: 1.45; }
+      .intel-rule-list li::before {
+        content: "";
+        position: absolute;
+        top: 0.55em;
+        left: 0;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #69c198;
+        box-shadow: 0 0 8px rgba(105, 193, 152, 0.55);
+      }
+
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
           scroll-behavior: auto !important;
@@ -813,6 +954,16 @@
           animation-iteration-count: 1 !important;
           transition-duration: 1ms !important;
         }
+      }
+
+      @media (max-width: 1180px) {
+        .workspace {
+          grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
+          grid-template-areas: "controls map" "controls intel";
+        }
+
+        .intel-panel { border-top: 1px solid rgba(104, 194, 154, 0.18); border-left: 0; }
+        .intel-card { position: static; }
       }
 
       @media (max-width: 900px) {
@@ -827,6 +978,7 @@
 
         .workspace {
           grid-template-columns: 1fr;
+          grid-template-areas: "controls" "map" "intel";
         }
 
         .side-panel {
@@ -834,12 +986,15 @@
           border-bottom: 1px solid var(--line);
         }
 
+        .intel-panel { border-top: 1px solid var(--line); }
+
         .side-panel {
           grid-template-columns: repeat(2, minmax(0, 1fr));
           align-items: start;
         }
 
-        .panel-block:first-child { grid-column: 1 / -1; }
+        .panel-block:first-child,
+        .panel-block:nth-child(2) { grid-column: 1 / -1; }
 
         .palette {
           grid-template-columns: repeat(4, minmax(130px, 1fr));
@@ -862,7 +1017,8 @@
 
         .side-panel { grid-template-columns: 1fr; }
 
-        .panel-block:first-child { grid-column: auto; }
+        .panel-block:first-child,
+        .panel-block:nth-child(2) { grid-column: auto; }
 
         .canvas-wrap { padding: 12px; }
 
@@ -930,15 +1086,6 @@
 
       <main class="workspace">
         <aside class="side-panel">
-          <section class="panel-block" aria-label="地块面板 / Terrain palette">
-            <h2 class="panel-title">地块 / Terrain</h2>
-            <div class="palette" id="palette"></div>
-            <div class="river-controls" id="riverControls" aria-label="河流模式 / River mode" hidden>
-              <button type="button" data-river-mode="draw" aria-pressed="true">绘制 / Draw</button>
-              <button type="button" data-river-mode="erase" aria-pressed="false">擦除 / Erase</button>
-            </div>
-          </section>
-
           <section class="panel-block" aria-label="地图尺寸 / Map size">
             <h2 class="panel-title">地图尺寸 / Map Size</h2>
             <div class="field-grid">
@@ -953,6 +1100,15 @@
             </div>
             <div class="field-grid single-column">
               <button type="button" id="resizeBtn">调整尺寸 / Resize</button>
+            </div>
+          </section>
+
+          <section class="panel-block" aria-label="地块面板 / Terrain palette">
+            <h2 class="panel-title">地块 / Terrain</h2>
+            <div class="palette" id="palette"></div>
+            <div class="river-controls" id="riverControls" aria-label="河流模式 / River mode" hidden>
+              <button type="button" data-river-mode="draw" aria-pressed="true">绘制 / Draw</button>
+              <button type="button" data-river-mode="erase" aria-pressed="false">擦除 / Erase</button>
             </div>
           </section>
 
@@ -995,6 +1151,45 @@
             </div>
           </div>
         </section>
+
+        <aside class="intel-panel" aria-label="地块情报 / Tile intel">
+          <section class="intel-card">
+            <header class="intel-header">
+              <span class="intel-kicker">TACTICAL INTELLIGENCE</span>
+              <h2>地块情报 / Tile Intel</h2>
+            </header>
+            <div class="intel-empty" id="tileIntelEmpty">
+              <span>点击地图上的地块查看详细信息<br />Select a tile to inspect its details</span>
+            </div>
+            <div class="intel-content" id="tileIntelContent" hidden>
+              <div class="intel-identity">
+                <div>
+                  <strong id="intelName">--</strong>
+                  <span id="intelVisualType">--</span>
+                </div>
+                <span class="intel-badge" id="intelRuleStatus">RULE LINK</span>
+              </div>
+              <section class="intel-section">
+                <h3>基础信息 / Basic Intel</h3>
+                <dl class="intel-facts">
+                  <div><dt>坐标 / Coord</dt><dd id="intelCoords">--</dd></div>
+                  <div><dt>地块类型 / Type</dt><dd id="intelType">--</dd></div>
+                  <div><dt>城市级别 / City</dt><dd id="intelCity">--</dd></div>
+                </dl>
+                <p class="intel-description" id="intelDescription"></p>
+              </section>
+              <section class="intel-section">
+                <h3>地块规则 / Tile Rules</h3>
+                <ul class="intel-rule-list" id="intelRuleList"></ul>
+                <p class="intel-empty-rule" id="intelEmptyRule" hidden>该地块暂无特殊规则 / No special rules for this tile</p>
+              </section>
+              <section class="intel-section" id="intelTacticalSection" hidden>
+                <h3>战术提示 / Tactical Notes</h3>
+                <ul class="intel-rule-list" id="intelTacticalList"></ul>
+              </section>
+            </div>
+          </section>
+        </aside>
       </main>
     </div>
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
@@ -1025,6 +1220,19 @@
       const canvasFrame = document.querySelector(".canvas-frame");
       const mapFeedbackText = document.getElementById("mapFeedbackText");
       const toastRegion = document.getElementById("toastRegion");
+      const tileIntelEmpty = document.getElementById("tileIntelEmpty");
+      const tileIntelContent = document.getElementById("tileIntelContent");
+      const intelName = document.getElementById("intelName");
+      const intelVisualType = document.getElementById("intelVisualType");
+      const intelRuleStatus = document.getElementById("intelRuleStatus");
+      const intelCoords = document.getElementById("intelCoords");
+      const intelType = document.getElementById("intelType");
+      const intelCity = document.getElementById("intelCity");
+      const intelDescription = document.getElementById("intelDescription");
+      const intelRuleList = document.getElementById("intelRuleList");
+      const intelEmptyRule = document.getElementById("intelEmptyRule");
+      const intelTacticalSection = document.getElementById("intelTacticalSection");
+      const intelTacticalList = document.getElementById("intelTacticalList");
 
       function showToast(message, type = "success") {
         const toast = document.createElement("div");
@@ -1131,6 +1339,87 @@
       ];
 
       const tileById = Object.fromEntries(tileTypes.map((tile) => [tile.id, tile]));
+      const tileDescriptions = {
+        open: "开阔、无明显地形阻碍的基础地块。 / Open ground without notable terrain obstruction.",
+        forest: "林地覆盖区域，现有规则包含移动与防守修正。 / Wooded terrain with connected movement and defense effects.",
+        city: "普通城市区域，保留城市视觉与基础地形语义。 / Standard city area with its existing city and terrain semantics.",
+        "major-city": "重要城市区域，已连接大城市防守与撤退规则。 / Major urban area with connected defense and retreat rules.",
+        fort: "筑垒视觉标记；对应规则仍待实现。 / Fortification visual marker; its rules are still pending.",
+        rail: "铁路视觉标记；对应规则仍待实现。 / Railroad visual marker; its rules are still pending.",
+        setup: "部署区域视觉标记；对应规则仍待实现。 / Setup visual marker; its rules are still pending.",
+      };
+      let inspectedHex = null;
+
+      function fillIntelList(list, items) {
+        list.replaceChildren(...items.map((text) => {
+          const item = document.createElement("li");
+          item.textContent = text;
+          return item;
+        }));
+      }
+
+      function resetTileIntel() {
+        inspectedHex = null;
+        tileIntelEmpty.hidden = false;
+        tileIntelContent.hidden = true;
+      }
+
+      function renderTileIntel() {
+        if (!inspectedHex || !inBounds(inspectedHex.q, inspectedHex.r)) {
+          resetTileIntel();
+          return;
+        }
+
+        const { q, r } = inspectedHex;
+        const visual = state.board[r][q] || "open";
+        const tile = tileById[visual] || tileById.open;
+        const definition = MapContract.visualDefinition(visual);
+        const rivers = riverDirectionsForHex(q, r);
+        const hex = { terrain: definition.terrain, city: definition.city, river: rivers };
+        const combatEffects = MapContract.getCombatEffects(hex);
+        const rules = [];
+        const tacticalNotes = [];
+
+        tileIntelEmpty.hidden = true;
+        tileIntelContent.hidden = false;
+        intelName.textContent = `${tile.zh} / ${tile.name}`;
+        intelVisualType.textContent = `VISUAL: ${tile.id}`;
+        intelRuleStatus.textContent = tile.pending ? "RULES PENDING" : "RULES LINKED";
+        intelCoords.textContent = `${q + 1}, ${r + 1}`;
+        intelType.textContent = definition.terrain;
+        intelCity.textContent = definition.city;
+        intelDescription.textContent = tileDescriptions[visual] || `${tile.zh} / ${tile.name}`;
+
+        if (!tile.pending) {
+          rules.push(`移动消耗 / Movement: ${tile.movement}`);
+          if (tile.combat !== "无修正 / No effect") rules.push(`战斗效果 / Combat: ${tile.combat}`);
+        }
+        if (rivers.length) {
+          rules.push(`河流边 / River edges: ${rivers.join(", ")}`);
+          rules.push(`跨河战斗 / River combat: ${tileById.river.combat}`);
+        }
+
+        if (combatEffects.modifiers.includes("forest")) {
+          tacticalNotes.push("森林防守修正已连接 / Forest defense modifier is connected");
+        }
+        if (combatEffects.modifiers.includes("major")) {
+          tacticalNotes.push("大城市防守与撤退规则已连接 / Major-city defense and retreat rules are connected");
+        }
+        if (rivers.length) {
+          tacticalNotes.push(`本格连接 ${rivers.length} 条河流边 / ${rivers.length} river edge(s) connected to this tile`);
+        }
+
+        fillIntelList(intelRuleList, rules);
+        intelEmptyRule.hidden = rules.length > 0;
+        fillIntelList(intelTacticalList, tacticalNotes);
+        intelTacticalSection.hidden = tacticalNotes.length === 0;
+      }
+
+      function selectTileIntel(hex) {
+        inspectedHex = hex ? { q: hex.q, r: hex.r } : null;
+        renderTileIntel();
+        draw();
+      }
 
       const state = {
         cols: 14,
@@ -1174,6 +1463,7 @@
         rowsInput.value = state.rows;
         resizeCanvas();
         updateJson();
+        resetTileIntel();
         draw();
       }
 
@@ -1670,6 +1960,19 @@
             drawCoordinate(q, r, center.x, center.y);
           }
         }
+        if (inspectedHex && inBounds(inspectedHex.q, inspectedHex.r)) {
+          const center = hexCenter(inspectedHex.q, inspectedHex.r);
+          ctx.save();
+          hexPath(center.x, center.y, state.size - 3);
+          ctx.fillStyle = "rgba(230, 190, 91, 0.12)";
+          ctx.strokeStyle = "rgba(239, 202, 108, 0.98)";
+          ctx.shadowColor = "rgba(218, 174, 67, 0.72)";
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 3;
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
         if (state.hoverHex && state.selected !== "river") {
           const center = hexCenter(state.hoverHex.q, state.hoverHex.r);
           ctx.save();
@@ -1695,6 +1998,7 @@
         if (state.board[hex.r][hex.q] === state.selected) return;
         state.board[hex.r][hex.q] = state.selected;
         updateJson();
+        if (inspectedHex?.q === hex.q && inspectedHex?.r === hex.r) renderTileIntel();
         draw();
       }
 
@@ -1704,6 +2008,7 @@
         if (state.riverMode === "erase") state.rivers.delete(edge.key);
         else state.rivers.add(edge.key);
         updateJson();
+        if (inspectedHex) renderTileIntel();
         draw();
       }
 
@@ -1772,6 +2077,7 @@
         colsInput.value = state.cols;
         resizeCanvas();
         updateJson();
+        resetTileIntel();
         draw();
       }
 
@@ -1801,14 +2107,17 @@
         state.rivers = nextRivers;
         resizeCanvas();
         updateJson();
+        resetTileIntel();
         draw();
       }
 
       canvas.addEventListener("pointerdown", (event) => {
         event.preventDefault();
         const point = canvasPoint(event);
+        const inspectionHex = hexAtPoint(point.x, point.y);
         const edge = state.selected === "river" ? edgeAtPoint(point.x, point.y) : null;
-        const hex = state.selected === "river" ? null : hexAtPoint(point.x, point.y);
+        const hex = state.selected === "river" ? null : inspectionHex;
+        if (inspectionHex) selectTileIntel(inspectionHex);
         if (!edge && !hex) return;
         if (edge) {
           const exists = state.rivers.has(edge.key);
@@ -1891,6 +2200,7 @@
         state.board = makeBoard(state.cols, state.rows, "open");
         state.rivers = new Set();
         updateJson();
+        resetTileIntel();
         draw();
         beginMapFeedback("正在重置地图 / Resetting map");
         finishMapFeedback();
