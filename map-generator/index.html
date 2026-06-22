@@ -1466,7 +1466,7 @@
       const state = {
         cols: 14,
         rows: 11,
-        size: 42,
+        size: 48,
         selected: "open",
         riverMode: "draw",
         rivers: new Set(),
@@ -1610,11 +1610,16 @@
         });
       });
 
+      function mapVisualScale() {
+        return state.size / 42;
+      }
+
       function resizeCanvas() {
         const s = state.size;
+        const scale = mapVisualScale();
         const hexHeight = Math.sqrt(3) * s;
-        const width = Math.ceil((state.cols - 1) * 1.5 * s + 2 * s + 44);
-        const height = Math.ceil((state.rows + 0.5) * hexHeight + 44);
+        const width = Math.ceil((state.cols - 1) * 1.5 * s + 2 * s + 44 * scale);
+        const height = Math.ceil((state.rows + 0.5) * hexHeight + 44 * scale);
         canvas.width = width;
         canvas.height = height;
         gridLabel.textContent = gridLabelText();
@@ -1622,10 +1627,11 @@
 
       function hexCenter(q, r) {
         const s = state.size;
+        const scale = mapVisualScale();
         const hexHeight = Math.sqrt(3) * s;
         return {
-          x: 24 + s + q * 1.5 * s,
-          y: 24 + hexHeight / 2 + r * hexHeight + (q % 2) * (hexHeight / 2),
+          x: 24 * scale + s + q * 1.5 * s,
+          y: 24 * scale + hexHeight / 2 + r * hexHeight + (q % 2) * (hexHeight / 2),
         };
       }
 
@@ -1863,6 +1869,7 @@
       function addTileMarks(id, cx, cy) {
         ctx.save();
         ctx.translate(cx, cy);
+        ctx.scale(mapVisualScale(), mapVisualScale());
         if (id === "river") {
           ctx.strokeStyle = "rgba(25, 114, 143, 0.86)";
           ctx.lineWidth = 8;
@@ -1946,10 +1953,11 @@
       }
 
       function drawCoordinate(q, r, cx, cy) {
+        const scale = mapVisualScale();
         ctx.fillStyle = "rgba(59, 65, 70, 0.42)";
-        ctx.font = "11px Cascadia Mono, Consolas, monospace";
+        ctx.font = `${Math.round(11 * scale)}px Cascadia Mono, Consolas, monospace`;
         ctx.textAlign = "center";
-        ctx.fillText(`${String(q + 1).padStart(2, "0")}${String(r + 1).padStart(2, "0")}`, cx, cy - 25);
+        ctx.fillText(`${String(q + 1).padStart(2, "0")}${String(r + 1).padStart(2, "0")}`, cx, cy - 25 * scale);
       }
 
       function strokeSegments(segments, color, width) {
@@ -1970,12 +1978,14 @@
 
       function drawRivers() {
         const segments = riverSegments();
-        strokeSegments(segments, "rgba(18, 64, 84, 0.92)", 11);
-        strokeSegments(segments, "rgba(45, 151, 190, 0.98)", 7);
-        strokeSegments(segments, "rgba(183, 235, 244, 0.62)", 2);
+        const scale = mapVisualScale();
+        strokeSegments(segments, "rgba(18, 64, 84, 0.92)", 11 * scale);
+        strokeSegments(segments, "rgba(45, 151, 190, 0.98)", 7 * scale);
+        strokeSegments(segments, "rgba(183, 235, 244, 0.62)", 2 * scale);
       }
 
       function draw() {
+        const scale = mapVisualScale();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#d0c8be";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1991,7 +2001,7 @@
             const center = hexCenter(q, r);
             hexPath(center.x, center.y, state.size);
             ctx.strokeStyle = "rgba(20, 24, 28, 0.68)";
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = 1.2 * scale;
             ctx.stroke();
           }
         }
@@ -2005,12 +2015,12 @@
         if (inspectedHex && inBounds(inspectedHex.q, inspectedHex.r)) {
           const center = hexCenter(inspectedHex.q, inspectedHex.r);
           ctx.save();
-          hexPath(center.x, center.y, state.size - 3);
+          hexPath(center.x, center.y, state.size - 3 * scale);
           ctx.fillStyle = "rgba(230, 190, 91, 0.12)";
           ctx.strokeStyle = "rgba(239, 202, 108, 0.98)";
           ctx.shadowColor = "rgba(218, 174, 67, 0.72)";
-          ctx.shadowBlur = 14;
-          ctx.lineWidth = 3;
+          ctx.shadowBlur = 14 * scale;
+          ctx.lineWidth = 3 * scale;
           ctx.fill();
           ctx.stroke();
           ctx.restore();
@@ -2018,11 +2028,11 @@
         if (state.hoverHex && state.selected !== "river") {
           const center = hexCenter(state.hoverHex.q, state.hoverHex.r);
           ctx.save();
-          hexPath(center.x, center.y, state.size - 2);
+          hexPath(center.x, center.y, state.size - 2 * scale);
           ctx.strokeStyle = "rgba(111, 224, 170, 0.96)";
           ctx.shadowColor = "rgba(67, 202, 139, 0.7)";
-          ctx.shadowBlur = 12;
-          ctx.lineWidth = 3;
+          ctx.shadowBlur = 12 * scale;
+          ctx.lineWidth = 3 * scale;
           ctx.stroke();
           ctx.restore();
         }
@@ -2031,7 +2041,7 @@
           const color = state.riverMode === "erase" || active
             ? "rgba(176, 38, 46, 0.96)"
             : "rgba(22, 126, 159, 0.96)";
-          strokeSegments([state.hoverEdge], color, 13);
+          strokeSegments([state.hoverEdge], color, 13 * scale);
         }
       }
 
