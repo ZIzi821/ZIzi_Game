@@ -215,6 +215,7 @@
         display: grid;
         grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
         min-height: calc(100vh - 64px);
+        padding-right: 318px;
       }
 
       .side-panel {
@@ -809,7 +810,7 @@
       .intel-panel {
         position: fixed;
         top: 90px;
-        left: 18px;
+        right: 18px;
         z-index: 19;
         width: min(300px, calc(100vw - 36px));
         pointer-events: none;
@@ -971,6 +972,7 @@
       }
 
       @media (max-width: 1180px) {
+        .workspace { padding-right: 308px; }
         .intel-panel { width: min(290px, calc(100vw - 36px)); }
       }
 
@@ -986,6 +988,7 @@
 
         .workspace {
           grid-template-columns: 1fr;
+          padding-right: 0;
         }
 
         .side-panel {
