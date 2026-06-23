@@ -2,7 +2,7 @@
   "use strict";
 
   const FORMAT = "zizi-operation-typhoon-map";
-  const VERSION = 2;
+  const VERSION = 3;
   const RULESET = "operation-typhoon-v1";
   const DIRECTIONS = Object.freeze(["N", "NE", "SE", "S", "SW", "NW"]);
   const OPPOSITE = Object.freeze({ N: "S", NE: "SW", SE: "NW", S: "N", SW: "NE", NW: "SE" });
@@ -13,7 +13,6 @@
     city: Object.freeze({ terrain: "open", city: "normal", rulesPending: false }),
     "major-city": Object.freeze({ terrain: "open", city: "major", rulesPending: false }),
     fort: Object.freeze({ terrain: "open", city: "none", rulesPending: true }),
-    rail: Object.freeze({ terrain: "open", city: "none", rulesPending: true }),
     setup: Object.freeze({ terrain: "open", city: "none", rulesPending: true }),
   });
 
@@ -37,6 +36,7 @@
       terrain: definition.terrain,
       city: definition.city,
       river: [],
+      rail: [],
     };
   }
 
@@ -66,13 +66,13 @@
     return { x: x + offsets[direction][0], y: y + offsets[direction][1] };
   }
 
-  function normalizeDirectionList(value) {
+  function normalizeDirectionList(value, labelZh = "河流方向", labelEn = "River directions") {
     if (value == null) return [];
-    if (!Array.isArray(value)) throw new Error("河流方向必须是数组 / River directions must be an array");
+    if (!Array.isArray(value)) throw new Error(labelZh + "必须是数组 / " + labelEn + " must be an array");
     const result = [];
     for (const direction of value) {
       if (!DIRECTIONS.includes(direction)) {
-        throw new Error(`无效河流方向 / Invalid river direction: ${direction}`);
+        throw new Error("无效" + labelZh + " / Invalid " + labelEn.toLowerCase() + ": " + direction);
       }
       if (!result.includes(direction)) result.push(direction);
     }
@@ -88,6 +88,22 @@
     const target = hexesByKey.get(`${neighbor.x},${neighbor.y}`);
     const opposite = OPPOSITE[direction];
     if (target && !target.river.includes(opposite)) target.river.push(opposite);
+  }
+
+  function addRailSide(hexesByKey, cols, rows, x, y, direction) {
+    const source = hexesByKey.get(`${x},${y}`);
+    if (!source) return;
+    const neighbor = neighborOf(x, y, direction);
+    if (neighbor.x < 0 || neighbor.x >= cols || neighbor.y < 0 || neighbor.y >= rows) return;
+    if (!source.rail.includes(direction)) source.rail.push(direction);
+    const target = hexesByKey.get(`${neighbor.x},${neighbor.y}`);
+    const opposite = OPPOSITE[direction];
+    if (target && !target.rail.includes(opposite)) target.rail.push(opposite);
+  }
+
+  function sortHexDirections(hex) {
+    hex.river.sort((a, b) => DIRECTIONS.indexOf(a) - DIRECTIONS.indexOf(b));
+    hex.rail.sort((a, b) => DIRECTIONS.indexOf(a) - DIRECTIONS.indexOf(b));
   }
 
   function normalizeVersionTwo(document) {
@@ -108,6 +124,7 @@
       : normalized.terrainSheet;
     const hexesByKey = new Map(normalized.hexes.map((hex) => [`${hex.x},${hex.y}`, hex]));
     const riverSides = [];
+    const railSides = [];
 
     for (const source of document.hexes) {
       const x = Number(source?.x);
@@ -116,19 +133,25 @@
         throw new Error(`无效六边形坐标 / Invalid hex coordinate: ${source?.x},${source?.y}`);
       }
       const target = hexesByKey.get(`${x},${y}`);
-      const visual = VISUALS[source.visual] ? source.visual : "open";
+      const legacyRailVisual = source.visual === "rail";
+      const visual = legacyRailVisual ? "open" : (VISUALS[source.visual] ? source.visual : "open");
       const definition = visualDefinition(visual);
       target.visual = visual;
       target.terrain = definition.terrain;
       target.city = definition.city;
       for (const direction of normalizeDirectionList(source.river)) riverSides.push({ x, y, direction });
+      for (const direction of normalizeDirectionList(source.rail, "铁路方向", "Rail directions")) railSides.push({ x, y, direction });
+      if (legacyRailVisual) railSides.push({ x, y, direction: "NE" }, { x, y, direction: "SW" });
     }
 
     for (const side of riverSides) {
       addRiverSide(hexesByKey, cols, rows, side.x, side.y, side.direction);
     }
+    for (const side of railSides) {
+      addRailSide(hexesByKey, cols, rows, side.x, side.y, side.direction);
+    }
     for (const hex of normalized.hexes) {
-      hex.river.sort((a, b) => DIRECTIONS.indexOf(a) - DIRECTIONS.indexOf(b));
+      sortHexDirections(hex);
     }
     return normalized;
   }
@@ -140,17 +163,19 @@
     const normalized = createMap(cols, rows);
     const hexesByKey = new Map(normalized.hexes.map((hex) => [`${hex.x},${hex.y}`, hex]));
     const legacyRivers = [];
+    const legacyRails = [];
 
     for (let y = 0; y < rows; y += 1) {
       for (let x = 0; x < cols; x += 1) {
         const sourceVisual = document.tiles[y]?.[x] || "open";
-        const visual = sourceVisual === "river" ? "open" : (VISUALS[sourceVisual] ? sourceVisual : "open");
+        const visual = sourceVisual === "river" || sourceVisual === "rail" ? "open" : (VISUALS[sourceVisual] ? sourceVisual : "open");
         const definition = visualDefinition(visual);
         const target = hexesByKey.get(`${x},${y}`);
         target.visual = visual;
         target.terrain = definition.terrain;
         target.city = definition.city;
         if (sourceVisual === "river") legacyRivers.push({ x, y });
+        if (sourceVisual === "rail") legacyRails.push({ x, y });
       }
     }
 
@@ -159,8 +184,13 @@
         addRiverSide(hexesByKey, cols, rows, river.x, river.y, direction);
       }
     }
+    for (const rail of legacyRails) {
+      for (const direction of ["NE", "SW"]) {
+        addRailSide(hexesByKey, cols, rows, rail.x, rail.y, direction);
+      }
+    }
     for (const hex of normalized.hexes) {
-      hex.river.sort((a, b) => DIRECTIONS.indexOf(a) - DIRECTIONS.indexOf(b));
+      sortHexDirections(hex);
     }
     return normalized;
   }

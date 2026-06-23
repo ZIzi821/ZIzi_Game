@@ -1140,7 +1140,7 @@
           <section class="panel-block" aria-label="地块面板 / Terrain palette">
             <h2 class="panel-title">地块 / Terrain</h2>
             <div class="palette" id="palette"></div>
-            <div class="river-controls" id="riverControls" aria-label="河流模式 / River mode" hidden>
+            <div class="river-controls" id="riverControls" aria-label="绘制模式 / Draw mode" hidden>
               <button type="button" data-river-mode="draw" aria-pressed="true">绘制 / Draw</button>
               <button type="button" data-river-mode="erase" aria-pressed="false">擦除 / Erase</button>
             </div>
@@ -1354,9 +1354,9 @@
           zh: "铁路",
           color: "#cedcc5",
           crop: { x: 27, y: 780, w: 106, h: 100 },
-          movement: "规则待实现 / Rules pending",
-          combat: "规则待实现 / Rules pending",
-          pending: true,
+          movement: "无规则效果；视觉连接 / No rule effect; visual connection",
+          combat: "无规则效果 / No rule effect",
+          railTool: true,
         },
         {
           id: "setup",
@@ -1377,7 +1377,7 @@
         city: "普通城市区域，保留城市视觉与基础地形语义。 / Standard city area with its existing city and terrain semantics.",
         "major-city": "重要城市区域，已连接大城市防守与撤退规则。 / Major urban area with connected defense and retreat rules.",
         fort: "筑垒视觉标记；对应规则仍待实现。 / Fortification visual marker; its rules are still pending.",
-        rail: "铁路视觉标记；对应规则仍待实现。 / Railroad visual marker; its rules are still pending.",
+        rail: "铁路连接工具；覆盖在任意地形上的视觉路线，暂不影响规则。 / Railroad connection tool; a visual route overlay on any terrain with no rule effect yet.",
         setup: "部署区域视觉标记；对应规则仍待实现。 / Setup visual marker; its rules are still pending.",
       };
       let inspectedHex = null;
@@ -1409,7 +1409,8 @@
         const tile = tileById[visual] || tileById.open;
         const definition = MapContract.visualDefinition(visual);
         const rivers = riverDirectionsForHex(q, r);
-        const hex = { terrain: definition.terrain, city: definition.city, river: rivers };
+        const rails = railDirectionsForHex(q, r);
+        const hex = { terrain: definition.terrain, city: definition.city, river: rivers, rail: rails };
         const combatEffects = MapContract.getCombatEffects(hex);
         const rules = [];
         const tacticalNotes = [];
@@ -1442,6 +1443,10 @@
         if (rivers.length) {
           tacticalNotes.push(`本格连接 ${rivers.length} 条河流边 / ${rivers.length} river edge(s) connected to this tile`);
         }
+        if (rails.length) {
+          tacticalNotes.push(`铁路连接 ${rails.join(", ")} / Rail connections: ${rails.join(", ")}`);
+          tacticalNotes.push("铁路当前仅为地图视觉数据 / Railroad is currently visual map data only");
+        }
 
         fillIntelList(intelRuleList, rules);
         intelEmptyRule.hidden = rules.length > 0;
@@ -1470,10 +1475,13 @@
         selected: "open",
         riverMode: "draw",
         rivers: new Set(),
+        rails: new Set(),
         hoverHex: null,
         hoverEdge: null,
         painting: false,
         strokeEdges: new Set(),
+        strokeRails: new Set(),
+        lastRailHex: null,
         board: [],
         undo: [],
         redo: [],
@@ -1493,6 +1501,7 @@
           rows: state.rows,
           board: cloneBoard(),
           rivers: [...state.rivers],
+          rails: [...state.rails],
         };
       }
 
@@ -1501,6 +1510,7 @@
         state.rows = snapshot.rows;
         state.board = snapshot.board.map((row) => row.slice());
         state.rivers = new Set(snapshot.rivers);
+        state.rails = new Set(snapshot.rails || []);
         colsInput.value = state.cols;
         rowsInput.value = state.rows;
         resizeCanvas();
@@ -1557,9 +1567,10 @@
         state.selected = id;
         const tile = tileById[id];
         selectedLabel.textContent = tileLabel(tile);
-        riverControls.hidden = !tile.edgeTool;
+        riverControls.hidden = !tile.edgeTool && !tile.railTool;
         state.hoverHex = null;
         state.hoverEdge = null;
+        state.lastRailHex = null;
         previewHex = null;
         hoverLabel.textContent = "--";
         if (inspectedHex) renderTileIntel(inspectedHex, "pinned");
@@ -1586,6 +1597,8 @@
           copy.className = "tile-copy";
           const detail = tile.edgeTool
             ? "边工具 / Edge tool"
+            : tile.railTool
+              ? "连接工具 / Connection tool"
             : tile.pending
               ? "规则待实现 / Rules pending"
               : "规则已连接 / Rules ready";
@@ -1782,6 +1795,62 @@
         return MapContract.DIRECTIONS.filter((direction) => state.rivers.has(riverEdgeKey(q, r, direction)));
       }
 
+      function railConnectionKey(q, r, direction, cols = state.cols, rows = state.rows) {
+        const neighbor = MapContract.neighborOf(q, r, direction);
+        if (!inBounds(neighbor.x, neighbor.y, cols, rows)) return null;
+        if (coordinateBefore({ x: q, y: r }, neighbor)) return `${q},${r},${direction}`;
+        return `${neighbor.x},${neighbor.y},${MapContract.OPPOSITE[direction]}`;
+      }
+
+      function decodeRailConnection(key) {
+        const [q, r, direction] = key.split(",");
+        return { q: Number(q), r: Number(r), direction };
+      }
+
+      function railDirectionBetween(from, to) {
+        if (!from || !to) return null;
+        for (const direction of MapContract.DIRECTIONS) {
+          const neighbor = MapContract.neighborOf(from.q, from.r, direction);
+          if (neighbor.x === to.q && neighbor.y === to.r) return direction;
+        }
+        return null;
+      }
+
+      function railKeyBetween(from, to, cols = state.cols, rows = state.rows) {
+        const direction = railDirectionBetween(from, to);
+        return direction ? railConnectionKey(from.q, from.r, direction, cols, rows) : null;
+      }
+
+      function railSegment(q, r, direction) {
+        const neighbor = MapContract.neighborOf(q, r, direction);
+        if (!inBounds(neighbor.x, neighbor.y)) return null;
+        return {
+          q,
+          r,
+          direction,
+          key: railConnectionKey(q, r, direction),
+          a: hexCenter(q, r),
+          b: hexCenter(neighbor.x, neighbor.y),
+        };
+      }
+
+      function railSegments() {
+        return [...state.rails]
+          .map((key) => {
+            const rail = decodeRailConnection(key);
+            const segment = railSegment(rail.q, rail.r, rail.direction);
+            return segment ? { ...segment, key } : null;
+          })
+          .filter(Boolean);
+      }
+
+      function railDirectionsForHex(q, r) {
+        return MapContract.DIRECTIONS.filter((direction) => {
+          const key = railConnectionKey(q, r, direction);
+          return key && state.rails.has(key);
+        });
+      }
+
       function drawImageCover(image, crop, left, top, width, height) {
         const scale = Math.max(width / crop.w, height / crop.h);
         const drawWidth = crop.w * scale;
@@ -1818,6 +1887,7 @@
         const cx = swatch.width / 2;
         const cy = swatch.height / 2;
         const hexHeight = Math.sqrt(3) * radius;
+        const swatchTile = tile.railTool ? tileById.open : tile;
         swatchCtx.clearRect(0, 0, swatch.width, swatch.height);
         swatchCtx.save();
         swatchCtx.beginPath();
@@ -1830,10 +1900,10 @@
         }
         swatchCtx.closePath();
         swatchCtx.clip();
-        swatchCtx.fillStyle = tile.color;
+        swatchCtx.fillStyle = swatchTile.color;
         swatchCtx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
         if (terrainImage.complete && terrainImage.naturalWidth > 0) {
-          const crop = tile.crop;
+          const crop = swatchTile.crop;
           const width = radius * 2;
           const height = hexHeight;
           const scale = Math.max(width / crop.w, height / crop.h);
@@ -1844,6 +1914,35 @@
           swatchCtx.drawImage(terrainImage, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
         }
         swatchCtx.restore();
+        if (tile.railTool) {
+          swatchCtx.save();
+          swatchCtx.translate(cx, cy);
+          swatchCtx.lineCap = "round";
+          swatchCtx.lineJoin = "round";
+          swatchCtx.strokeStyle = "rgba(34, 37, 42, 0.72)";
+          swatchCtx.lineWidth = 8;
+          swatchCtx.beginPath();
+          swatchCtx.moveTo(-33, 12);
+          swatchCtx.lineTo(33, -12);
+          swatchCtx.stroke();
+          swatchCtx.strokeStyle = "rgba(224, 214, 190, 0.82)";
+          swatchCtx.lineWidth = 2;
+          for (let i = -24; i <= 24; i += 12) {
+            swatchCtx.beginPath();
+            swatchCtx.moveTo(i - 4, 7);
+            swatchCtx.lineTo(i + 4, -7);
+            swatchCtx.stroke();
+          }
+          swatchCtx.strokeStyle = "rgba(18, 20, 24, 0.96)";
+          swatchCtx.lineWidth = 2;
+          for (const offset of [-3, 3]) {
+            swatchCtx.beginPath();
+            swatchCtx.moveTo(-31, 12 + offset);
+            swatchCtx.lineTo(31, -12 + offset);
+            swatchCtx.stroke();
+          }
+          swatchCtx.restore();
+        }
         swatchCtx.strokeStyle = "rgba(22, 26, 31, 0.42)";
         swatchCtx.lineWidth = 2;
         swatchCtx.beginPath();
@@ -1984,6 +2083,95 @@
         strokeSegments(segments, "rgba(183, 235, 244, 0.62)", 2 * scale);
       }
 
+      function drawRailSleepers(segments) {
+        if (!segments.length) return;
+        const scale = mapVisualScale();
+        ctx.save();
+        ctx.strokeStyle = "rgba(226, 216, 194, 0.78)";
+        ctx.lineWidth = 2 * scale;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        for (const segment of segments) {
+          const dx = segment.b.x - segment.a.x;
+          const dy = segment.b.y - segment.a.y;
+          const length = Math.hypot(dx, dy);
+          if (!length) continue;
+          const ux = dx / length;
+          const uy = dy / length;
+          const px = -uy;
+          const py = ux;
+          const half = 8 * scale;
+          const step = 12 * scale;
+          for (let distance = 8 * scale; distance < length - 8 * scale; distance += step) {
+            const x = segment.a.x + ux * distance;
+            const y = segment.a.y + uy * distance;
+            ctx.moveTo(x - px * half, y - py * half);
+            ctx.lineTo(x + px * half, y + py * half);
+          }
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawParallelRails(segments) {
+        if (!segments.length) return;
+        const scale = mapVisualScale();
+        ctx.save();
+        ctx.strokeStyle = "rgba(18, 20, 24, 0.96)";
+        ctx.lineWidth = 2.2 * scale;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (const segment of segments) {
+          const dx = segment.b.x - segment.a.x;
+          const dy = segment.b.y - segment.a.y;
+          const length = Math.hypot(dx, dy);
+          if (!length) continue;
+          const px = -dy / length;
+          const py = dx / length;
+          for (const offset of [-3.5 * scale, 3.5 * scale]) {
+            ctx.moveTo(segment.a.x + px * offset, segment.a.y + py * offset);
+            ctx.lineTo(segment.b.x + px * offset, segment.b.y + py * offset);
+          }
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawRailJunctions() {
+        const scale = mapVisualScale();
+        for (let r = 0; r < state.rows; r += 1) {
+          for (let q = 0; q < state.cols; q += 1) {
+            const directions = railDirectionsForHex(q, r);
+            if (directions.length < 3) continue;
+            const center = hexCenter(q, r);
+            ctx.save();
+            ctx.fillStyle = "rgba(31, 34, 39, 0.96)";
+            ctx.strokeStyle = "rgba(232, 222, 196, 0.92)";
+            ctx.lineWidth = 2 * scale;
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, 8 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "rgba(232, 222, 196, 0.9)";
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, 2.5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      function drawRails() {
+        const segments = railSegments();
+        const scale = mapVisualScale();
+        strokeSegments(segments, "rgba(22, 24, 29, 0.56)", 10 * scale);
+        strokeSegments(segments, "rgba(74, 70, 62, 0.92)", 6 * scale);
+        drawRailSleepers(segments);
+        drawParallelRails(segments);
+        drawRailJunctions();
+      }
+
       function draw() {
         const scale = mapVisualScale();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2005,6 +2193,7 @@
             ctx.stroke();
           }
         }
+        drawRails();
         drawRivers();
         for (let r = 0; r < state.rows; r += 1) {
           for (let q = 0; q < state.cols; q += 1) {
@@ -2046,7 +2235,7 @@
       }
 
       function paintHex(hex) {
-        if (!hex || state.selected === "river") return;
+        if (!hex || state.selected === "river" || state.selected === "rail") return;
         if (state.board[hex.r][hex.q] === state.selected) return;
         state.board[hex.r][hex.q] = state.selected;
         updateJson();
@@ -2059,6 +2248,31 @@
         state.strokeEdges.add(edge.key);
         if (state.riverMode === "erase") state.rivers.delete(edge.key);
         else state.rivers.add(edge.key);
+        updateJson();
+        if (inspectedHex) renderTileIntel();
+        draw();
+      }
+
+      function paintRailToHex(hex) {
+        if (!hex) return;
+        const current = { q: hex.q, r: hex.r };
+        if (!state.lastRailHex) {
+          state.lastRailHex = current;
+          return;
+        }
+        if (state.lastRailHex.q === current.q && state.lastRailHex.r === current.r) return;
+        const key = railKeyBetween(state.lastRailHex, current);
+        state.lastRailHex = current;
+        if (!key || state.strokeRails.has(key)) return;
+        state.strokeRails.add(key);
+        const exists = state.rails.has(key);
+        if (state.riverMode === "erase") {
+          if (!exists) return;
+          state.rails.delete(key);
+        } else {
+          if (exists) return;
+          state.rails.add(key);
+        }
         updateJson();
         if (inspectedHex) renderTileIntel();
         draw();
@@ -2089,6 +2303,7 @@
               terrain: definition.terrain,
               city: definition.city,
               river: riverDirectionsForHex(q, r),
+              rail: railDirectionsForHex(q, r),
             });
           }
         }
@@ -2119,11 +2334,17 @@
         state.cols = normalized.grid.cols;
         state.board = makeBoard(state.cols, state.rows);
         state.rivers = new Set();
+        state.rails = new Set();
         for (const hex of normalized.hexes) {
-          const visual = tileById[hex.visual] && hex.visual !== "river" ? hex.visual : "open";
+          const tile = tileById[hex.visual];
+          const visual = tile && !tile.edgeTool && !tile.railTool ? hex.visual : "open";
           state.board[hex.y][hex.x] = visual;
           for (const direction of hex.river) {
             state.rivers.add(riverEdgeKey(hex.x, hex.y, direction));
+          }
+          for (const direction of hex.rail || []) {
+            const key = railConnectionKey(hex.x, hex.y, direction);
+            if (key) state.rails.add(key);
           }
         }
         rowsInput.value = state.rows;
@@ -2154,10 +2375,20 @@
             nextRivers.add(riverEdgeKey(edge.q, edge.r, edge.direction, cols, rows));
           }
         }
+        const nextRails = new Set();
+        for (const key of state.rails) {
+          const rail = decodeRailConnection(key);
+          const neighbor = MapContract.neighborOf(rail.q, rail.r, rail.direction);
+          if (inBounds(rail.q, rail.r, cols, rows) && inBounds(neighbor.x, neighbor.y, cols, rows)) {
+            const nextKey = railConnectionKey(rail.q, rail.r, rail.direction, cols, rows);
+            if (nextKey) nextRails.add(nextKey);
+          }
+        }
         state.cols = cols;
         state.rows = rows;
         state.board = next;
         state.rivers = nextRivers;
+        state.rails = nextRails;
         resizeCanvas();
         updateJson();
         resetTileIntel();
@@ -2171,16 +2402,23 @@
         const edge = state.selected === "river" ? edgeAtPoint(point.x, point.y) : null;
         const hex = state.selected === "river" ? null : inspectionHex;
         if (inspectionHex) selectTileIntel(inspectionHex);
-        if (!edge && !hex) return;
-        if (edge) {
+        if (state.selected === "river") {
+          if (!edge) return;
           const exists = state.rivers.has(edge.key);
           if ((state.riverMode === "draw" && exists) || (state.riverMode === "erase" && !exists)) return;
+        } else if (state.selected === "rail") {
+          if (!inspectionHex) return;
+        } else if (!hex) {
+          return;
         }
         pushHistory();
         state.painting = true;
         state.strokeEdges = new Set();
+        state.strokeRails = new Set();
+        state.lastRailHex = state.selected === "rail" && inspectionHex ? { q: inspectionHex.q, r: inspectionHex.r } : null;
         canvas.setPointerCapture(event.pointerId);
         if (edge) paintRiverEdge(edge);
+        else if (state.selected === "rail") draw();
         else paintHex(hex);
       });
 
@@ -2191,6 +2429,7 @@
         const hex = state.selected === "river" ? null : inspectionHex;
         if (state.painting) {
           if (edge) paintRiverEdge(edge);
+          else if (state.selected === "rail") paintRailToHex(inspectionHex);
           else paintHex(hex);
         } else if (
           state.hoverEdge?.key !== edge?.key
@@ -2204,6 +2443,8 @@
       canvas.addEventListener("pointerup", (event) => {
         state.painting = false;
         state.strokeEdges = new Set();
+        state.strokeRails = new Set();
+        state.lastRailHex = null;
         if (canvas.hasPointerCapture(event.pointerId)) {
           canvas.releasePointerCapture(event.pointerId);
         }
@@ -2212,6 +2453,8 @@
       canvas.addEventListener("pointerleave", () => {
         state.painting = false;
         state.strokeEdges = new Set();
+        state.strokeRails = new Set();
+        state.lastRailHex = null;
         updateHover(null, null);
       });
 
@@ -2253,6 +2496,7 @@
         pushHistory();
         state.board = makeBoard(state.cols, state.rows, "open");
         state.rivers = new Set();
+        state.rails = new Set();
         updateJson();
         resetTileIntel();
         draw();
@@ -2333,6 +2577,7 @@
       drawPaletteSwatches();
       state.board = makeBoard(state.cols, state.rows, "open");
       state.rivers = new Set();
+      state.rails = new Set();
       resizeCanvas();
       setSelected("open");
       updateJson();
