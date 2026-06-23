@@ -1,7 +1,14 @@
 {
-  "updatedAt": "2026-06-22T05:29:41.973Z",
+  "updatedAt": "2026-06-23T04:19:39.247Z",
   "leaderboards": {
     "starfall": [
+      {
+        "id": "QrxYyM08U65MJTGeyRxT",
+        "nickname": "Jeffrey Cheah",
+        "score": 67669,
+        "createdAt": "2026-06-22T12:31:43.961Z",
+        "sourceRegion": ""
+      },
       {
         "id": "iRGE2nTBfm2ASUcC4KdY",
         "nickname": "Jason",
@@ -59,11 +66,25 @@
         "score": 27576,
         "createdAt": "2026-05-29T05:55:45.958Z",
         "sourceRegion": ""
+      },
+      {
+        "id": "j3WLbrtn3MYOVybfggTT",
+        "nickname": "Jeffrey Cheah",
+        "score": 26375,
+        "createdAt": "2026-06-22T12:35:47.690Z",
+        "sourceRegion": ""
       }
     ],
     "bluecrowd": [],
     "tangsprint": {
       "level1": [
+        {
+          "id": "nxk5iE3q4NhgpqZlFDH8",
+          "nickname": "Jeffrey Cheah",
+          "score": 349486,
+          "createdAt": "2026-06-22T12:37:19.161Z",
+          "sourceRegion": ""
+        },
         {
           "id": "nKAxVKIPxUeWEea12jNS",
           "nickname": "zizi",
