@@ -3,136 +3,199 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZIzi Game Collection</title>
+    <title>ZIzi Game Collection - Game Strata Archive</title>
     <link rel="stylesheet" href="assets/site.css" />
   </head>
   <body class="home-page">
+    <div class="home-noise" aria-hidden="true"></div>
+
+    <header class="strata-hero" aria-label="ZIzi Game Collection">
+      <div class="letterbox" aria-hidden="true"></div>
+      <div class="hero-geology" aria-hidden="true"></div>
+      <nav class="home-nav" aria-label="Primary navigation">
+        <a href="#games">Games</a>
+        <a href="#leaderboards">Leaderboards</a>
+        <a href="#updates">Updates</a>
+        <a href="#developers">Creators</a>
+        <a href="forum.html">Community</a>
+      </nav>
+      <section class="hero-copy reveal-block">
+        <p class="eyebrow">VOL. 01 / GAME STRATA ARCHIVE</p>
+        <h1>ZIzi Game Collection</h1>
+        <p class="hero-lede">A cinematic archive of playable browser worlds.</p>
+        <p class="hero-lede cn">一个持续扩张的浏览器游戏地层档案。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#games">Enter the Archive / 进入游戏库</a>
+          <a class="button" href="#leaderboards">Leaderboard / 排行榜</a>
+          <a class="button" href="#updates">Updates / 更新日志</a>
+          <a class="button" href="#developers">Developer / 开发者</a>
+          <a class="button" href="forum.html">Community / 社区</a>
+        </div>
+      </section>
+      <aside class="hero-dossier reveal-block" aria-label="Collection status">
+        <p><span>CURRENT BUILD</span><b>ONLINE</b></p>
+        <p><span>PLAYABLE</span><b>BROWSER-BASED</b></p>
+        <p><span>SCORES</span><b>LIVE LEADERBOARDS</b></p>
+        <p><span>ARCHIVE</span><b>UPDATED CONTINUOUSLY</b></p>
+      </aside>
+      <a class="scroll-cue" href="#archive" aria-label="Scroll to archive introduction">SCROLL / DESCEND</a>
+    </header>
+
     <main>
-      <header class="hero home-hero">
-        <section class="hero-copy" aria-label="ZIzi Game Collection">
-          <p class="eyebrow">ZIzi Game Collection</p>
-          <h1>ZIzi Game Index</h1>
-          <p class="intro">一个持续更新的浏览器游戏档案库：轻量、可直接进入、带排行榜与更新记录。</p>
-          <p class="intro">A focused archive of browser games: playable builds, live scoreboards, and a clear trail of updates.</p>
-          <div class="hero-actions">
-            <a class="button primary" href="#games">进入游戏库 / Browse Games</a>
-            <a class="button" href="updates.html">更新日志 / Updates</a>
-            <a class="button" href="developer.html">开发者简介 / Developers</a>
-            <a class="button" href="forum.html">社区留言板 / Community Board</a>
+      <section id="archive" class="strata-section archive-layer reveal-section" data-layer="01" aria-labelledby="archive-title">
+        <div class="section-kicker">01 / BASALT LAYER</div>
+        <div class="section-grid">
+          <div>
+            <p class="eyebrow">The Archive Beneath the Surface</p>
+            <h2 id="archive-title">地表之下的游戏档案</h2>
           </div>
-        </section>
-        <aside class="hero-terminal" aria-label="Collection status">
-          <div class="terminal-bar">
-            <span></span><span></span><span></span>
+          <div class="archive-copy">
+            <p>ZIzi Game Collection is not a static menu. It is a growing archive of browser builds, score records, developer experiments, and community traces, each new release settling into the next layer.</p>
+            <p>这里不是普通游戏列表，而是一个持续更新的浏览器游戏档案库：可直接游玩的版本、在线排行榜、更新记录、社区留言，以及仍在生长的开发实验。</p>
           </div>
-          <p><b>status</b><span>online</span></p>
-          <p><b>builds</b><span>playable in browser</span></p>
-          <p><b>scores</b><span>Firebase leaderboard cache</span></p>
-          <p><b>latest</b><span>Tang Sprint expanded to 6 levels</span></p>
-        </aside>
-      </header>
-
-      <section id="games" class="game-grid" aria-label="游戏入口 / Game list">
-        <a class="game starfall-card" href="aetherfall-protocol/">
-          <span class="game-visual starfall-visual" aria-hidden="true"><span></span></span>
-          <strong>Starfall / 星陨</strong>
-          <span>守住能量核心，在一波波追击里升级、闪避、冲出高分。</span>
-          <span>Guard the energy core, dodge through waves, and chase a bright new score.</span>
-          <b>开始游戏 / Play</b>
-        </a>
-
-        <a class="game sentinel-card" href="starline-defense/">
-          <span class="game-visual sentinel-visual" aria-hidden="true"><span></span></span>
-          <strong>Sentinel / 哨兵防线</strong>
-          <span>摆好防线，守住核心，把每一波敌人拦在门外。</span>
-          <span>Build a steady defense and hold the line.</span>
-          <b>开始游戏 / Play</b>
-        </a>
-
-        <a class="game bluecrowd-card" href="blue-crowd-rush/">
-          <span class="game-visual bluecrowd-visual" aria-hidden="true"><span></span></span>
-          <strong>唐人冲刺 / Tang people sprint</strong>
-          <span>穿过运算门、陷阱和敌阵，六个关卡各自记录排行榜。</span>
-          <span>Run through arithmetic gates, traps, and rival crowds across six ranked levels.</span>
-          <b>开始游戏 / Play</b>
-        </a>
-
-        <a class="game moscow-card" href="battle-for-moscow/">
-          <span class="game-visual moscow-visual" aria-hidden="true"><span></span></span>
-          <strong>台风行动 / Operation Typhoon</strong>
-          <span>静态战棋游戏入口，暂时不接入 Firebase 排行榜。</span>
-          <span>Play the static wargame build, with no Firebase backend connected for now.</span>
-          <b>开始游戏 / Play</b>
-        </a>
-
-        <a class="game mapbuilder-card" href="map-generator/">
-          <span class="game-visual mapbuilder-visual" aria-hidden="true"><span></span></span>
-          <strong>兵棋地图生成器 / Wargame Map Generator</strong>
-          <span>使用台风行动原版六边形地块，像拼图一样搭建规则兵棋地图。</span>
-          <span>Build regular hex maps with the Operation Typhoon terrain sheet.</span>
-          <b>打开生成器 / Open Tool</b>
-        </a>
-
-
-        <a class="game mapbuilder-card" href="wargame-counter-maker/">
-          <span class="game-visual mapbuilder-visual" aria-hidden="true"><span></span></span>
-          <strong>兵牌制作器 / Counter Maker</strong>
-          <span>制作苏联/德国风格兵棋算子，支持番号、编制、兵种和 PNG/SVG 导出。</span>
-          <span>Create wargame counters with faction colors, echelon marks, and unit symbols.</span>
-          <b>打开制作器 / Open Tool</b>
-        </a>
-        <a class="game chomp-card" href="pacman-odyssey/">
-          <span class="game-visual chomp-visual" aria-hidden="true"><span></span></span>
-          <strong>Chomp / 大口吃</strong>
-          <span>穿过迷宫、收集核心、甩开追击者，每一关都有独立榜单。</span>
-          <span>Dash through mazes, collect cores, and climb each level board.</span>
-          <b>开始游戏 / Play</b>
-        </a>
+        </div>
+        <div class="museum-notes">
+          <article>
+            <span>01</span>
+            <h3>Playable Browser Builds</h3>
+            <p>Every entry opens directly in the browser, ready to test, replay, or share.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Live Scoreboards</h3>
+            <p>Scores surface through the shared leaderboard system and exported cache fallback.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Update Records</h3>
+            <p>The full sediment timeline stays visible, newest layers first.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>Community Notes</h3>
+            <p>Forum, support pages, sync tools, and creator notes remain part of the archive.</p>
+          </article>
+        </div>
       </section>
 
-      <section class="leaderboard-overview" aria-label="排行榜总览 / Leaderboard overview">
+      <section id="games" class="strata-section playable-layer reveal-section" data-layer="02" aria-label="Playable Strata">
         <div class="section-head">
           <div>
-            <h2>排行榜总览 / Leaderboard Overview</h2>
-            <p class="intro">展示每个游戏的 Top 5。唐人冲刺显示六个独立关卡榜单，Chomp 显示四个独立关卡榜单。</p>
+            <p class="eyebrow">Playable Strata / Mineral Cut</p>
+            <h2>岩层样本中的游戏入口</h2>
           </div>
-          <span class="lb-status" id="leaderboardStatus">加载中 / Loading...</span>
+          <p class="section-note">Each build is treated like a core sample: numbered, tagged, and preserved as a playable layer.</p>
+        </div>
+        <div class="game-grid">
+          <a class="game starfall-card" href="aetherfall-protocol/">
+            <span class="sample-index">01</span>
+            <span class="sample-tag">GAME / ARCADE</span>
+            <span class="game-visual starfall-visual" aria-hidden="true"><span></span></span>
+            <strong>Starfall / 星陨</strong>
+            <span>Guard the energy core through waves of pressure, light, and collapse.</span>
+            <b>Play / 开始游戏</b>
+          </a>
+
+          <a class="game sentinel-card" href="starline-defense/">
+            <span class="sample-index">02</span>
+            <span class="sample-tag">GAME / DEFENSE</span>
+            <span class="game-visual sentinel-visual" aria-hidden="true"><span></span></span>
+            <strong>Sentinel / 哨兵防线</strong>
+            <span>Build a precise defense line and hold the core under rising attack waves.</span>
+            <b>Play / 开始游戏</b>
+          </a>
+
+          <a class="game bluecrowd-card" href="blue-crowd-rush/">
+            <span class="sample-index">03</span>
+            <span class="sample-tag">GAME / RUNNER</span>
+            <span class="game-visual bluecrowd-visual" aria-hidden="true"><span></span></span>
+            <strong>唐人冲刺 / Tang people sprint</strong>
+            <span>Run through arithmetic gates, traps, and rival crowds across six ranked levels.</span>
+            <b>Play / 开始游戏</b>
+          </a>
+
+          <a class="game moscow-card" href="battle-for-moscow/">
+            <span class="sample-index">04</span>
+            <span class="sample-tag">WARGAME / STRATEGY</span>
+            <span class="game-visual moscow-visual" aria-hidden="true"><span></span></span>
+            <strong>台风行动 / Operation Typhoon</strong>
+            <span>A historical wargame layer preserved as a static browser build.</span>
+            <b>Play / 开始游戏</b>
+          </a>
+
+          <a class="game mapbuilder-card" href="map-generator/">
+            <span class="sample-index">05</span>
+            <span class="sample-tag">TOOL / MAP</span>
+            <span class="game-visual mapbuilder-visual" aria-hidden="true"><span></span></span>
+            <strong>兵棋地图生成器 / Wargame Map Generator</strong>
+            <span>Compose regular hex maps with Operation Typhoon terrain samples.</span>
+            <b>Open Tool / 打开工具</b>
+          </a>
+
+          <a class="game counter-card" href="wargame-counter-maker/">
+            <span class="sample-index">06</span>
+            <span class="sample-tag">TOOL / COUNTER</span>
+            <span class="game-visual counter-visual" aria-hidden="true"><span></span></span>
+            <strong>兵牌制作器 / Counter Maker</strong>
+            <span>Create wargame counters with faction colors, echelon marks, and unit symbols.</span>
+            <b>Open Tool / 打开工具</b>
+          </a>
+
+          <a class="game chomp-card" href="pacman-odyssey/">
+            <span class="sample-index">07</span>
+            <span class="sample-tag">GAME / MAZE</span>
+            <span class="game-visual chomp-visual" aria-hidden="true"><span></span></span>
+            <strong>Chomp / 大口吃</strong>
+            <span>Dash through mazes, collect cores, and climb each level board.</span>
+            <b>Play / 开始游戏</b>
+          </a>
+        </div>
+      </section>
+
+      <section id="leaderboards" class="strata-section leaderboard-overview fault-layer reveal-section" data-layer="03" aria-label="Fault Line Leaderboards">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Fault Line / Data Panel</p>
+            <h2>Fault Line Leaderboards<br />断层排行榜</h2>
+            <p class="intro">Scores recorded across each playable layer of the archive. 每一次得分，都会被记录在新的地层里。</p>
+          </div>
+          <span class="lb-status" id="leaderboardStatus">Loading strata data...</span>
         </div>
         <div class="lb-cards">
           <article class="lb-card" data-board="starfall">
             <h3>Starfall / 星陨</h3>
-            <div class="lb-list" id="lb-starfall"><p class="lb-empty">加载中 / Loading...</p></div>
+            <div class="lb-list" id="lb-starfall"><p class="lb-empty">Loading...</p></div>
           </article>
           <article class="lb-card" data-board="sentinel">
             <h3>Sentinel / 哨兵防线</h3>
-            <div class="lb-list" id="lb-sentinel"><p class="lb-empty">加载中 / Loading...</p></div>
+            <div class="lb-list" id="lb-sentinel"><p class="lb-empty">Loading...</p></div>
           </article>
           <article class="lb-card" data-board="tangsprint">
             <h3>唐人冲刺 / Tang people sprint</h3>
             <div class="chomp-levels">
               <section class="chomp-level">
                 <h4>Level 1 / 长街冲刺</h4>
-                <div class="lb-list" id="lb-tangsprint-level1"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level1"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 2 / 远路极限</h4>
-                <div class="lb-list" id="lb-tangsprint-level2"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level2"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 3 / Decision Divide</h4>
-                <div class="lb-list" id="lb-tangsprint-level3"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level3"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 4 / Arithmetic Storm</h4>
-                <div class="lb-list" id="lb-tangsprint-level4"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level4"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 5 / Golden Switchbacks</h4>
-                <div class="lb-list" id="lb-tangsprint-level5"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level5"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 6 / Final Rush</h4>
-                <div class="lb-list" id="lb-tangsprint-level6"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-tangsprint-level6"><p class="lb-empty">Loading...</p></div>
               </section>
             </div>
           </article>
@@ -141,22 +204,230 @@
             <div class="chomp-levels">
               <section class="chomp-level">
                 <h4>Level 1 / 第一关</h4>
-                <div class="lb-list" id="lb-chomp-level1"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-chomp-level1"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 2 / 第二关</h4>
-                <div class="lb-list" id="lb-chomp-level2"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-chomp-level2"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 3 / 第三关</h4>
-                <div class="lb-list" id="lb-chomp-level3"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-chomp-level3"><p class="lb-empty">Loading...</p></div>
               </section>
               <section class="chomp-level">
                 <h4>Level 4 / 猫猫大地图</h4>
-                <div class="lb-list" id="lb-chomp-level4"><p class="lb-empty">加载中 / Loading...</p></div>
+                <div class="lb-list" id="lb-chomp-level4"><p class="lb-empty">Loading...</p></div>
               </section>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section id="updates" class="strata-section update-layer reveal-section" data-layer="04" aria-labelledby="updates-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Sediment Timeline / Full Update Archive</p>
+            <h2 id="updates-title">完整更新日志</h2>
+            <p class="intro">Every released layer is shown here, newest first. 这里展示完整更新历史，不是精选摘要。</p>
+          </div>
+          <a class="button" href="updates.html">Open Updates Page / 打开更新日志页面</a>
+        </div>
+        <div class="log-list strata-timeline" aria-label="完整更新日志 / Full update list">
+          <article class="log-card">
+            <time datetime="2026-06-22">2026-06-22</time>
+            <h3>6 月 22 日更新 / June 22 Update</h3>
+            <ul>
+              <li><span class="tag">兵牌制作器 / Counter Maker</span>: 新增兵牌制作器。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-06-20">2026-06-20</time>
+            <h3>6 月 20 日更新 / June 20 Update</h3>
+            <ul>
+              <li><span class="tag">兵棋地图生成器 / Wargame Map Generator</span>: 新增兵棋地图生成器。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-06-09">2026-06-09</time>
+            <h3>6 月 9 日更新 / June 9 Update</h3>
+            <ul>
+              <li><span class="tag">游戏交互 / Game UX</span>: 优化游戏交互体验。</li>
+              <li><span class="tag">唐人冲刺 / Tang people sprint</span>: 新增四个关卡。</li>
+              <li><span class="tag">网址显示 / URL Display</span>: 优化网址显示。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-06-07">2026-06-07</time>
+            <h3>6 月 7 日更新 / June 7 Update</h3>
+            <ul>
+              <li><span class="tag">台风行动 / Operation Typhoon</span>: <strong>Battle for Moscow</strong> 更名为台风行动 / Operation Typhoon，并加入汉化。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-06-06">2026-06-06</time>
+            <h3>6 月 6 日更新 / June 6 Update</h3>
+            <ul>
+              <li><span class="tag">新游戏 / New Game</span>: 引入由 Frank Chadwick（弗兰克·查德威克）于 1986 年设计的游戏 <strong>Battle for Moscow</strong>。</li>
+              <li><span class="tag">开发者简介 / Developer Profile</span>: <strong>Jason</strong> 加入团队。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-06-01">2026-06-01</time>
+            <h3>6 月 1 日更新 / June 1 Update</h3>
+            <ul>
+              <li><span class="tag">新增游戏 / New Game</span>: 新增唐人冲刺 / Tang people sprint。</li>
+              <li><span class="tag">排行榜 / Leaderboards</span>: 唐人冲刺 Level 1、Level 2 独立显示和独立提交成绩。</li>
+              <li><span class="tag">Starfall / 星陨</span>: 增加 Boss 血量条，第二个 Boss 会在第一个 Boss 击败 30 秒后出现。</li>
+              <li><span class="tag">Chomp / 大口吃</span>: 加强第四关排行榜连接诊断，Firebase 失败时会显示更具体的原因。</li>
+              <li><span class="tag">Chomp / 大口吃</span>: 幽灵模式怪物重生冷却调整为 5 秒 / Ghost-mode monster respawn cooldown changed to 5 seconds.</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-31">2026-05-31</time>
+            <h3>5 月 31 日更新 / May 31 Update</h3>
+            <ul>
+              <li><span class="tag">网站外观 / Site UI</span>: 更新了视觉风格。</li>
+              <li><span class="tag">中英文文案 / Bilingual Copy</span>: 优化主要标题、按钮和提示文字。</li>
+              <li><span class="tag">排行榜 / Leaderboards</span>: 美化排行榜弹窗和首页排行榜总览，Chomp 一次性展示所有榜单。</li>
+              <li><span class="tag">社区留言板 / Community Board</span>: 调整输入框、状态提示和留言卡片的排版，阅读和留言都更舒服。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-29">2026-05-29</time>
+            <h3>5 月 29 日更新 / May 29 Update</h3>
+            <ul>
+              <li><span class="tag">Starfall / 星陨</span>: 修复排行榜窗口遮挡游戏按钮提示的问题。</li>
+              <li><span class="tag">Chomp / 大口吃</span>: 优化关卡选择的清晰度。</li>
+              <li><span class="tag">Chomp / 大口吃</span>: 新增每关独立排行榜。</li>
+              <li><span class="tag">网站 / Site</span>: 新增首页排行榜总览。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-28">2026-05-28</time>
+            <h3>5 月 28 日更新 / May 28 Update</h3>
+            <ul>
+              <li><span class="tag">排行榜 / Leaderboards</span>: 新增在线排行榜系统。</li>
+              <li><span class="tag">排行榜 / Leaderboards</span>: 玩家可以提交成绩，并和其他玩家一起竞争。</li>
+              <li><span class="tag">社区留言板 / Community Board</span>: 新增公开留言板。</li>
+              <li><span class="tag">开发者简介 / Developer Profile</span>: 新增开发者资料、项目介绍、小小补给站和技术支持页面。</li>
+              <li><span class="tag">开发者简介 / Developer Profile</span>: <strong>Mark</strong> 加入团队。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-27">2026-05-27</time>
+            <h3>5 月 27 日更新 / May 27 Update</h3>
+            <ul>
+              <li><span class="tag">Sentinel / 哨兵防线</span>: 重做视觉效果。</li>
+              <li><span class="tag">Sentinel / 哨兵防线</span>: 强化单位待机、敌人行走、弹道、命中、死亡和入侵警报反馈，让战斗更有生命感。</li>
+              <li><span class="tag">Chomp / 大口吃</span>: 修复暂停、说明页返回、选关按钮、Enter 键误触发和结算界面相关问题。</li>
+              <li><span class="tag">重新命名 / Renaming</span>: 三个游戏重新命名，并更新菜单文案、浏览器标题和项目说明。</li>
+              <li><span class="tag">网站 / Site</span>: 整合网站并新增更新日志页面。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-26">2026-05-26</time>
+            <h3>5 月 26 日更新 / May 26 Update</h3>
+            <ul>
+              <li><span class="tag">Aetherfall Protocol</span>: 游戏构建完成。</li>
+              <li><span class="tag">Starline Defense</span>: 打包测试。</li>
+              <li><span class="tag">网站 / Website</span>: 网站搭建完成 / Website setup completed.</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-25">2026-05-25</time>
+            <h3>5 月 25 日更新 / May 25 Update</h3>
+            <ul>
+              <li><span class="tag">Nasi lemak</span>: 新增相关更新记录。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-21">2026-05-21</time>
+            <h3>5 月 21 日更新 / May 21 Update</h3>
+            <ul>
+              <li><span class="tag">Starline Defense</span>: 构建。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-20">2026-05-20</time>
+            <h3>5 月 20 日更新 / May 20 Update</h3>
+            <ul>
+              <li><span class="tag">Aetherfall Protocol</span>: 感谢 Mark 提供初始源码 <code>experiment for codex.zip</code>，游戏雏形完成。</li>
+              <li><span class="tag">PacmanGame.exe</span>: 打包测试。</li>
+            </ul>
+          </article>
+          <article class="log-card">
+            <time datetime="2026-05-19">2026-05-19</time>
+            <h3>5 月 19 日更新 / May 19 Update</h3>
+            <ul>
+              <li><span class="tag">PacmanGame</span>: 构建。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="developers" class="strata-section crew-layer reveal-section" data-layer="05" aria-labelledby="crew-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Obsidian Crew Wall</p>
+            <h2 id="crew-title">The People Behind the Archive<br />档案背后的人</h2>
+          </div>
+          <a class="button" href="developer.html">Developer Page / 开发者页面</a>
+        </div>
+        <div class="crew-group">
+          <p class="crew-label">Developers / 开发者</p>
+          <div class="crew-grid">
+            <article class="crew-card">
+              <img src="assets/developer/zizi-photo.jpg" alt="Photo of ZIzi" />
+              <span>DEV 01</span>
+              <h3>ZIzi</h3>
+              <p>Started the collection and keeps turning small playable ideas into browser pages people can actually open.</p>
+            </article>
+            <article class="crew-card">
+              <img src="assets/developer/dr-mark.jpg" alt="Photo of Mark" />
+              <span>DEV 02</span>
+              <h3>Mark</h3>
+              <p>Initial code support, build energy, and the principle that the vibe must stay online.</p>
+            </article>
+            <article class="crew-card">
+              <img src="assets/developer/jason-liangliyuan.png" alt="Photo of Jason" />
+              <span>DEV 03</span>
+              <h3>Jason</h3>
+              <p>Developer focused on building, learning, and solving practical problems across the archive.</p>
+            </article>
+          </div>
+        </div>
+        <div class="crew-group support-crew">
+          <p class="crew-label">Technical Support / 技术支持</p>
+          <div class="crew-grid">
+            <article class="crew-card">
+              <img src="assets/developer/barry-fun.png" alt="Barry technical support photo" />
+              <span>SUPPORT 01</span>
+              <h3>Barry</h3>
+              <p>Testing, momentum, and spicy commentary for the archive's less reasonable experiments.</p>
+            </article>
+            <article class="crew-card">
+              <img src="assets/developer/lay-image.jpg" alt="Photo of Lay" />
+              <span>SUPPORT 02</span>
+              <h3>Lay</h3>
+              <p>Technical support, field notes, and a steady supply of memorable internal labels.</p>
+            </article>
+            <article class="crew-card">
+              <img src="assets/developer/junqi-chen.jpg" alt="Photo of Junqi Chen" />
+              <span>SUPPORT 03</span>
+              <h3>Junqi Chen</h3>
+              <p>Support, review energy, and the eternal question that keeps the build honest: what does this mean?</p>
+            </article>
+          </div>
+        </div>
+        <div class="final-cta">
+          <p>Enter the collection. 每一次更新，都是新的地层。</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#games">Browse Games / 进入游戏库</a>
+            <a class="button" href="developer.html">Developer Page / 开发者页面</a>
+            <a class="button" href="forum.html">Community Board / 社区留言板</a>
+            <a class="button" href="updates.html">Updates / 更新日志</a>
+            <a class="button" href="developer.html#support">Support the Project / 支持项目</a>
+          </div>
         </div>
       </section>
     </main>
@@ -183,7 +454,7 @@
         if (!rows.length) {
           const empty = document.createElement("p");
           empty.className = "lb-empty";
-          empty.textContent = "还没有成绩 / No scores yet.";
+          empty.textContent = "No scores yet. 暂无记录。";
           container.append(empty);
           return;
         }
@@ -230,15 +501,16 @@
           renderRows(boards.chompLevel2, chompLevel2);
           renderRows(boards.chompLevel3, chompLevel3);
           renderRows(boards.chompLevel4, chompLevel4);
-          statusEl.textContent = "已更新 / Loaded";
+          statusEl.textContent = "Loaded / 已更新";
         } catch (error) {
           console.warn("[ZIzi Home] Leaderboard overview failed:", error);
           Object.values(boards).forEach((board) => renderRows(board, []));
-          statusEl.textContent = "排行榜暂不可用 / Leaderboard unavailable";
+          statusEl.textContent = "Leaderboard unavailable / 排行榜暂不可用";
         }
       }
 
       window.setTimeout(loadOverview, 0);
     </script>
+    <script src="assets/home-cinematic.js" defer></script>
   </body>
 </html>
