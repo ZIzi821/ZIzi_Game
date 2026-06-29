@@ -1230,6 +1230,12 @@
       const MapContract = window.OperationTyphoonMap;
       const terrainImage = new Image();
       terrainImage.src = "../battle-for-moscow/assets/terrain.png";
+      const customTerrainImages = {
+        open: new Image(),
+        city: new Image(),
+      };
+      customTerrainImages.open.src = "assets/terrain-open.png";
+      customTerrainImages.city.src = "assets/terrain-city.png";
 
       const canvas = document.getElementById("mapCanvas");
       const ctx = canvas.getContext("2d");
@@ -1851,18 +1857,40 @@
         });
       }
 
-      function drawImageCover(image, crop, left, top, width, height) {
+      function imageIsReady(image) {
+        return image?.complete && image.naturalWidth > 0;
+      }
+
+      function fullImageCrop(image) {
+        return { x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight };
+      }
+
+      function tileTextureSource(tile, allowCustom = true) {
+        const customImage = customTerrainImages[tile.id];
+        if (allowCustom && imageIsReady(customImage)) {
+          return { image: customImage, crop: fullImageCrop(customImage) };
+        }
+        if (imageIsReady(terrainImage)) {
+          return { image: terrainImage, crop: tile.crop };
+        }
+        return null;
+      }
+
+      function drawImageCover(targetCtx, image, crop, left, top, width, height) {
         const scale = Math.max(width / crop.w, height / crop.h);
         const drawWidth = crop.w * scale;
         const drawHeight = crop.h * scale;
         const drawLeft = left + (width - drawWidth) / 2;
         const drawTop = top + (height - drawHeight) / 2;
-        ctx.drawImage(image, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
+        targetCtx.drawImage(image, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
       }
 
       function drawTileImage(tile, cx, cy, radius) {
         const hexHeight = Math.sqrt(3) * radius;
-        drawImageCover(terrainImage, tile.crop, cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
+        const source = tileTextureSource(tile);
+        if (source) {
+          drawImageCover(ctx, source.image, source.crop, cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
+        }
       }
 
       function drawTexture(tile, cx, cy) {
@@ -1873,7 +1901,7 @@
         ctx.clip();
         ctx.fillStyle = tile.color;
         ctx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
-        if (terrainImage.complete && terrainImage.naturalWidth > 0) {
+        if (tileTextureSource(tile)) {
           drawTileImage(tile, cx, cy, radius);
         } else {
           addTileMarks(tile.id, cx, cy);
@@ -1902,16 +1930,12 @@
         swatchCtx.clip();
         swatchCtx.fillStyle = swatchTile.color;
         swatchCtx.fillRect(cx - radius, cy - hexHeight / 2, radius * 2, hexHeight);
-        if (terrainImage.complete && terrainImage.naturalWidth > 0) {
-          const crop = swatchTile.crop;
+        const source = tileTextureSource(swatchTile, !tile.railTool);
+        if (source) {
+          const crop = source.crop;
           const width = radius * 2;
           const height = hexHeight;
-          const scale = Math.max(width / crop.w, height / crop.h);
-          const drawWidth = crop.w * scale;
-          const drawHeight = crop.h * scale;
-          const drawLeft = cx - radius + (width - drawWidth) / 2;
-          const drawTop = cy - hexHeight / 2 + (height - drawHeight) / 2;
-          swatchCtx.drawImage(terrainImage, crop.x, crop.y, crop.w, crop.h, drawLeft, drawTop, drawWidth, drawHeight);
+          drawImageCover(swatchCtx, source.image, crop, cx - radius, cy - hexHeight / 2, width, height);
         }
         swatchCtx.restore();
         if (tile.railTool) {
@@ -2572,6 +2596,13 @@
         draw();
       });
       terrainImage.addEventListener("error", draw);
+      Object.values(customTerrainImages).forEach((image) => {
+        image.addEventListener("load", () => {
+          drawPaletteSwatches();
+          draw();
+        });
+        image.addEventListener("error", draw);
+      });
 
       buildPalette();
       drawPaletteSwatches();
