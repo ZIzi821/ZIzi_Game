@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>兵棋实验场 / Wargame Sandbox</title>
 <style>
-:root{color:#f5f1e6;background:#191b18;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:radial-gradient(circle at 16% 10%,rgba(187,57,42,.2),transparent 28rem),radial-gradient(circle at 90% 0,rgba(44,102,102,.22),transparent 30rem),linear-gradient(180deg,#22231d,#141612 72%)}button,input{font:inherit}button{cursor:pointer;border:0}.shell{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:34px 0 44px}.back{display:inline-flex;margin-bottom:18px;color:#ffd166;text-decoration:none;font-weight:850}.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;margin-bottom:18px}.eyebrow{margin:0 0 8px;color:#ffd166;font-size:.78rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase}h1,p{margin-top:0}h1{margin-bottom:8px;font-size:clamp(2rem,5vw,4.4rem);line-height:1;letter-spacing:0}.intro{max-width:70ch;margin-bottom:0;color:#cfc5ab;line-height:1.65}.toolbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:8px;background:#ffd166;color:#1d1604;font-weight:900;padding:10px 14px;text-decoration:none}.button.secondary{background:#dfe8df;color:#142015}.button.ghost{border:1px solid rgba(245,241,230,.22);background:rgba(255,255,255,.05);color:#f5f1e6}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}.board-panel,.side-panel{border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(26,29,24,.9);box-shadow:0 24px 80px rgba(0,0,0,.28)}.board-panel{overflow:hidden}.board-scroll{overflow:auto;padding:16px;background:#11130f}.board-scroll canvas{display:block;max-width:none;border-radius:8px;background:#2d3128}.status{display:grid;grid-template-columns:1.1fr 1fr 1.6fr;gap:10px;border-top:1px solid rgba(245,241,230,.12);padding:12px 14px;color:#d8cfb9}.status b{display:block;margin-bottom:3px;color:#fff7df;font-size:.78rem;text-transform:uppercase}.status span{display:block;min-height:20px}.side-panel{display:grid;gap:14px;padding:14px}.side-panel h2{margin:0;color:#fff7df;font-size:1rem}.unit-list{display:grid;gap:8px}.unit-row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(255,255,255,.05);padding:9px}.unit-row[data-selected=true]{border-color:#ffd166;background:rgba(255,209,102,.14)}.dot{width:12px;height:12px;border-radius:50%;border:2px solid #111}.unit-row strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.unit-row small{color:#cfc5ab}.empty{margin:0;color:#a99f89;line-height:1.5}.file-input{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0)}@media(max-width:880px){.top,.layout{grid-template-columns:1fr}.toolbar{justify-content:flex-start}.status{grid-template-columns:1fr}.shell{width:min(100% - 18px,760px);padding-top:24px}}@media(max-width:520px){.toolbar .button{width:100%}.board-scroll{padding:10px}}
+:root{color:#f5f1e6;background:#191b18;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:radial-gradient(circle at 16% 10%,rgba(187,57,42,.2),transparent 28rem),radial-gradient(circle at 90% 0,rgba(44,102,102,.22),transparent 30rem),linear-gradient(180deg,#22231d,#141612 72%)}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.shell{width:min(1380px,calc(100% - 28px));margin:0 auto;padding:34px 0 44px}.back{display:inline-flex;margin-bottom:18px;color:#ffd166;text-decoration:none;font-weight:850}.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;margin-bottom:18px}.eyebrow{margin:0 0 8px;color:#ffd166;font-size:.78rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase}h1,p{margin-top:0}h1{margin-bottom:8px;font-size:clamp(2rem,5vw,4.4rem);line-height:1;letter-spacing:0}.intro{max-width:72ch;margin-bottom:0;color:#cfc5ab;line-height:1.65}.toolbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:8px;background:#ffd166;color:#1d1604;font-weight:900;padding:10px 14px;text-decoration:none}.button.secondary{background:#dfe8df;color:#142015}.button.ghost{border:1px solid rgba(245,241,230,.22);background:rgba(255,255,255,.05);color:#f5f1e6}.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}.board-panel,.side-panel{border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(26,29,24,.9);box-shadow:0 24px 80px rgba(0,0,0,.28)}.board-panel{overflow:hidden}.board-scroll{overflow:auto;padding:16px;background:#11130f}.board-scroll canvas{display:block;max-width:none;border-radius:8px;background:#2d3128}.status{display:grid;grid-template-columns:1.1fr 1fr 1.6fr;gap:10px;border-top:1px solid rgba(245,241,230,.12);padding:12px 14px;color:#d8cfb9}.status b,.field span{display:block;margin-bottom:3px;color:#fff7df;font-size:.78rem;font-weight:850;text-transform:uppercase}.status span{display:block;min-height:20px}.side-panel{display:grid;gap:16px;padding:14px}.panel-block{display:grid;gap:10px;border-bottom:1px solid rgba(245,241,230,.12);padding-bottom:14px}.panel-block:last-child{border-bottom:0;padding-bottom:0}.panel-block h2{margin:0;color:#fff7df;font-size:1rem}.field{display:grid;gap:5px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}input,select,textarea{width:100%;border:1px solid rgba(245,241,230,.16);border-radius:8px;background:rgba(255,255,255,.06);color:#fff7df;outline:0;padding:9px 10px}textarea{min-height:64px;resize:vertical}option{color:#151712}input:focus,select:focus,textarea:focus{border-color:#ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.13)}input[aria-invalid=true]{border-color:#ff8c7a}.unit-list{display:grid;gap:8px}.unit-row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(255,255,255,.05);color:#f5f1e6;padding:9px;text-align:left}.unit-row[data-selected=true]{border-color:#ffd166;background:rgba(255,209,102,.14)}.dot{width:12px;height:12px;border-radius:50%;border:2px solid #111}.unit-row strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.unit-row small,.empty{color:#cfc5ab}.empty{margin:0;line-height:1.5}.ops{display:grid;grid-template-columns:1fr;gap:8px}.danger{background:#ca4b40;color:#fff7df}.file-input{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0)}@media(max-width:980px){.top,.layout{grid-template-columns:1fr}.toolbar{justify-content:flex-start}.side-panel{grid-template-columns:1fr 1fr}.shell{width:min(100% - 18px,820px);padding-top:24px}}@media(max-width:680px){.side-panel,.status,.field-grid{grid-template-columns:1fr}.toolbar .button{width:100%}.board-scroll{padding:10px}}
 </style>
 </head>
 <body>
@@ -13,17 +13,20 @@
 <a class="back" href="../">← 返回主页 / Back Home</a>
 <header class="top">
 <section>
-<p class="eyebrow">Playable Prototype</p>
+<p class="eyebrow">Scenario Editor</p>
 <h1>兵棋实验场 / Wargame Sandbox</h1>
-<p class="intro">导入地图和兵牌数据，测试属于自己的回合制兵棋原型。Import map and unit data to test our own turn-based wargame prototype.</p>
+<p class="intro">编辑场景信息、地图和单位，测试属于自己的回合制兵棋原型。Edit scenario data, map, and units for a playable wargame prototype.</p>
 </section>
 <div class="toolbar" aria-label="Sandbox tools">
+<button class="button" id="importScenarioButton" type="button">导入场景 / Import Scenario</button>
 <button class="button" id="importMapButton" type="button">导入地图 JSON / Import Map JSON</button>
 <button class="button" id="importUnitButton" type="button">导入单位 JSON / Import Unit JSON</button>
 <button class="button secondary" id="loadDemoButton" type="button">使用示例数据 / Load Demo</button>
+<button class="button ghost" id="exportScenarioButton" type="button">导出场景 / Export Scenario</button>
 <button class="button ghost" id="exportSaveButton" type="button">导出当前局面 / Export Save</button>
 </div>
 </header>
+<input class="file-input" id="scenarioInput" type="file" accept="application/json,.json">
 <input class="file-input" id="mapInput" type="file" accept="application/json,.json">
 <input class="file-input" id="unitInput" type="file" accept="application/json,.json" multiple>
 <section class="layout">
@@ -35,114 +38,121 @@
 <p><b>Message</b><span id="messageStatus">准备就绪 / Ready.</span></p>
 </div>
 </section>
-<aside class="side-panel" aria-label="Units">
+<aside class="side-panel" aria-label="Scenario editor">
+<section class="panel-block">
+<h2>场景 / Scenario</h2>
+<label class="field"><span>Scenario Name</span><input id="scenarioName" autocomplete="off"></label>
+<label class="field"><span>Description</span><textarea id="scenarioDescription"></textarea></label>
+<label class="field"><span>Author</span><input id="scenarioAuthor" autocomplete="off"></label>
+<div class="field-grid">
+<label class="field"><span>Turn</span><input id="scenarioTurn" type="number" min="1" step="1"></label>
+<label class="field"><span>Side</span><select id="scenarioSide"><option value="german">german</option><option value="soviet">soviet</option></select></label>
+<label class="field"><span>Phase</span><select id="scenarioPhase"><option value="setup">setup</option><option value="movement">movement</option><option value="combat">combat</option><option value="end">end</option></select></label>
+</div>
+</section>
+<section class="panel-block">
 <h2>单位 / Units</h2>
 <div class="unit-list" id="unitList"></div>
+<div class="ops">
+<button class="button ghost" id="duplicateUnitButton" type="button">复制选中单位 / Duplicate Selected</button>
+<button class="button danger" id="deleteUnitButton" type="button">删除选中单位 / Delete Selected</button>
+<button class="button danger" id="clearUnitsButton" type="button">清空全部单位 / Clear Units</button>
+</div>
+</section>
+<section class="panel-block" id="unitEditor" hidden>
+<h2>单位编辑 / Unit Editor</h2>
+<label class="field"><span>designation</span><input id="unitDesignation" autocomplete="off"></label>
+<div class="field-grid">
+<label class="field"><span>faction</span><select id="unitFaction"><option value="german">german</option><option value="soviet">soviet</option></select></label>
+<label class="field"><span>unitType</span><input id="unitType" autocomplete="off"></label>
+<label class="field"><span>combatFull</span><input id="unitCombatFull" type="number" min="0" step="1"></label>
+<label class="field"><span>combatReduced</span><input id="unitCombatReduced" type="number" min="0" step="1"></label>
+<label class="field"><span>movement</span><input id="unitMovement" type="number" min="0" step="1"></label>
+<label class="field"><span>steps</span><input id="unitSteps" type="number" min="1" step="1"></label>
+<label class="field"><span>strength</span><select id="unitStrength"><option value="full">full</option><option value="reduced">reduced</option></select></label>
+<label class="field"><span>x</span><input id="unitX" type="number" min="0" step="1"></label>
+<label class="field"><span>y</span><input id="unitY" type="number" min="0" step="1"></label>
+</div>
+</section>
 </aside>
 </section>
 </main>
 <script src="../assets/operation-typhoon-map.js"></script>
 <script src="../assets/wargame-unit.js"></script>
+<script src="../assets/wargame-scenario.js"></script>
 <script>
 (function(){
 "use strict";
-var MapApi=window.OperationTyphoonMap,UnitApi=window.ZiziWargameUnit;
-var canvas=document.getElementById("mapCanvas"),ctx=canvas.getContext("2d"),scroll=document.getElementById("boardScroll");
-var selectedStatus=document.getElementById("selectedStatus"),coordStatus=document.getElementById("coordStatus"),messageStatus=document.getElementById("messageStatus"),unitList=document.getElementById("unitList");
-var HEX=34,MARGIN=42,SQRT3=Math.sqrt(3),state={map:null,units:[],selectedId:null,currentTurn:1,message:"准备就绪 / Ready."};
-var terrainStyles={open:{fill:"#c9bd8f",label:"Open"},forest:{fill:"#54764e",label:"Forest"},city:{fill:"#c6a968",label:"City"},"major-city":{fill:"#b36b53",label:"Major"}};
+var MapApi=window.OperationTyphoonMap,UnitApi=window.ZiziWargameUnit,ScenarioApi=window.ZiziWargameScenario;
+var canvas=document.getElementById("mapCanvas"),ctx=canvas.getContext("2d");
+var selectedStatus=document.getElementById("selectedStatus"),coordStatus=document.getElementById("coordStatus"),messageStatus=document.getElementById("messageStatus"),unitList=document.getElementById("unitList"),unitEditor=document.getElementById("unitEditor");
+var HEX=34,MARGIN=42,SQRT3=Math.sqrt(3),state={scenario:ScenarioApi.createDefaultScenario(),selectedId:null,message:"准备就绪 / Ready.",placementAdjusted:false,rendering:false};
+var terrainStyles={open:{fill:"#c9bd8f"},forest:{fill:"#54764e"},city:{fill:"#c6a968"},"major-city":{fill:"#b36b53"}};
 var factionStyles={german:{fill:"#6c725f",stroke:"#2b3028",text:"#111"},soviet:{fill:"#b83a34",stroke:"#6f1614",text:"#fff7df"}};
-
+function el(id){return document.getElementById(id)}
 function clone(value){return JSON.parse(JSON.stringify(value))}
+function map(){return state.scenario.map}
+function units(){return state.scenario.units}
 function setMessage(text){state.message=text;messageStatus.textContent=text}
 function hexKey(x,y){return x+","+y}
-function hexAt(x,y){return state.map.hexes.find(function(hex){return hex.x===x&&hex.y===y})}
-function inBounds(x,y){return !!hexAt(x,y)}
+function hexAt(x,y){return map().hexes.find(function(hex){return hex.x===x&&hex.y===y})}
+function inBounds(x,y){return !!hexAt(Number(x),Number(y))}
 function centerOf(hex){return{x:MARGIN+HEX+hex.x*HEX*1.5,y:MARGIN+HEX*SQRT3/2+hex.y*HEX*SQRT3+(Math.abs(hex.x%2)===1?HEX*SQRT3/2:0)}}
 function vertices(center){var points=[];for(var i=0;i<6;i+=1){var angle=Math.PI/180*(60*i);points.push({x:center.x+HEX*Math.cos(angle),y:center.y+HEX*Math.sin(angle)})}return points}
-function sidePoints(center,direction){var pts=vertices(center),map={N:[4,5],NE:[5,0],SE:[0,1],S:[1,2],SW:[2,3],NW:[3,4]};var pair=map[direction]||map.N;return[pts[pair[0]],pts[pair[1]]]}
+function sidePoints(center,direction){var pts=vertices(center),sides={N:[4,5],NE:[5,0],SE:[0,1],S:[1,2],SW:[2,3],NW:[3,4]},pair=sides[direction]||sides.N;return[pts[pair[0]],pts[pair[1]]]}
 function offsetToCube(x,y){var q=x,r=y-(x-(x&1))/2;return{x:q,y:-q-r,z:r}}
 function hexDistance(a,b){var ac=offsetToCube(a.x,a.y),bc=offsetToCube(b.x,b.y);return Math.max(Math.abs(ac.x-bc.x),Math.abs(ac.y-bc.y),Math.abs(ac.z-bc.z))}
-function normalizeMap(doc){return MapApi.normalizeMap(doc)}
-function defaultMap(){return normalizeMap(MapApi.createMap(10,8))}
-
-function makeDemoMap(){
-  var map=defaultMap(),byKey=new Map(map.hexes.map(function(hex){return[hexKey(hex.x,hex.y),hex]}));
-  [[2,1,"forest"],[3,1,"forest"],[4,2,"forest"],[5,3,"forest"],[2,5,"city"],[7,2,"city"],[6,5,"major-city"]].forEach(function(item){
-    var hex=byKey.get(hexKey(item[0],item[1]));if(hex){var def=MapApi.visualDefinition(item[2]);hex.visual=item[2];hex.terrain=def.terrain;hex.city=def.city}
-  });
-  [[1,3,"NE"],[2,2,"SE"],[3,3,"SE"],[4,4,"NE"]].forEach(function(item){var hex=byKey.get(hexKey(item[0],item[1]));if(hex&&!hex.river.includes(item[2]))hex.river.push(item[2])});
-  [[0,6,"NE"],[1,5,"NE"],[2,5,"NE"],[3,4,"NE"],[4,4,"NE"],[5,3,"NE"],[6,3,"NE"]].forEach(function(item){var hex=byKey.get(hexKey(item[0],item[1]));if(hex&&!hex.rail.includes(item[2]))hex.rail.push(item[2])});
-  return normalizeMap(map);
-}
-
-function uniqueId(base){var id=base||"unit",seen=new Set(state.units.map(function(unit){return unit.id}));if(!seen.has(id))return id;var index=2;while(seen.has(id+"-"+index))index+=1;return id+"-"+index}
-function firstAvailableHex(){var occupied=new Set(state.units.map(function(unit){return hexKey(unit.position.x,unit.position.y)}));return state.map.hexes.find(function(hex){return !occupied.has(hexKey(hex.x,hex.y))})||state.map.hexes[0]}
-function fitUnitToMap(unit){if(inBounds(unit.position.x,unit.position.y))return unit;var spot=firstAvailableHex();unit.position={x:spot.x,y:spot.y};state.placementAdjusted=true;return unit}
-function addUnit(doc){var normalized=UnitApi.normalizeUnitDocument(doc).unit;normalized.id=uniqueId(normalized.id||UnitApi.makeUnitId(normalized));state.units.push(fitUnitToMap(normalized));state.selectedId=normalized.id}
-function selectedUnit(){return state.units.find(function(unit){return unit.id===state.selectedId})||null}
+function selectedUnit(){return units().find(function(unit){return unit.id===state.selectedId})||null}
 function combatValue(unit){return unit.strength==="reduced"?unit.combatReduced:unit.combatFull}
+function uniqueId(base){var id=base||"unit",seen=new Set(units().map(function(unit){return unit.id}));if(!seen.has(id))return id;var i=2;while(seen.has(id+"-"+i))i+=1;return id+"-"+i}
+function firstAvailableHex(){var occupied=new Set(units().map(function(unit){return hexKey(unit.position.x,unit.position.y)}));return map().hexes.find(function(hex){return !occupied.has(hexKey(hex.x,hex.y))})||map().hexes[0]}
+function firstAvailableNear(position){var occupied=new Set(units().map(function(unit){return hexKey(unit.position.x,unit.position.y)}));return map().hexes.filter(function(hex){return !occupied.has(hexKey(hex.x,hex.y))}).sort(function(a,b){return hexDistance(position,a)-hexDistance(position,b)})[0]||null}
+function fitUnitToMap(unit){if(inBounds(unit.position.x,unit.position.y))return unit;var spot=firstAvailableHex();unit.position={x:spot.x,y:spot.y};state.placementAdjusted=true;return unit}
 function saveBlob(data,name){var url=URL.createObjectURL(new Blob([data],{type:"application/json;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url)}
+function scenarioDoc(){return ScenarioApi.normalizeScenarioDocument({source:"ZIzi_Game wargame-sandbox",scenario:clone(state.scenario)})}
+function applyScenario(scenario,message){state.placementAdjusted=false;state.scenario=ScenarioApi.normalizeScenario(scenario);state.scenario.units.forEach(fitUnitToMap);state.selectedId=state.scenario.units[0]?state.scenario.units[0].id:null;setMessage(state.placementAdjusted?message+"；越界单位已放到第一个可用格 / Out-of-map units placed on first available hex.":message);draw()}
+function addUnitDoc(doc,message){var unit=UnitApi.normalizeUnitDocument(doc).unit;unit.id=uniqueId(unit.id||UnitApi.makeUnitId(unit));units().push(fitUnitToMap(unit));state.selectedId=unit.id;setMessage(state.placementAdjusted?message+"；越界单位已放到第一个可用格 / Out-of-map unit placed on first available hex.":message);draw()}
+function importDocument(doc,message){if(doc.format===ScenarioApi.FORMAT||doc.format==="zizi-wargame-sandbox-save"){applyScenario(ScenarioApi.normalizeScenarioDocument(doc).scenario,message||"场景已导入 / Scenario imported.");return}if(doc.format===UnitApi.FORMAT||doc.unit||doc.faction){state.placementAdjusted=false;addUnitDoc(doc,message||"单位已导入 / Unit imported.");return}state.placementAdjusted=false;state.scenario.map=MapApi.normalizeMap(doc.map||doc);state.scenario.units.forEach(fitUnitToMap);setMessage(state.placementAdjusted?"地图已导入，部分单位已放到第一个可用格 / Map imported; some units moved to valid hexes.":(message||"地图已导入 / Map imported."));draw()}
+async function readJsonFile(file){return JSON.parse(await file.text())}
+async function importFileList(files){for(var i=0;i<files.length;i+=1)importDocument(await readJsonFile(files[i]))}
 
-function resizeCanvas(){
-  var cols=state.map.grid.cols,rows=state.map.grid.rows,dpr=window.devicePixelRatio||1;
-  var width=Math.ceil(MARGIN*2+HEX*2+(cols-1)*HEX*1.5),height=Math.ceil(MARGIN*2+HEX*SQRT3+(rows-1)*HEX*SQRT3+HEX*SQRT3/2);
-  canvas.style.width=width+"px";canvas.style.height=height+"px";canvas.width=Math.ceil(width*dpr);canvas.height=Math.ceil(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-function drawHex(hex){
-  var center=centerOf(hex),pts=vertices(center),visual=hex.visual==="city"||hex.city==="normal"?"city":hex.visual==="major-city"||hex.city==="major"?"major-city":hex.terrain==="forest"?"forest":"open",style=terrainStyles[visual]||terrainStyles.open;
-  ctx.beginPath();pts.forEach(function(point,index){if(index===0)ctx.moveTo(point.x,point.y);else ctx.lineTo(point.x,point.y)});ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle="rgba(31,27,18,.58)";ctx.lineWidth=1.5;ctx.stroke();
-  if(visual==="forest"){ctx.fillStyle="rgba(26,55,31,.55)";for(var i=0;i<3;i+=1){ctx.beginPath();ctx.arc(center.x-12+i*12,center.y+3-(i%2)*8,4.5,0,Math.PI*2);ctx.fill()}}
-  if(visual==="city"||visual==="major-city"){ctx.fillStyle=visual==="major-city"?"#5c2c24":"#60472e";ctx.fillRect(center.x-10,center.y-9,20,18);ctx.fillStyle="#f5e4b5";ctx.fillRect(center.x-4,center.y-3,8,12)}
-  ctx.fillStyle="rgba(30,27,21,.62)";ctx.font="11px Segoe UI, sans-serif";ctx.textAlign="center";ctx.fillText(hex.x+","+hex.y,center.x,center.y+HEX*.72);
-}
+function renderScenarioForm(){el("scenarioName").value=state.scenario.name;el("scenarioDescription").value=state.scenario.description;el("scenarioAuthor").value=state.scenario.author;el("scenarioTurn").value=state.scenario.turn;el("scenarioSide").value=state.scenario.side;el("scenarioPhase").value=state.scenario.phase}
+function updateScenarioFromForm(){if(state.rendering)return;var turn=Number(el("scenarioTurn").value);if(!Number.isInteger(turn)||turn<1){el("scenarioTurn").setAttribute("aria-invalid","true");setMessage("Turn 必须是正整数 / Turn must be a positive integer.");return}el("scenarioTurn").removeAttribute("aria-invalid");state.scenario.name=el("scenarioName").value.trim()||"Untitled Scenario";state.scenario.description=el("scenarioDescription").value.trim();state.scenario.author=el("scenarioAuthor").value.trim()||"ZIzi Game";state.scenario.turn=turn;state.scenario.side=el("scenarioSide").value;state.scenario.phase=el("scenarioPhase").value;state.scenario.id=ScenarioApi.makeScenarioId(state.scenario);setMessage("场景信息已更新 / Scenario updated.")}
+function renderUnitEditor(){var unit=selectedUnit();unitEditor.hidden=!unit;if(!unit)return;el("unitDesignation").value=unit.designation;el("unitFaction").value=unit.faction;el("unitType").value=unit.unitType;el("unitCombatFull").value=unit.combatFull;el("unitCombatReduced").value=unit.combatReduced;el("unitMovement").value=unit.movement;el("unitSteps").value=unit.steps;el("unitStrength").value=unit.strength;el("unitX").value=unit.position.x;el("unitY").value=unit.position.y}
+function updateUnitFromForm(){if(state.rendering)return;var unit=selectedUnit();if(!unit)return;var next={id:unit.id,faction:el("unitFaction").value,designation:el("unitDesignation").value,unitType:el("unitType").value,echelon:unit.echelon,combatFull:el("unitCombatFull").value,combatReduced:el("unitCombatReduced").value,movement:el("unitMovement").value,steps:el("unitSteps").value,strength:el("unitStrength").value,position:{x:el("unitX").value,y:el("unitY").value}};try{var normalized=UnitApi.normalizeUnit(next);if(!inBounds(normalized.position.x,normalized.position.y)){el("unitX").setAttribute("aria-invalid","true");el("unitY").setAttribute("aria-invalid","true");setMessage("坐标超出地图，未保存 / Coordinates are outside the map and were not saved.");return}el("unitX").removeAttribute("aria-invalid");el("unitY").removeAttribute("aria-invalid");Object.assign(unit,normalized);setMessage("单位已更新 / Unit updated.");draw()}catch(error){setMessage(error.message)}}
+
+function resizeCanvas(){var cols=map().grid.cols,rows=map().grid.rows,dpr=window.devicePixelRatio||1,width=Math.ceil(MARGIN*2+HEX*2+(cols-1)*HEX*1.5),height=Math.ceil(MARGIN*2+HEX*SQRT3+(rows-1)*HEX*SQRT3+HEX*SQRT3/2);canvas.style.width=width+"px";canvas.style.height=height+"px";canvas.width=Math.ceil(width*dpr);canvas.height=Math.ceil(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0)}
+function drawHex(hex){var center=centerOf(hex),pts=vertices(center),visual=hex.visual==="city"||hex.city==="normal"?"city":hex.visual==="major-city"||hex.city==="major"?"major-city":hex.terrain==="forest"?"forest":"open",style=terrainStyles[visual]||terrainStyles.open;ctx.beginPath();pts.forEach(function(point,index){if(index===0)ctx.moveTo(point.x,point.y);else ctx.lineTo(point.x,point.y)});ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle="rgba(31,27,18,.58)";ctx.lineWidth=1.5;ctx.stroke();if(visual==="forest"){ctx.fillStyle="rgba(26,55,31,.55)";for(var i=0;i<3;i+=1){ctx.beginPath();ctx.arc(center.x-12+i*12,center.y+3-(i%2)*8,4.5,0,Math.PI*2);ctx.fill()}}if(visual==="city"||visual==="major-city"){ctx.fillStyle=visual==="major-city"?"#5c2c24":"#60472e";ctx.fillRect(center.x-10,center.y-9,20,18);ctx.fillStyle="#f5e4b5";ctx.fillRect(center.x-4,center.y-3,8,12)}ctx.fillStyle="rgba(30,27,21,.62)";ctx.font="11px Segoe UI, sans-serif";ctx.textAlign="center";ctx.fillText(hex.x+","+hex.y,center.x,center.y+HEX*.72)}
+function drawMovementRange(){var unit=selectedUnit();if(!unit)return;map().hexes.forEach(function(hex){if(hexDistance(unit.position,hex)>unit.movement)return;var center=centerOf(hex),pts=vertices(center);ctx.beginPath();pts.forEach(function(point,index){if(index===0)ctx.moveTo(point.x,point.y);else ctx.lineTo(point.x,point.y)});ctx.closePath();ctx.fillStyle="rgba(255,209,102,.18)";ctx.fill();ctx.strokeStyle="rgba(255,209,102,.64)";ctx.lineWidth=2;ctx.stroke()})}
 function drawRivers(hex){var center=centerOf(hex);ctx.strokeStyle="#287ca8";ctx.lineWidth=5;ctx.lineCap="round";(hex.river||[]).forEach(function(direction){var side=sidePoints(center,direction);ctx.beginPath();ctx.moveTo(side[0].x,side[0].y);ctx.lineTo(side[1].x,side[1].y);ctx.stroke()})}
 function drawRails(hex){var center=centerOf(hex);(hex.rail||[]).forEach(function(direction){var neighbor=MapApi.neighborOf(hex.x,hex.y,direction);if(!inBounds(neighbor.x,neighbor.y))return;if(hex.x>neighbor.x||hex.x===neighbor.x&&hex.y>neighbor.y)return;var target=centerOf(neighbor);ctx.strokeStyle="#f2f2e8";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(center.x,center.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.strokeStyle="#2b2418";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(center.x,center.y);ctx.lineTo(target.x,target.y);ctx.stroke()})}
-function drawUnit(unit,indexAtHex){
-  var center=centerOf(unit.position),style=factionStyles[unit.faction]||factionStyles.german,w=44,h=34,dy=indexAtHex*8;
-  ctx.save();ctx.translate(center.x,center.y+dy);
-  ctx.fillStyle=style.fill;ctx.strokeStyle=unit.id===state.selectedId?"#ffd166":style.stroke;ctx.lineWidth=unit.id===state.selectedId?4:3;
-  ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,5);ctx.fill();ctx.stroke();
-  ctx.fillStyle=style.text;ctx.textAlign="center";ctx.font="700 12px Segoe UI, sans-serif";ctx.fillText(unit.designation,-1,-2);
-  ctx.font="700 10px Segoe UI, sans-serif";ctx.fillText(combatValue(unit)+"-"+unit.movement,-1,12);
-  ctx.restore();
-}
-function draw(){
-  resizeCanvas();ctx.clearRect(0,0,canvas.width,canvas.height);state.map.hexes.forEach(drawHex);state.map.hexes.forEach(drawRails);state.map.hexes.forEach(drawRivers);
-  var stacks={};state.units.forEach(function(unit){var key=hexKey(unit.position.x,unit.position.y);stacks[key]=(stacks[key]||0)+1;drawUnit(unit,stacks[key]-1)});
-  renderStatus();renderUnitList();
-}
+function drawUnit(unit,indexAtHex){var center=centerOf(unit.position),style=factionStyles[unit.faction]||factionStyles.german,w=44,h=34,dy=indexAtHex*8;ctx.save();ctx.translate(center.x,center.y+dy);ctx.fillStyle=style.fill;ctx.strokeStyle=unit.id===state.selectedId?"#ffd166":style.stroke;ctx.lineWidth=unit.id===state.selectedId?4:3;ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,5);ctx.fill();ctx.stroke();ctx.fillStyle=style.text;ctx.textAlign="center";ctx.font="700 12px Segoe UI, sans-serif";ctx.fillText(unit.designation,-1,-2);ctx.font="700 10px Segoe UI, sans-serif";ctx.fillText(combatValue(unit)+"-"+unit.movement,-1,12);ctx.restore()}
+function draw(){state.rendering=true;resizeCanvas();ctx.clearRect(0,0,canvas.width,canvas.height);map().hexes.forEach(drawHex);drawMovementRange();map().hexes.forEach(drawRails);map().hexes.forEach(drawRivers);var stacks={};units().forEach(function(unit){var key=hexKey(unit.position.x,unit.position.y);stacks[key]=(stacks[key]||0)+1;drawUnit(unit,stacks[key]-1)});renderStatus();renderScenarioForm();renderUnitList();renderUnitEditor();state.rendering=false}
 function renderStatus(){var unit=selectedUnit();selectedStatus.textContent=unit?unit.designation+" ("+unit.id+")":"未选择 / None";coordStatus.textContent=unit?unit.position.x+","+unit.position.y:"-";messageStatus.textContent=state.message}
-function renderUnitList(){
-  unitList.replaceChildren();if(!state.units.length){var empty=document.createElement("p");empty.className="empty";empty.textContent="还没有单位 / No units imported.";unitList.append(empty);return}
-  state.units.forEach(function(unit){var row=document.createElement("button");row.className="unit-row";row.type="button";row.dataset.selected=String(unit.id===state.selectedId);row.onclick=function(){state.selectedId=unit.id;setMessage("已选择单位 / Unit selected.");draw()};var dot=document.createElement("span");dot.className="dot";dot.style.background=(factionStyles[unit.faction]||factionStyles.german).fill;var label=document.createElement("span");label.innerHTML="<strong></strong><small></small>";label.querySelector("strong").textContent=unit.designation;label.querySelector("small").textContent=unit.position.x+","+unit.position.y+" · "+combatValue(unit)+"-"+unit.movement;var steps=document.createElement("small");steps.textContent=unit.steps+" steps";row.append(dot,label,steps);unitList.append(row)})
-}
-function hexFromPoint(x,y){var best=null,bestDistance=Infinity;state.map.hexes.forEach(function(hex){var c=centerOf(hex),dist=Math.hypot(c.x-x,c.y-y);if(dist<bestDistance){best=hex;bestDistance=dist}});return bestDistance<=HEX?best:null}
-function unitFromPoint(x,y){for(var i=state.units.length-1;i>=0;i-=1){var unit=state.units[i],c=centerOf(unit.position);if(Math.abs(x-c.x)<=27&&Math.abs(y-c.y)<=24)return unit}return null}
+function renderUnitList(){unitList.replaceChildren();if(!units().length){var empty=document.createElement("p");empty.className="empty";empty.textContent="还没有单位 / No units imported.";unitList.append(empty);return}units().forEach(function(unit){var row=document.createElement("button");row.className="unit-row";row.type="button";row.dataset.selected=String(unit.id===state.selectedId);row.onclick=function(){state.selectedId=unit.id;setMessage("已选择单位 / Unit selected.");draw()};var dot=document.createElement("span");dot.className="dot";dot.style.background=(factionStyles[unit.faction]||factionStyles.german).fill;var label=document.createElement("span");label.innerHTML="<strong></strong><small></small>";label.querySelector("strong").textContent=unit.designation;label.querySelector("small").textContent=unit.position.x+","+unit.position.y+" · "+combatValue(unit)+"-"+unit.movement;var steps=document.createElement("small");steps.textContent=unit.steps+" steps";row.append(dot,label,steps);unitList.append(row)})}
+function hexFromPoint(x,y){var best=null,bestDistance=Infinity;map().hexes.forEach(function(hex){var c=centerOf(hex),dist=Math.hypot(c.x-x,c.y-y);if(dist<bestDistance){best=hex;bestDistance=dist}});return bestDistance<=HEX?best:null}
+function unitFromPoint(x,y){for(var i=units().length-1;i>=0;i-=1){var unit=units()[i],c=centerOf(unit.position);if(Math.abs(x-c.x)<=27&&Math.abs(y-c.y)<=24)return unit}return null}
 function canvasPoint(event){var rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(parseFloat(canvas.style.width)/rect.width),y:(event.clientY-rect.top)*(parseFloat(canvas.style.height)/rect.height)}}
-function handleCanvasClick(event){
-  var point=canvasPoint(event),clickedUnit=unitFromPoint(point.x,point.y),target=hexFromPoint(point.x,point.y);
-  if(clickedUnit){state.selectedId=clickedUnit.id;setMessage("已选择单位 / Unit selected.");draw();return}
-  if(!target){coordStatus.textContent="-";return}
-  coordStatus.textContent=target.x+","+target.y;var unit=selectedUnit();if(!unit){setMessage("请先选择一个单位 / Select a unit first.");return}
-  var distance=hexDistance(unit.position,target);if(distance>unit.movement){setMessage("目标超过移动力 / Target is beyond movement allowance.");draw();return}
-  unit.position={x:target.x,y:target.y};state.currentTurn+=1;setMessage("单位已移动 / Unit moved.");draw();
-}
-async function readJsonFile(file){return JSON.parse(await file.text())}
-async function importMap(file){try{var doc=await readJsonFile(file);state.placementAdjusted=false;state.map=normalizeMap(doc.map||doc);state.units.forEach(fitUnitToMap);setMessage(state.placementAdjusted?"地图已导入，部分单位已放到第一个可用格 / Map imported; some units were placed on the first available hex.":"地图已导入 / Map imported.");draw()}catch(error){setMessage(error.message)}}
-async function importUnits(files){try{state.placementAdjusted=false;for(var i=0;i<files.length;i+=1){var doc=await readJsonFile(files[i]);if(Array.isArray(doc.units)){doc.units.forEach(function(unit){addUnit({unit:unit})})}else addUnit(doc)}setMessage(state.placementAdjusted?"单位已导入，越界单位已放到第一个可用格 / Unit imported; out-of-map units were placed on the first available hex.":"单位已导入 / Unit imported.");draw()}catch(error){setMessage(error.message)}}
-function loadDemo(){state.map=makeDemoMap();state.units=[];addUnit({unit:{faction:"german",designation:"NNA",echelon:"army",unitType:"tank",combatFull:12,combatReduced:6,movement:6,steps:2,position:{x:1,y:1}}});addUnit({unit:{faction:"soviet",designation:"16A",echelon:"army",unitType:"infantry",combatFull:8,combatReduced:4,movement:4,steps:2,position:{x:7,y:5}}});state.selectedId=state.units[0].id;state.currentTurn=1;setMessage("示例数据已加载 / Demo loaded.");draw()}
-function exportSave(){var save={version:1,format:"zizi-wargame-sandbox-save",source:"ZIzi_Game wargame-sandbox",meta:{currentTurn:state.currentTurn,exportedAt:new Date().toISOString()},map:clone(state.map),units:clone(state.units)};saveBlob(JSON.stringify(save,null,2),"wargame-sandbox-save-turn-"+state.currentTurn+".json");setMessage("当前局面已导出 / Save exported.")}
+function handleCanvasClick(event){var point=canvasPoint(event),clickedUnit=unitFromPoint(point.x,point.y),target=hexFromPoint(point.x,point.y);if(clickedUnit){state.selectedId=clickedUnit.id;setMessage("已选择单位 / Unit selected.");draw();return}if(!target){coordStatus.textContent="-";return}coordStatus.textContent=target.x+","+target.y;var unit=selectedUnit();if(!unit){setMessage("请先选择一个单位 / Select a unit first.");return}var distance=hexDistance(unit.position,target);if(distance>unit.movement){setMessage("目标超过移动力 / Target is beyond movement allowance.");draw();return}unit.position={x:target.x,y:target.y};state.scenario.turn+=1;setMessage("单位已移动 / Unit moved.");draw()}
+function exportScenario(){var doc=scenarioDoc();saveBlob(JSON.stringify(doc,null,2),"scenario-"+doc.scenario.id+".json");setMessage("场景已导出 / Scenario exported.")}
+function exportSave(){var doc=scenarioDoc(),save={version:1,format:"zizi-wargame-sandbox-save",source:"ZIzi_Game wargame-sandbox",meta:{currentTurn:doc.scenario.turn,exportedAt:new Date().toISOString()},scenario:{name:doc.scenario.name,description:doc.scenario.description,author:doc.scenario.author,ruleset:doc.scenario.ruleset},side:doc.scenario.side,phase:doc.scenario.phase,map:doc.scenario.map,units:doc.scenario.units};saveBlob(JSON.stringify(save,null,2),"wargame-sandbox-save-turn-"+doc.scenario.turn+".json");setMessage("当前局面已导出 / Save exported.")}
+function loadDemo(){applyScenario(ScenarioApi.createDemoScenario(),"示例数据已加载 / Demo loaded.")}
+function deleteSelected(){var unit=selectedUnit();if(!unit)return setMessage("没有选中单位 / No unit selected.");if(!confirm("删除选中单位？ / Delete selected unit?"))return;state.scenario.units=units().filter(function(item){return item.id!==unit.id});state.selectedId=units()[0]?units()[0].id:null;setMessage("单位已删除 / Unit deleted.");draw()}
+function duplicateSelected(){var unit=selectedUnit();if(!unit)return setMessage("没有选中单位 / No unit selected.");var copy=clone(unit),spot=firstAvailableNear(unit.position);copy.id=uniqueId(unit.id+"-copy");if(spot)copy.position={x:spot.x,y:spot.y};else setMessage("没有空格，复制单位留在原位置 / No empty hex; copy stayed in original hex.");units().push(copy);state.selectedId=copy.id;if(spot)setMessage("单位已复制 / Unit duplicated.");draw()}
+function clearUnits(){if(!units().length)return setMessage("没有单位可清空 / No units to clear.");if(!confirm("清空全部单位？ / Clear all units?"))return;state.scenario.units=[];state.selectedId=null;setMessage("单位已清空 / Units cleared.");draw()}
+function readPending(){["ziziPendingScenario","ziziPendingMap","ziziPendingUnit"].forEach(function(key){var raw=localStorage.getItem(key);if(!raw)return;try{importDocument(JSON.parse(raw),key==="ziziPendingScenario"?"已读取待处理场景 / Pending scenario loaded.":key==="ziziPendingMap"?"已读取待处理地图 / Pending map loaded.":"已读取待处理单位 / Pending unit loaded.")}catch(error){setMessage(error.message)}finally{localStorage.removeItem(key)}})}
 
-document.getElementById("importMapButton").onclick=function(){document.getElementById("mapInput").click()};
-document.getElementById("importUnitButton").onclick=function(){document.getElementById("unitInput").click()};
-document.getElementById("mapInput").onchange=function(event){if(event.target.files[0])importMap(event.target.files[0]);event.target.value=""};
-document.getElementById("unitInput").onchange=function(event){if(event.target.files.length)importUnits(event.target.files);event.target.value=""};
-document.getElementById("loadDemoButton").onclick=loadDemo;
-document.getElementById("exportSaveButton").onclick=exportSave;
-canvas.addEventListener("click",handleCanvasClick);
-window.addEventListener("resize",draw);
-state.map=defaultMap();draw();
+["scenarioName","scenarioDescription","scenarioAuthor","scenarioTurn","scenarioSide","scenarioPhase"].forEach(function(id){el(id).addEventListener("input",updateScenarioFromForm)});
+["unitDesignation","unitFaction","unitType","unitCombatFull","unitCombatReduced","unitMovement","unitSteps","unitStrength","unitX","unitY"].forEach(function(id){el(id).addEventListener("input",updateUnitFromForm)});
+el("importScenarioButton").onclick=function(){el("scenarioInput").click()};
+el("importMapButton").onclick=function(){el("mapInput").click()};
+el("importUnitButton").onclick=function(){el("unitInput").click()};
+el("scenarioInput").onchange=async function(event){try{if(event.target.files[0])importDocument(await readJsonFile(event.target.files[0]),"场景已导入 / Scenario imported.")}catch(error){setMessage(error.message)}finally{event.target.value=""}};
+el("mapInput").onchange=async function(event){try{if(event.target.files[0])importDocument(await readJsonFile(event.target.files[0]),"地图已导入 / Map imported.")}catch(error){setMessage(error.message)}finally{event.target.value=""}};
+el("unitInput").onchange=async function(event){try{if(event.target.files.length)await importFileList(event.target.files)}catch(error){setMessage(error.message)}finally{event.target.value=""}};
+el("loadDemoButton").onclick=loadDemo;el("exportScenarioButton").onclick=exportScenario;el("exportSaveButton").onclick=exportSave;el("deleteUnitButton").onclick=deleteSelected;el("duplicateUnitButton").onclick=duplicateSelected;el("clearUnitsButton").onclick=clearUnits;
+canvas.addEventListener("click",handleCanvasClick);window.addEventListener("resize",draw);
+draw();readPending();
 })();
 </script>
 </body>

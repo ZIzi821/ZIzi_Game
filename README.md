@@ -26,6 +26,9 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 Map Generator exports map JSON.
 Counter Maker exports unit JSON.
 Wargame Sandbox imports both and runs a playable prototype.
+Map Generator can send map data directly to Wargame Sandbox.
+Counter Maker can send unit data directly to Wargame Sandbox.
+Wargame Sandbox can export a complete scenario JSON.
 
 ## Unified Community
 

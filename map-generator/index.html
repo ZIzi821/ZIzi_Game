@@ -1110,6 +1110,7 @@
                 <div class="export-panel-surface">
                   <button type="button" id="pngBtn">导出 PNG / Export PNG</button>
                   <button type="button" id="downloadJsonBtn">导出地图数据 / Export Map Data</button>
+                  <button type="button" id="openSandboxBtn">发送到实验场 / Open in Sandbox</button>
                 </div>
               </div>
             </div>
@@ -2556,6 +2557,15 @@
         URL.revokeObjectURL(link.href);
         setExportMenu(false);
         showToast("地图数据已导出 / Map data exported");
+      });
+
+      document.getElementById("openSandboxBtn").addEventListener("click", () => {
+        try {
+          localStorage.setItem("ziziPendingMap", JSON.stringify(currentDocument()));
+          window.location.href = "../wargame-sandbox/";
+        } catch (error) {
+          showToast(`无法发送到实验场 / Could not send to sandbox: ${error.message}`, "error");
+        }
       });
 
       document.getElementById("applyJsonBtn").addEventListener("click", () => {
