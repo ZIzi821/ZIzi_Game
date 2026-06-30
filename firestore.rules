@@ -45,6 +45,38 @@ service cloud.firestore {
         (gameId == 'tangsprint' && validTangSprintLevel(levelId));
     }
 
+    function validWargameType(type) {
+      return type in ['map', 'unit', 'scenario'];
+    }
+
+    function validWargameVisibility(visibility) {
+      return visibility in ['private', 'unlisted', 'public'];
+    }
+
+    function validWargameFields(data) {
+      return data.keys().hasOnly([
+        'schemaVersion',
+        'type',
+        'title',
+        'description',
+        'visibility',
+        'ownerUid',
+        'payload',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+        data.schemaVersion == 1 &&
+        validWargameType(data.type) &&
+        data.title is string &&
+        data.title.size() >= 1 &&
+        data.title.size() <= 80 &&
+        data.description is string &&
+        data.description.size() <= 500 &&
+        validWargameVisibility(data.visibility) &&
+        data.ownerUid is string &&
+        data.payload is map;
+    }
+
     match /messages/{messageId} {
       allow read: if true;
 
@@ -96,6 +128,36 @@ service cloud.firestore {
         request.resource.data.createdAt == request.time;
 
       allow update, delete: if false;
+    }
+
+    match /wargameItems/{itemId} {
+      allow get: if request.auth != null &&
+        (
+          resource.data.ownerUid == request.auth.uid ||
+          resource.data.visibility in ['public', 'unlisted']
+        );
+
+      allow list: if request.auth != null &&
+        (
+          resource.data.ownerUid == request.auth.uid ||
+          resource.data.visibility == 'public'
+        );
+
+      allow create: if request.auth != null &&
+        validWargameFields(request.resource.data) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if request.auth != null &&
+        resource.data.ownerUid == request.auth.uid &&
+        validWargameFields(request.resource.data) &&
+        request.resource.data.ownerUid == resource.data.ownerUid &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if request.auth != null &&
+        resource.data.ownerUid == request.auth.uid;
     }
   }
 }

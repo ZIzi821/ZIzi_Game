@@ -1147,6 +1147,18 @@
             </div>
           </section>
 
+          <section class="panel-block" aria-label="云端地图 / Cloud Map">
+            <h2 class="panel-title">云端 / Cloud</h2>
+            <div class="field-control">
+              <label for="mapCloudId">Cloud ID</label>
+              <input id="mapCloudId" type="text" autocomplete="off" />
+            </div>
+            <div class="field-grid">
+              <button type="button" id="saveMapCloudBtn">保存地图到云端 / Save Map to Cloud</button>
+              <button type="button" id="loadMapCloudBtn">从云端读取地图 / Load Map from Cloud</button>
+            </div>
+          </section>
+
           <section class="panel-block" aria-label="地图 JSON / Map JSON">
             <h2 class="panel-title">地图 JSON / Map JSON</h2>
             <textarea id="jsonBox" class="json-box" spellcheck="false"></textarea>
@@ -1227,8 +1239,10 @@
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
     <script src="../assets/operation-typhoon-map.js"></script>
+    <script src="../assets/wargame-cloud.js"></script>
     <script>
       const MapContract = window.OperationTyphoonMap;
+      const CloudApi = window.ZiziWargameCloud;
       const terrainImage = new Image();
       terrainImage.src = "../battle-for-moscow/assets/terrain.png";
       const customTerrainImages = {
@@ -1255,6 +1269,7 @@
       const exportMenu = document.getElementById("exportMenu");
       const exportBtn = document.getElementById("exportBtn");
       const exportPanel = document.getElementById("exportPanel");
+      const mapCloudId = document.getElementById("mapCloudId");
       const canvasFrame = document.querySelector(".canvas-frame");
       const mapFeedbackText = document.getElementById("mapFeedbackText");
       const toastRegion = document.getElementById("toastRegion");
@@ -2565,6 +2580,37 @@
           window.location.href = "../wargame-sandbox/";
         } catch (error) {
           showToast(`无法发送到实验场 / Could not send to sandbox: ${error.message}`, "error");
+        }
+      });
+
+      document.getElementById("saveMapCloudBtn").addEventListener("click", async () => {
+        try {
+          const id = await CloudApi.saveCloudItem({
+            type: "map",
+            title: `Wargame Map ${state.cols}x${state.rows}`,
+            description: "",
+            visibility: "private",
+            payload: currentDocument()
+          });
+          mapCloudId.value = id;
+          showToast(`地图已保存到云端 / Map saved to cloud: ${id}`);
+        } catch (error) {
+          showToast(`云端保存失败 / Cloud save failed: ${error.message}`, "error");
+        }
+      });
+
+      document.getElementById("loadMapCloudBtn").addEventListener("click", async () => {
+        try {
+          const id = mapCloudId.value.trim();
+          if (!id) throw new Error("Cloud ID is required");
+          const item = await CloudApi.getCloudItem(id);
+          if (item.type !== "map") throw new Error("Cloud item is not a map");
+          pushHistory();
+          loadDocument(item.payload);
+          updateHistoryButtons();
+          showToast("云端地图已读取 / Cloud map loaded");
+        } catch (error) {
+          showToast(`云端读取失败 / Cloud load failed: ${error.message}`, "error");
         }
       });
 

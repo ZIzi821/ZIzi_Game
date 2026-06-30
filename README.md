@@ -29,6 +29,10 @@ Wargame Sandbox imports both and runs a playable prototype.
 Map Generator can send map data directly to Wargame Sandbox.
 Counter Maker can send unit data directly to Wargame Sandbox.
 Wargame Sandbox can export a complete scenario JSON.
+Wargame cloud saves use Firebase Firestore directly.
+They do not use GitHub Issue sync.
+Map, unit, and scenario data can be saved to Firebase and loaded by Cloud ID.
+GitHub cache / issue sync runs weekly as a fallback for community and leaderboard data.
 
 ## Unified Community
 
