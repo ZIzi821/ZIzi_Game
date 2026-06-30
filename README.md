@@ -17,6 +17,16 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 - [Tang people sprint / 唐人冲刺](https://zizi821.github.io/ZIzi_Game/blue-crowd-rush/)
 - [Chomp / 大口吃](https://zizi821.github.io/ZIzi_Game/pacman-odyssey/)
 
+## Wargame Tools
+
+- [Wargame Map Generator / 兵棋地图生成器](https://zizi821.github.io/ZIzi_Game/map-generator/)
+- [Counter Maker / 兵牌制作器](https://zizi821.github.io/ZIzi_Game/wargame-counter-maker/)
+- [Wargame Sandbox / 兵棋实验场](https://zizi821.github.io/ZIzi_Game/wargame-sandbox/)
+
+Map Generator exports map JSON.
+Counter Maker exports unit JSON.
+Wargame Sandbox imports both and runs a playable prototype.
+
 ## Unified Community
 
 `forum.html` is the only community entry point.

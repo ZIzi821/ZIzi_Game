@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>兵棋实验场 / Wargame Sandbox</title>
+<style>
+:root{color:#f5f1e6;background:#191b18;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:radial-gradient(circle at 16% 10%,rgba(187,57,42,.2),transparent 28rem),radial-gradient(circle at 90% 0,rgba(44,102,102,.22),transparent 30rem),linear-gradient(180deg,#22231d,#141612 72%)}button,input{font:inherit}button{cursor:pointer;border:0}.shell{width:min(1280px,calc(100% - 28px));margin:0 auto;padding:34px 0 44px}.back{display:inline-flex;margin-bottom:18px;color:#ffd166;text-decoration:none;font-weight:850}.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;margin-bottom:18px}.eyebrow{margin:0 0 8px;color:#ffd166;font-size:.78rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase}h1,p{margin-top:0}h1{margin-bottom:8px;font-size:clamp(2rem,5vw,4.4rem);line-height:1;letter-spacing:0}.intro{max-width:70ch;margin-bottom:0;color:#cfc5ab;line-height:1.65}.toolbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:8px;background:#ffd166;color:#1d1604;font-weight:900;padding:10px 14px;text-decoration:none}.button.secondary{background:#dfe8df;color:#142015}.button.ghost{border:1px solid rgba(245,241,230,.22);background:rgba(255,255,255,.05);color:#f5f1e6}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}.board-panel,.side-panel{border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(26,29,24,.9);box-shadow:0 24px 80px rgba(0,0,0,.28)}.board-panel{overflow:hidden}.board-scroll{overflow:auto;padding:16px;background:#11130f}.board-scroll canvas{display:block;max-width:none;border-radius:8px;background:#2d3128}.status{display:grid;grid-template-columns:1.1fr 1fr 1.6fr;gap:10px;border-top:1px solid rgba(245,241,230,.12);padding:12px 14px;color:#d8cfb9}.status b{display:block;margin-bottom:3px;color:#fff7df;font-size:.78rem;text-transform:uppercase}.status span{display:block;min-height:20px}.side-panel{display:grid;gap:14px;padding:14px}.side-panel h2{margin:0;color:#fff7df;font-size:1rem}.unit-list{display:grid;gap:8px}.unit-row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid rgba(245,241,230,.12);border-radius:8px;background:rgba(255,255,255,.05);padding:9px}.unit-row[data-selected=true]{border-color:#ffd166;background:rgba(255,209,102,.14)}.dot{width:12px;height:12px;border-radius:50%;border:2px solid #111}.unit-row strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.unit-row small{color:#cfc5ab}.empty{margin:0;color:#a99f89;line-height:1.5}.file-input{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip:rect(0 0 0 0)}@media(max-width:880px){.top,.layout{grid-template-columns:1fr}.toolbar{justify-content:flex-start}.status{grid-template-columns:1fr}.shell{width:min(100% - 18px,760px);padding-top:24px}}@media(max-width:520px){.toolbar .button{width:100%}.board-scroll{padding:10px}}
+</style>
+</head>
+<body>
+<main class="shell">
+<a class="back" href="../">← 返回主页 / Back Home</a>
+<header class="top">
+<section>
+<p class="eyebrow">Playable Prototype</p>
+<h1>兵棋实验场 / Wargame Sandbox</h1>
+<p class="intro">导入地图和兵牌数据，测试属于自己的回合制兵棋原型。Import map and unit data to test our own turn-based wargame prototype.</p>
+</section>
+<div class="toolbar" aria-label="Sandbox tools">
+<button class="button" id="importMapButton" type="button">导入地图 JSON / Import Map JSON</button>
+<button class="button" id="importUnitButton" type="button">导入单位 JSON / Import Unit JSON</button>
+<button class="button secondary" id="loadDemoButton" type="button">使用示例数据 / Load Demo</button>
+<button class="button ghost" id="exportSaveButton" type="button">导出当前局面 / Export Save</button>
+</div>
+</header>
+<input class="file-input" id="mapInput" type="file" accept="application/json,.json">
+<input class="file-input" id="unitInput" type="file" accept="application/json,.json" multiple>
+<section class="layout">
+<section class="board-panel" aria-label="Wargame map">
+<div class="board-scroll" id="boardScroll"><canvas id="mapCanvas" width="800" height="600"></canvas></div>
+<div class="status" aria-live="polite">
+<p><b>Selected Unit</b><span id="selectedStatus">未选择 / None</span></p>
+<p><b>Coordinate</b><span id="coordStatus">-</span></p>
+<p><b>Message</b><span id="messageStatus">准备就绪 / Ready.</span></p>
+</div>
+</section>
+<aside class="side-panel" aria-label="Units">
+<h2>单位 / Units</h2>
+<div class="unit-list" id="unitList"></div>
+</aside>
+</section>
+</main>
+<script src="../assets/operation-typhoon-map.js"></script>
+<script src="../assets/wargame-unit.js"></script>
+<script>
+(function(){
+"use strict";
+var MapApi=window.OperationTyphoonMap,UnitApi=window.ZiziWargameUnit;
+var canvas=document.getElementById("mapCanvas"),ctx=canvas.getContext("2d"),scroll=document.getElementById("boardScroll");
+var selectedStatus=document.getElementById("selectedStatus"),coordStatus=document.getElementById("coordStatus"),messageStatus=document.getElementById("messageStatus"),unitList=document.getElementById("unitList");
+var HEX=34,MARGIN=42,SQRT3=Math.sqrt(3),state={map:null,units:[],selectedId:null,currentTurn:1,message:"准备就绪 / Ready."};
+var terrainStyles={open:{fill:"#c9bd8f",label:"Open"},forest:{fill:"#54764e",label:"Forest"},city:{fill:"#c6a968",label:"City"},"major-city":{fill:"#b36b53",label:"Major"}};
+var factionStyles={german:{fill:"#6c725f",stroke:"#2b3028",text:"#111"},soviet:{fill:"#b83a34",stroke:"#6f1614",text:"#fff7df"}};
+
+function clone(value){return JSON.parse(JSON.stringify(value))}
+function setMessage(text){state.message=text;messageStatus.textContent=text}
+function hexKey(x,y){return x+","+y}
+function hexAt(x,y){return state.map.hexes.find(function(hex){return hex.x===x&&hex.y===y})}
+function inBounds(x,y){return !!hexAt(x,y)}
+function centerOf(hex){return{x:MARGIN+HEX+hex.x*HEX*1.5,y:MARGIN+HEX*SQRT3/2+hex.y*HEX*SQRT3+(Math.abs(hex.x%2)===1?HEX*SQRT3/2:0)}}
+function vertices(center){var points=[];for(var i=0;i<6;i+=1){var angle=Math.PI/180*(60*i);points.push({x:center.x+HEX*Math.cos(angle),y:center.y+HEX*Math.sin(angle)})}return points}
+function sidePoints(center,direction){var pts=vertices(center),map={N:[4,5],NE:[5,0],SE:[0,1],S:[1,2],SW:[2,3],NW:[3,4]};var pair=map[direction]||map.N;return[pts[pair[0]],pts[pair[1]]]}
+function offsetToCube(x,y){var q=x,r=y-(x-(x&1))/2;return{x:q,y:-q-r,z:r}}
+function hexDistance(a,b){var ac=offsetToCube(a.x,a.y),bc=offsetToCube(b.x,b.y);return Math.max(Math.abs(ac.x-bc.x),Math.abs(ac.y-bc.y),Math.abs(ac.z-bc.z))}
+function normalizeMap(doc){return MapApi.normalizeMap(doc)}
+function defaultMap(){return normalizeMap(MapApi.createMap(10,8))}
+
+function makeDemoMap(){
+  var map=defaultMap(),byKey=new Map(map.hexes.map(function(hex){return[hexKey(hex.x,hex.y),hex]}));
+  [[2,1,"forest"],[3,1,"forest"],[4,2,"forest"],[5,3,"forest"],[2,5,"city"],[7,2,"city"],[6,5,"major-city"]].forEach(function(item){
+    var hex=byKey.get(hexKey(item[0],item[1]));if(hex){var def=MapApi.visualDefinition(item[2]);hex.visual=item[2];hex.terrain=def.terrain;hex.city=def.city}
+  });
+  [[1,3,"NE"],[2,2,"SE"],[3,3,"SE"],[4,4,"NE"]].forEach(function(item){var hex=byKey.get(hexKey(item[0],item[1]));if(hex&&!hex.river.includes(item[2]))hex.river.push(item[2])});
+  [[0,6,"NE"],[1,5,"NE"],[2,5,"NE"],[3,4,"NE"],[4,4,"NE"],[5,3,"NE"],[6,3,"NE"]].forEach(function(item){var hex=byKey.get(hexKey(item[0],item[1]));if(hex&&!hex.rail.includes(item[2]))hex.rail.push(item[2])});
+  return normalizeMap(map);
+}
+
+function uniqueId(base){var id=base||"unit",seen=new Set(state.units.map(function(unit){return unit.id}));if(!seen.has(id))return id;var index=2;while(seen.has(id+"-"+index))index+=1;return id+"-"+index}
+function firstAvailableHex(){var occupied=new Set(state.units.map(function(unit){return hexKey(unit.position.x,unit.position.y)}));return state.map.hexes.find(function(hex){return !occupied.has(hexKey(hex.x,hex.y))})||state.map.hexes[0]}
+function fitUnitToMap(unit){if(inBounds(unit.position.x,unit.position.y))return unit;var spot=firstAvailableHex();unit.position={x:spot.x,y:spot.y};state.placementAdjusted=true;return unit}
+function addUnit(doc){var normalized=UnitApi.normalizeUnitDocument(doc).unit;normalized.id=uniqueId(normalized.id||UnitApi.makeUnitId(normalized));state.units.push(fitUnitToMap(normalized));state.selectedId=normalized.id}
+function selectedUnit(){return state.units.find(function(unit){return unit.id===state.selectedId})||null}
+function combatValue(unit){return unit.strength==="reduced"?unit.combatReduced:unit.combatFull}
+function saveBlob(data,name){var url=URL.createObjectURL(new Blob([data],{type:"application/json;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url)}
+
+function resizeCanvas(){
+  var cols=state.map.grid.cols,rows=state.map.grid.rows,dpr=window.devicePixelRatio||1;
+  var width=Math.ceil(MARGIN*2+HEX*2+(cols-1)*HEX*1.5),height=Math.ceil(MARGIN*2+HEX*SQRT3+(rows-1)*HEX*SQRT3+HEX*SQRT3/2);
+  canvas.style.width=width+"px";canvas.style.height=height+"px";canvas.width=Math.ceil(width*dpr);canvas.height=Math.ceil(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function drawHex(hex){
+  var center=centerOf(hex),pts=vertices(center),visual=hex.visual==="city"||hex.city==="normal"?"city":hex.visual==="major-city"||hex.city==="major"?"major-city":hex.terrain==="forest"?"forest":"open",style=terrainStyles[visual]||terrainStyles.open;
+  ctx.beginPath();pts.forEach(function(point,index){if(index===0)ctx.moveTo(point.x,point.y);else ctx.lineTo(point.x,point.y)});ctx.closePath();ctx.fillStyle=style.fill;ctx.fill();ctx.strokeStyle="rgba(31,27,18,.58)";ctx.lineWidth=1.5;ctx.stroke();
+  if(visual==="forest"){ctx.fillStyle="rgba(26,55,31,.55)";for(var i=0;i<3;i+=1){ctx.beginPath();ctx.arc(center.x-12+i*12,center.y+3-(i%2)*8,4.5,0,Math.PI*2);ctx.fill()}}
+  if(visual==="city"||visual==="major-city"){ctx.fillStyle=visual==="major-city"?"#5c2c24":"#60472e";ctx.fillRect(center.x-10,center.y-9,20,18);ctx.fillStyle="#f5e4b5";ctx.fillRect(center.x-4,center.y-3,8,12)}
+  ctx.fillStyle="rgba(30,27,21,.62)";ctx.font="11px Segoe UI, sans-serif";ctx.textAlign="center";ctx.fillText(hex.x+","+hex.y,center.x,center.y+HEX*.72);
+}
+function drawRivers(hex){var center=centerOf(hex);ctx.strokeStyle="#287ca8";ctx.lineWidth=5;ctx.lineCap="round";(hex.river||[]).forEach(function(direction){var side=sidePoints(center,direction);ctx.beginPath();ctx.moveTo(side[0].x,side[0].y);ctx.lineTo(side[1].x,side[1].y);ctx.stroke()})}
+function drawRails(hex){var center=centerOf(hex);(hex.rail||[]).forEach(function(direction){var neighbor=MapApi.neighborOf(hex.x,hex.y,direction);if(!inBounds(neighbor.x,neighbor.y))return;if(hex.x>neighbor.x||hex.x===neighbor.x&&hex.y>neighbor.y)return;var target=centerOf(neighbor);ctx.strokeStyle="#f2f2e8";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(center.x,center.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.strokeStyle="#2b2418";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(center.x,center.y);ctx.lineTo(target.x,target.y);ctx.stroke()})}
+function drawUnit(unit,indexAtHex){
+  var center=centerOf(unit.position),style=factionStyles[unit.faction]||factionStyles.german,w=44,h=34,dy=indexAtHex*8;
+  ctx.save();ctx.translate(center.x,center.y+dy);
+  ctx.fillStyle=style.fill;ctx.strokeStyle=unit.id===state.selectedId?"#ffd166":style.stroke;ctx.lineWidth=unit.id===state.selectedId?4:3;
+  ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,5);ctx.fill();ctx.stroke();
+  ctx.fillStyle=style.text;ctx.textAlign="center";ctx.font="700 12px Segoe UI, sans-serif";ctx.fillText(unit.designation,-1,-2);
+  ctx.font="700 10px Segoe UI, sans-serif";ctx.fillText(combatValue(unit)+"-"+unit.movement,-1,12);
+  ctx.restore();
+}
+function draw(){
+  resizeCanvas();ctx.clearRect(0,0,canvas.width,canvas.height);state.map.hexes.forEach(drawHex);state.map.hexes.forEach(drawRails);state.map.hexes.forEach(drawRivers);
+  var stacks={};state.units.forEach(function(unit){var key=hexKey(unit.position.x,unit.position.y);stacks[key]=(stacks[key]||0)+1;drawUnit(unit,stacks[key]-1)});
+  renderStatus();renderUnitList();
+}
+function renderStatus(){var unit=selectedUnit();selectedStatus.textContent=unit?unit.designation+" ("+unit.id+")":"未选择 / None";coordStatus.textContent=unit?unit.position.x+","+unit.position.y:"-";messageStatus.textContent=state.message}
+function renderUnitList(){
+  unitList.replaceChildren();if(!state.units.length){var empty=document.createElement("p");empty.className="empty";empty.textContent="还没有单位 / No units imported.";unitList.append(empty);return}
+  state.units.forEach(function(unit){var row=document.createElement("button");row.className="unit-row";row.type="button";row.dataset.selected=String(unit.id===state.selectedId);row.onclick=function(){state.selectedId=unit.id;setMessage("已选择单位 / Unit selected.");draw()};var dot=document.createElement("span");dot.className="dot";dot.style.background=(factionStyles[unit.faction]||factionStyles.german).fill;var label=document.createElement("span");label.innerHTML="<strong></strong><small></small>";label.querySelector("strong").textContent=unit.designation;label.querySelector("small").textContent=unit.position.x+","+unit.position.y+" · "+combatValue(unit)+"-"+unit.movement;var steps=document.createElement("small");steps.textContent=unit.steps+" steps";row.append(dot,label,steps);unitList.append(row)})
+}
+function hexFromPoint(x,y){var best=null,bestDistance=Infinity;state.map.hexes.forEach(function(hex){var c=centerOf(hex),dist=Math.hypot(c.x-x,c.y-y);if(dist<bestDistance){best=hex;bestDistance=dist}});return bestDistance<=HEX?best:null}
+function unitFromPoint(x,y){for(var i=state.units.length-1;i>=0;i-=1){var unit=state.units[i],c=centerOf(unit.position);if(Math.abs(x-c.x)<=27&&Math.abs(y-c.y)<=24)return unit}return null}
+function canvasPoint(event){var rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*(parseFloat(canvas.style.width)/rect.width),y:(event.clientY-rect.top)*(parseFloat(canvas.style.height)/rect.height)}}
+function handleCanvasClick(event){
+  var point=canvasPoint(event),clickedUnit=unitFromPoint(point.x,point.y),target=hexFromPoint(point.x,point.y);
+  if(clickedUnit){state.selectedId=clickedUnit.id;setMessage("已选择单位 / Unit selected.");draw();return}
+  if(!target){coordStatus.textContent="-";return}
+  coordStatus.textContent=target.x+","+target.y;var unit=selectedUnit();if(!unit){setMessage("请先选择一个单位 / Select a unit first.");return}
+  var distance=hexDistance(unit.position,target);if(distance>unit.movement){setMessage("目标超过移动力 / Target is beyond movement allowance.");draw();return}
+  unit.position={x:target.x,y:target.y};state.currentTurn+=1;setMessage("单位已移动 / Unit moved.");draw();
+}
+async function readJsonFile(file){return JSON.parse(await file.text())}
+async function importMap(file){try{var doc=await readJsonFile(file);state.placementAdjusted=false;state.map=normalizeMap(doc.map||doc);state.units.forEach(fitUnitToMap);setMessage(state.placementAdjusted?"地图已导入，部分单位已放到第一个可用格 / Map imported; some units were placed on the first available hex.":"地图已导入 / Map imported.");draw()}catch(error){setMessage(error.message)}}
+async function importUnits(files){try{state.placementAdjusted=false;for(var i=0;i<files.length;i+=1){var doc=await readJsonFile(files[i]);if(Array.isArray(doc.units)){doc.units.forEach(function(unit){addUnit({unit:unit})})}else addUnit(doc)}setMessage(state.placementAdjusted?"单位已导入，越界单位已放到第一个可用格 / Unit imported; out-of-map units were placed on the first available hex.":"单位已导入 / Unit imported.");draw()}catch(error){setMessage(error.message)}}
+function loadDemo(){state.map=makeDemoMap();state.units=[];addUnit({unit:{faction:"german",designation:"NNA",echelon:"army",unitType:"tank",combatFull:12,combatReduced:6,movement:6,steps:2,position:{x:1,y:1}}});addUnit({unit:{faction:"soviet",designation:"16A",echelon:"army",unitType:"infantry",combatFull:8,combatReduced:4,movement:4,steps:2,position:{x:7,y:5}}});state.selectedId=state.units[0].id;state.currentTurn=1;setMessage("示例数据已加载 / Demo loaded.");draw()}
+function exportSave(){var save={version:1,format:"zizi-wargame-sandbox-save",source:"ZIzi_Game wargame-sandbox",meta:{currentTurn:state.currentTurn,exportedAt:new Date().toISOString()},map:clone(state.map),units:clone(state.units)};saveBlob(JSON.stringify(save,null,2),"wargame-sandbox-save-turn-"+state.currentTurn+".json");setMessage("当前局面已导出 / Save exported.")}
+
+document.getElementById("importMapButton").onclick=function(){document.getElementById("mapInput").click()};
+document.getElementById("importUnitButton").onclick=function(){document.getElementById("unitInput").click()};
+document.getElementById("mapInput").onchange=function(event){if(event.target.files[0])importMap(event.target.files[0]);event.target.value=""};
+document.getElementById("unitInput").onchange=function(event){if(event.target.files.length)importUnits(event.target.files);event.target.value=""};
+document.getElementById("loadDemoButton").onclick=loadDemo;
+document.getElementById("exportSaveButton").onclick=exportSave;
+canvas.addEventListener("click",handleCanvasClick);
+window.addEventListener("resize",draw);
+state.map=defaultMap();draw();
+})();
+</script>
+</body>
+</html>
