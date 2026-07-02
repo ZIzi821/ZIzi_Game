@@ -338,12 +338,6 @@ p {
     linear-gradient(135deg, rgba(215, 221, 218, 0.92), rgba(161, 176, 181, 0.66) 48%, rgba(225, 218, 204, 0.72));
 }
 
-.alamein-card {
-  --game-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.86)),
-    linear-gradient(135deg, rgba(236, 207, 134, 0.78), rgba(120, 190, 191, 0.48) 42%, rgba(119, 139, 97, 0.34));
-}
-
 .mapbuilder-card {
   --game-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.86)),
@@ -547,41 +541,6 @@ p {
   background: url("game-art/operation-typhoon-2.png") center / cover;
   box-shadow: 0 14px 24px rgba(12, 17, 23, 0.3);
   transform: rotate(-3deg);
-}
-
-.alamein-visual {
-  background:
-    linear-gradient(180deg, rgba(106, 186, 194, 0.72) 0 27%, transparent 28%),
-    linear-gradient(30deg, rgba(117, 131, 86, 0.24) 0 7%, transparent 8% 32%, rgba(117, 131, 86, 0.22) 33% 40%, transparent 41%),
-    linear-gradient(135deg, #ecd78d, #f5e5aa 58%, #d7c279);
-  border-color: rgba(101, 105, 70, 0.24);
-}
-
-.alamein-visual::before {
-  content: "";
-  position: absolute;
-  inset: 9px;
-  background:
-    linear-gradient(30deg, transparent 0 46%, rgba(97, 103, 76, 0.28) 47% 49%, transparent 50%),
-    linear-gradient(150deg, transparent 0 46%, rgba(97, 103, 76, 0.28) 47% 49%, transparent 50%),
-    linear-gradient(90deg, transparent 0 47%, rgba(97, 103, 76, 0.24) 48% 50%, transparent 51%);
-  background-size: 52px 45px;
-  opacity: 0.62;
-}
-
-.alamein-visual::after {
-  content: "";
-  position: absolute;
-  left: 28px;
-  bottom: 22px;
-  width: 34px;
-  height: 40px;
-  border: 2px solid rgba(55, 61, 39, 0.46);
-  background: #e8d88f;
-  box-shadow:
-    54px -22px 0 -1px #d6ca8b,
-    108px -6px 0 -1px #e8d88f,
-    162px -36px 0 -1px #d6ca8b;
 }
 
 .mapbuilder-visual {

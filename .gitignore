@@ -29,7 +29,3 @@ Thumbs.db
 
 # Local runtime state
 highscore.json
-
-# Local VMOD-derived wargame assets and generated data
-el-alamein/local-assets/
-el-alamein/local-data/
