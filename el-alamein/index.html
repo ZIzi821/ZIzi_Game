@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>阿拉曼战役 / El Alamein</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Local Hotseat Wargame</p>
+        <h1>阿拉曼战役 / El Alamein</h1>
+      </div>
+      <nav class="actions" aria-label="Game actions">
+        <button id="newGameButton" type="button">新局 / New</button>
+        <button id="saveButton" type="button">保存 / Save</button>
+        <button id="loadButton" type="button">读取 / Load</button>
+        <button id="chartsButton" type="button">表格 / Charts</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="board-panel" aria-label="Game board">
+        <div id="boardViewport" class="board-viewport">
+          <div id="boardSurface" class="board-surface">
+            <img id="mapImage" alt="El Alamein map" />
+            <canvas id="hexLayer" width="2448" height="1696"></canvas>
+            <div id="unitLayer"></div>
+            <div id="boardBadge" class="board-badge"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="Game controls">
+        <section class="panel-block phase-block">
+          <div class="turn-line">
+            <strong id="turnLabel">--</strong>
+            <span id="phaseLabel">--</span>
+          </div>
+          <div id="winnerBanner" class="winner-banner" hidden></div>
+          <div class="phase-actions">
+            <button id="finishDeclarationsButton" type="button" hidden>完成宣告 / Resolve</button>
+            <button id="resolveBattleButton" type="button" hidden>结算下一战 / Roll</button>
+            <button id="endPhaseButton" type="button">结束阶段 / End Phase</button>
+          </div>
+        </section>
+
+        <section class="panel-block">
+          <h2>选中单位 / Unit</h2>
+          <div id="selectedUnit" class="selected-unit empty">--</div>
+        </section>
+
+        <section class="panel-block">
+          <h2>战斗 / Combat</h2>
+          <div id="combatComposer" class="combat-composer"></div>
+          <div id="battleList" class="battle-list"></div>
+        </section>
+
+        <section id="logBlock" class="panel-block log-block" data-expanded="false">
+          <div class="panel-title-row">
+            <h2>记录 / Log</h2>
+            <button id="logToggleButton" type="button">打开 / Open</button>
+          </div>
+          <div id="logList" class="log-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <dialog id="chartsDialog" class="charts-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close">×</button>
+      </form>
+      <div class="chart-grid">
+        <figure>
+          <figcaption>战斗结果表 / CRT</figcaption>
+          <img id="crtImage" alt="Combat results table" />
+        </figure>
+        <figure>
+          <figcaption>地形表 / TEC</figcaption>
+          <img id="tecImage" alt="Terrain effects chart" />
+        </figure>
+        <figure>
+          <figcaption>回合轨 / Turn Track</figcaption>
+          <img id="turnTrackImage" alt="Turn track" />
+        </figure>
+      </div>
+    </dialog>
+
+    <dialog id="victoryDialog" class="victory-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close">×</button>
+      </form>
+      <div class="victory-content">
+        <h2 id="victoryTitle">战役结束</h2>
+        <div id="victoryBody"></div>
+      </div>
+    </dialog>
+
+    <dialog id="combatResultDialog" class="combat-result-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="close" aria-label="Close">×</button>
+      </form>
+      <div class="combat-result-content">
+        <h2 id="combatResultTitle">战斗结果</h2>
+        <div id="combatResultBody"></div>
+      </div>
+    </dialog>
+
+      <template id="missingDataTemplate">
+        <div class="missing-data">
+          <h2>缺少本地数据 / Local Data Missing</h2>
+          <p>请先准备本地地图和单位数据，然后刷新页面。</p>
+        </div>
+      </template>
+
+    <script src="game.js" defer></script>
+  </body>
+</html>
