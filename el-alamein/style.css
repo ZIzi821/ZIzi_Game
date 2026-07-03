@@ -61,7 +61,7 @@ button:disabled {
   padding: 24px;
   background:
     linear-gradient(90deg, rgba(19, 25, 18, 0.9), rgba(41, 39, 27, 0.5)),
-    url("local-assets/photos/afrika-korps-advance.jpg") center / cover;
+    url("local-assets/photos/rommel-campaign.png") center / cover;
 }
 
 .menu-panel {
@@ -485,15 +485,58 @@ body[data-view="aar"] .game-view {
   box-shadow: inset 4px 0 0 rgba(45, 107, 69, 0.62);
 }
 
+.declaration-focus {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 220, 0.94), rgba(232, 211, 157, 0.88)),
+    repeating-linear-gradient(135deg, rgba(80, 67, 39, 0.07) 0 1px, transparent 1px 8px);
+}
+
 .operation-card strong,
 .battle-row strong {
   display: block;
   margin-bottom: 4px;
 }
 
+.battle-list-title {
+  margin-top: 3px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(86, 73, 43, 0.45);
+  color: #514326;
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-row[data-declaration="true"] {
+  position: relative;
+  padding-right: 42px;
+}
+
+.battle-cancel-button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-color: #9b332c;
+  background: #fff4df;
+  color: #8d2018;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.inline-skip-button {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 30px;
+  font-size: 0.82rem;
+}
+
 .operation-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin-top: 8px;
 }
@@ -650,6 +693,24 @@ body[data-view="aar"] .game-view {
 .aar-card span,
 .aar-card p {
   color: #ead7a4;
+  white-space: pre-line;
+}
+
+.aar-card a {
+  color: #fff0a6;
+  font-weight: 950;
+  text-decoration-thickness: 2px;
+}
+
+.aar-toggle-button {
+  justify-self: start;
+  min-height: 34px;
+  padding-inline: 12px;
+}
+
+.aar-battle-records {
+  display: grid;
+  gap: 10px;
 }
 
 .counter-list {

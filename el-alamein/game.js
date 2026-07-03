@@ -4,6 +4,7 @@
   const SAVE_KEY = "zizi-el-alamein-save-v2";
   const LEGACY_SAVE_KEY = "zizi-el-alamein-save-v1";
   const CHECKPOINT_KEY = "zizi-el-alamein-turn-checkpoint-v1";
+  const SESSION_KEY = "zizi-el-alamein-current-session-v1";
   const LANG_KEY = "zizi-el-alamein-lang";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const HIGHLIGHT = {
@@ -65,7 +66,7 @@
       app: { title: "阿拉曼战役" },
       menu: {
         eyebrow: "北非战役",
-        copy: "装甲矛头、沙漠阵地与沿海道路的四回合战役。",
+        copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败第8军团。",
         start: "开始战役",
         continue: "继续本回合",
         load: "读取存档",
@@ -191,7 +192,7 @@
       app: { title: "El Alamein" },
       menu: {
         eyebrow: "North African Campaign",
-        copy: "A four-turn desert campaign of armoured thrusts, prepared positions, and the coastal road.",
+        copy: "The final major Axis offensive launched from the North African theatre toward Egypt and Syria, intended to defeat the Eighth Army before Allied reinforcement made victory in Africa unattainable.",
         start: "Start Campaign",
         continue: "Continue Turn",
         load: "Load Save",
@@ -315,6 +316,83 @@
     },
   };
 
+  Object.assign(I18N.zh.menu, {
+    copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败第8军团。",
+    continue: "继续游戏",
+    continued: "已回到上次离开的局面。",
+    noCheckpoint: "没有可继续的局面。",
+  });
+  Object.assign(I18N.en.menu, {
+    copy: "The final major Axis offensive launched from the North African theatre toward Egypt and Syria, intended to defeat the Eighth Army before Allied reinforcement made victory in Africa unattainable.",
+    continue: "Continue Game",
+    continued: "Returned to the last saved position.",
+    noCheckpoint: "No campaign position is available.",
+  });
+  Object.assign(I18N.zh.text, {
+    currentDeclaration: "正在宣告",
+    declaredBattles: "已宣告战斗",
+    declareInOperations: "在战情板中选择守方和参战部队。",
+    chooseDefender: "选择一支相邻有可参战单位的敌军。",
+    cancel: "取消",
+    defenderOnly: "受攻击地块",
+    compactStatus: "阶段",
+    noDeclared: "尚未宣告战斗。",
+    retreatPrompt: "{unit} 撤退：选择最终撤退格",
+    finalRetreat: "最终撤退格",
+    combatSummary: "战斗结算",
+    lossReport: "战损统计",
+    initialStrength: "开局总战力",
+    currentStrength: "当前总战力",
+    eliminatedUnits: "被歼灭单位",
+    lostStrength: "损失战力",
+    victoryImpact: "战役影响",
+    objectives: "目标态势",
+    ridgeObjectives: "阿拉姆哈勒法岭",
+    coastalRoadObjectives: "沿海道路",
+    showBattleRecord: "展开战斗记录",
+    hideBattleRecord: "收起战斗记录",
+    axisImpact: "隆美尔和他的战士们将继续追歼残敌，在中东完成与南方面军的伟大会师！",
+    alliedImpactPrefix: "历史上，",
+    alliedImpactLink: "轴心军攻占苏伊士运河地区的最后希望破灭了",
+    alliedImpactSuffix: "，英军第8集团军由此稳住埃及防线，并为随后转入反攻奠定基础。",
+  });
+  Object.assign(I18N.en.text, {
+    currentDeclaration: "Current Declaration",
+    declaredBattles: "Declared Combats",
+    declareInOperations: "Select the defender and eligible attacking units on the operations board.",
+    chooseDefender: "Select an enemy unit with adjacent eligible attackers.",
+    cancel: "Cancel",
+    defenderOnly: "Defender Hex",
+    compactStatus: "Phase",
+    noDeclared: "No combats have been declared.",
+    retreatPrompt: "{unit} retreat: choose final retreat hex",
+    finalRetreat: "Final Retreat Hex",
+    combatSummary: "Combat Resolution",
+    lossReport: "Loss Report",
+    initialStrength: "Initial Combat Strength",
+    currentStrength: "Current Combat Strength",
+    eliminatedUnits: "Eliminated Units",
+    lostStrength: "Combat Strength Lost",
+    victoryImpact: "Operational Impact",
+    objectives: "Objective Situation",
+    ridgeObjectives: "Alam Halfa Ridge",
+    coastalRoadObjectives: "Coastal Road",
+    showBattleRecord: "Expand Combat Record",
+    hideBattleRecord: "Collapse Combat Record",
+    axisImpact: "Rommel and his soldiers will continue the pursuit and complete the great junction with the southern army group in the Middle East.",
+    alliedImpactPrefix: "Historically, ",
+    alliedImpactLink: "the Axis army's final hope of seizing the Suez Canal region collapsed",
+    alliedImpactSuffix: ", securing the Eighth Army's line in Egypt and opening the way to the counteroffensive.",
+  });
+  Object.assign(I18N.zh.aar, {
+    losses: "战损统计",
+    battles: "战斗记录",
+  });
+  Object.assign(I18N.en.aar, {
+    losses: "Loss Report",
+    battles: "Combat Record",
+  });
+
   const el = {
     body: document.body,
     menuView: document.getElementById("menuView"),
@@ -376,6 +454,7 @@
     reachable: new Map(),
     legalRetreats: new Set(),
     legalRetreatSteps: new Set(),
+    retreatPaths: new Map(),
     animating: false,
     logExpanded: false,
   };
@@ -469,7 +548,15 @@
     };
   }
 
+  function totalStrengthBySide(units) {
+    return units.reduce((totals, unit) => {
+      if (!unit.eliminated) totals[unit.side] += Number(unit.combat || 0);
+      return totals;
+    }, { axis: 0, allied: 0 });
+  }
+
   function makeInitialState() {
+    const units = clone(app.scenario.units);
     return {
       version: 2,
       turn: 1,
@@ -490,17 +577,17 @@
       battleReports: [],
       eliminatedUnitIds: [],
       losses: makeStats(),
+      initialStrength: totalStrengthBySide(units),
       log: [tr("text.newGame")],
       winner: null,
-      units: clone(app.scenario.units),
+      units,
     };
   }
 
-  function normalizeState(state) {
+  function normalizeState(state, options = {}) {
     if (!state || !Array.isArray(state.units)) throw new Error("Bad state");
+    const preserveTransient = Boolean(options.preserveTransient);
     state.version = 2;
-    state.selectedUnitId = null;
-    state.selectedDefenderId = null;
     state.selectedAttackers ||= [];
     state.declaredCombats ||= [];
     state.movedUnits ||= [];
@@ -511,10 +598,22 @@
     state.battleReports ||= [];
     state.eliminatedUnitIds ||= [];
     state.losses ||= makeStats();
-    state.lastMove = null;
-    state.retreatTask = null;
-    state.advanceTask = null;
+    state.initialStrength ||= totalStrengthBySide(app.scenario?.units || state.units);
     state.lastCombatResult ||= null;
+    if (!preserveTransient) {
+      state.selectedUnitId = null;
+      state.selectedDefenderId = null;
+      state.selectedAttackers = [];
+      state.lastMove = null;
+      state.retreatTask = null;
+      state.advanceTask = null;
+    } else {
+      state.selectedUnitId ||= null;
+      state.selectedDefenderId ||= null;
+      state.lastMove ||= null;
+      state.retreatTask ||= null;
+      state.advanceTask ||= null;
+    }
     return state;
   }
 
@@ -562,7 +661,7 @@
     el.langZhButton.addEventListener("click", () => setLanguage("zh"));
     el.langEnButton.addEventListener("click", () => setLanguage("en"));
     el.startCampaignButton.addEventListener("click", startNewCampaign);
-    el.continueCampaignButton.addEventListener("click", continueCheckpoint);
+    el.continueCampaignButton.addEventListener("click", continueCampaign);
     el.menuLoadButton.addEventListener("click", () => loadGame({ fromMenu: true }));
     el.menuButton.addEventListener("click", showMenu);
     el.newGameButton.addEventListener("click", startNewCampaign);
@@ -605,7 +704,7 @@
   }
 
   function updateMenu() {
-    el.continueCampaignButton.disabled = !localStorage.getItem(CHECKPOINT_KEY);
+    el.continueCampaignButton.disabled = !(localStorage.getItem(SESSION_KEY) || localStorage.getItem(CHECKPOINT_KEY));
     el.menuLoadButton.disabled = !(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY));
   }
 
@@ -616,6 +715,7 @@
   }
 
   function showMenu() {
+    saveSessionState();
     setView("menu");
     updateMenu();
   }
@@ -626,10 +726,12 @@
   }
 
   function startNewCampaign() {
+    localStorage.removeItem(SESSION_KEY);
     app.state = makeInitialState();
     app.reachable.clear();
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
     saveTurnCheckpoint();
     showGame();
     log(tr("text.newGame"));
@@ -654,8 +756,8 @@
       return;
     }
     try {
-      app.state = normalizeState(JSON.parse(raw));
-      clearTransientState();
+      app.state = normalizeState(JSON.parse(raw), { preserveTransient: true });
+      restoreInteractiveState();
       log(tr("text.loaded"));
       setMenuStatus(tr("menu.loaded"));
       showGame();
@@ -678,20 +780,43 @@
     updateMenu();
   }
 
-  function continueCheckpoint() {
-    const raw = localStorage.getItem(CHECKPOINT_KEY);
+  function saveSessionState() {
+    if (!app.state) return;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(app.state));
+    updateMenu();
+  }
+
+  function continueCampaign() {
+    const sessionRaw = localStorage.getItem(SESSION_KEY);
+    const checkpointRaw = localStorage.getItem(CHECKPOINT_KEY);
+    const raw = sessionRaw || checkpointRaw;
     if (!raw) {
       setMenuStatus(tr("menu.noCheckpoint"));
       return;
     }
     try {
-      app.state = normalizeState(JSON.parse(raw));
-      clearTransientState();
+      app.state = normalizeState(JSON.parse(raw), { preserveTransient: Boolean(sessionRaw) });
+      if (sessionRaw) restoreInteractiveState();
+      else clearTransientState();
       setMenuStatus(tr("menu.continued"));
       showGame();
     } catch (_) {
       setMenuStatus(tr("menu.noCheckpoint"));
     }
+  }
+
+  function restoreInteractiveState() {
+    app.reachable.clear();
+    app.legalRetreats.clear();
+    app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
+    if (app.state.selectedUnitId) {
+      const unit = unitById(app.state.selectedUnitId);
+      if (unit && isMovementPhase() && unit.side === activeSide() && !unit.disrupted && !app.state.movedUnits.includes(unit.id)) {
+        app.reachable = reachableHexes(unit);
+      }
+    }
+    if (app.state.retreatTask) prepareCurrentRetreat({ silent: true });
   }
 
   function clearTransientState() {
@@ -704,6 +829,7 @@
     app.reachable.clear();
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
   }
 
   function centerOnOpeningFront() {
@@ -892,6 +1018,22 @@
     }));
     app.state.selectedDefenderId = null;
     app.state.selectedAttackers = [];
+    draw();
+  }
+
+  function cancelDeclaredBattle(battleId) {
+    if (!isCombatPhase() || app.state.combatMode !== "declare") return;
+    const battle = app.state.declaredCombats.find((item) => item.id === battleId);
+    if (!battle) return;
+    app.state.declaredCombats = app.state.declaredCombats.filter((item) => item.id !== battleId);
+    app.state.usedDefenders = app.state.usedDefenders.filter((id) => id !== battle.defenderId);
+    app.state.usedAttackers = app.state.usedAttackers.filter((id) => !battle.attackerIds.includes(id));
+    app.state.combatCompleteNotified = false;
+    if (app.state.selectedDefenderId === battle.defenderId) {
+      app.state.selectedDefenderId = null;
+      app.state.selectedAttackers = [];
+    }
+    log(tr("text.battleCancelled"));
     draw();
   }
 
@@ -1124,12 +1266,12 @@
     task.battleId = task.battle?.id || task.battleId;
     task.index = 0;
     task.remainingSteps = task.steps;
-    task.stepOrigins = {};
+    task.origins ||= {};
     app.state.retreatTask = task;
     prepareCurrentRetreat();
   }
 
-  function prepareCurrentRetreat() {
+  function prepareCurrentRetreat(options = {}) {
     const task = app.state.retreatTask;
     if (!task) return;
     while (task.index < task.unitIds.length) {
@@ -1139,18 +1281,17 @@
         task.remainingSteps = task.steps;
         continue;
       }
-      task.stepOrigins[unit.id] ||= task.origins[unit.id] || unit.hexId;
-      task.remainingSteps ||= task.steps;
-      const currentHexId = task.transit?.unitId === unit.id ? task.transit.throughHexId : unit.hexId;
-      app.legalRetreatSteps = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id], currentHexId);
-      app.legalRetreats = new Set(app.legalRetreatSteps);
-      if (app.legalRetreatSteps.size) {
-        log(tr("text.retreatNeeded", { unit: unitName(unit), steps: task.remainingSteps }));
-        draw();
+      const originHexId = task.origins[unit.id] || unit.hexId;
+      task.remainingSteps = task.steps;
+      app.retreatPaths = legalRetreatPaths(unit, task.steps, originHexId);
+      app.legalRetreatSteps = new Set(app.retreatPaths.keys());
+      app.legalRetreats = new Set(app.retreatPaths.keys());
+      if (app.retreatPaths.size) {
+        if (!options.silent) log(tr("text.retreatNeeded", { unit: unitName(unit), steps: task.steps }));
+        if (!options.silent) draw();
         return;
       }
       eliminateUnit(unit.id, task.battleId);
-      task.transit = null;
       task.index += 1;
       task.remainingSteps = task.steps;
     }
@@ -1159,45 +1300,25 @@
 
   async function chooseRetreatHex(hexId) {
     const task = app.state.retreatTask;
-    if (!task || !app.legalRetreatSteps.has(hexId)) return;
+    if (!task || !app.retreatPaths.has(hexId)) return;
     const unit = unitById(task.unitIds[task.index]);
     if (!unit) return;
-    const transit = task.transit?.unitId === unit.id ? task.transit : null;
-    const path = transit ? [...transit.path, hexId] : [unit.hexId, hexId];
-    const occupant = liveUnitAt(hexId);
-    const friendlyOccupied = occupant && occupant.id !== unit.id && occupant.side === unit.side;
-    if (friendlyOccupied) {
-      const nextRemaining = Math.max(task.remainingSteps - 1, 0);
-      task.transit = {
-        unitId: unit.id,
-        throughHexId: hexId,
-        path,
-      };
-      task.remainingSteps = nextRemaining > 0 ? nextRemaining : 1;
-      addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
-      log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
-      if (nextRemaining <= 0) log(tr("text.retreatExtra", { unit: unitName(unit) }));
-      const continuation = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id], hexId);
-      if (!continuation.size) {
-        eliminateUnit(unit.id, task.battleId);
-        task.transit = null;
-        task.index += 1;
-        task.remainingSteps = task.steps;
-      }
-      prepareCurrentRetreat();
-      return;
-    }
+    const path = app.retreatPaths.get(hexId);
+    app.legalRetreats.clear();
+    app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
     await animateUnitPath(unit, path);
     unit.hexId = hexId;
-    task.transit = null;
-    task.remainingSteps -= 1;
+    const movedSteps = Math.max(0, path.length - 1);
+    if (movedSteps > task.steps) {
+      addBattleEvent(task.battleId, { type: "retreat-extra", unitId: unit.id, toHexId: hexId, text: tr("text.retreatExtra", { unit: unitName(unit) }) });
+      log(tr("text.retreatExtra", { unit: unitName(unit) }));
+    }
     addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
     log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
-    if (task.remainingSteps <= 0) {
-      unit.disrupted = Boolean(task.disruptAfterRetreat);
-      task.index += 1;
-      task.remainingSteps = task.steps;
-    }
+    unit.disrupted = Boolean(task.disruptAfterRetreat);
+    task.index += 1;
+    task.remainingSteps = task.steps;
     prepareCurrentRetreat();
   }
 
@@ -1212,6 +1333,7 @@
     app.state.retreatTask = null;
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
     if (task.advanceAfter && battle) startAdvanceTask(battle);
     markCombatCompleteOnce();
     draw();
@@ -1246,58 +1368,17 @@
     draw();
   }
 
-  function legalRetreatStepDestinations(unit, originHexId, currentHexId = unit.hexId) {
-    const result = new Set();
-    const currentDistance = hexDistance(currentHexId, originHexId);
-    for (const nextId of neighborsOf(currentHexId)) {
-      const nextHex = hexById(nextId);
-      if (!terrainRule(nextHex).passable) continue;
-      const occupant = liveUnitAt(nextId);
-      if (occupant && occupant.side !== unit.side) continue;
-      if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
-      if (hexDistance(nextId, originHexId) <= currentDistance) continue;
-      if (occupant && occupant.id !== unit.id && occupant.side === unit.side) {
-        const continuation = legalRetreatContinuationAfterFriendly(unit, nextId, originHexId);
-        if (!continuation.size) continue;
-      }
-      result.add(nextId);
-    }
-    return result;
-  }
-
-  function legalRetreatContinuationAfterFriendly(unit, friendlyHexId, originHexId) {
-    const result = new Set();
-    const currentDistance = hexDistance(friendlyHexId, originHexId);
-    for (const nextId of neighborsOf(friendlyHexId)) {
-      const nextHex = hexById(nextId);
-      if (!terrainRule(nextHex).passable) continue;
-      const occupant = liveUnitAt(nextId);
-      if (occupant && occupant.id !== unit.id) continue;
-      if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
-      if (hexDistance(nextId, originHexId) <= currentDistance) continue;
-      result.add(nextId);
-    }
-    return result;
-  }
-
-  function legalRetreatDestinations(unit, requiredSteps, originHexId) {
-    const result = new Set();
-    const maxSteps = requiredSteps + 6;
+  function legalRetreatPaths(unit, requiredSteps, originHexId) {
+    const result = new Map();
+    const maxSteps = Math.min(app.hexes.length, requiredSteps + 18);
     const seen = new Set();
-    const queue = [{ hexId: unit.hexId, steps: 0 }];
+    const queue = [{ hexId: unit.hexId, steps: 0, requiredSteps, path: [unit.hexId] }];
     while (queue.length) {
       const current = queue.shift();
-      const key = `${current.hexId}:${current.steps}`;
+      const key = `${current.hexId}:${current.steps}:${current.requiredSteps}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const currentDistance = hexDistance(current.hexId, originHexId);
-      if (current.steps >= requiredSteps) {
-        const occupant = liveUnitAt(current.hexId);
-        if (!occupant || occupant.id === unit.id) {
-          result.add(current.hexId);
-          continue;
-        }
-      }
       if (current.steps >= maxSteps) continue;
       for (const nextId of neighborsOf(current.hexId)) {
         const nextHex = hexById(nextId);
@@ -1306,11 +1387,23 @@
         if (occupant && occupant.side !== unit.side) continue;
         if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
         if (hexDistance(nextId, originHexId) <= currentDistance) continue;
-        queue.push({ hexId: nextId, steps: current.steps + 1 });
+        const nextSteps = current.steps + 1;
+        const friendlyOccupied = occupant && occupant.id !== unit.id && occupant.side === unit.side;
+        const nextPath = [...current.path, nextId];
+        let nextRequiredSteps = current.requiredSteps;
+        if (nextSteps >= nextRequiredSteps && friendlyOccupied) nextRequiredSteps += 1;
+        if (nextSteps >= nextRequiredSteps && !friendlyOccupied) {
+          if (!result.has(nextId)) result.set(nextId, nextPath);
+          continue;
+        }
+        queue.push({ hexId: nextId, steps: nextSteps, requiredSteps: nextRequiredSteps, path: nextPath });
       }
     }
-    result.delete(unit.hexId);
     return result;
+  }
+
+  function legalRetreatDestinations(unit, requiredSteps, originHexId) {
+    return new Set(legalRetreatPaths(unit, requiredSteps, originHexId).keys());
   }
 
   async function attemptMove(destinationHexId) {
@@ -1491,10 +1584,12 @@
     app.state.usedDefenders = [];
     app.state.movedUnits = [];
     app.state.lastMove = null;
+    app.state.lastCombatResult = null;
     app.state.combatMode = "declare";
     app.reachable.clear();
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
+    app.retreatPaths.clear();
   }
 
   function recoverSide(side) {
@@ -1531,6 +1626,10 @@
 
   function buildAarData(side = app.state.winner?.side || null, reason = app.state.winner?.reason || tr("aar.pendingTitle")) {
     const eliminated = app.state.eliminatedUnitIds.map(unitById).filter(Boolean);
+    const eliminatedBySide = {
+      axis: eliminated.filter((unit) => unit.side === "axis"),
+      allied: eliminated.filter((unit) => unit.side === "allied"),
+    };
     const axisUnits = liveUnits().filter((unit) => unit.side === "axis");
     const ridge = new Set(app.scenario.objectives.alamHalfaRidge);
     const road = new Set(app.scenario.objectives.coastalRoadEast);
@@ -1541,6 +1640,9 @@
       reason,
       turn: app.state.turn,
       eliminated,
+      eliminatedBySide,
+      initialStrength: clone(app.state.initialStrength || totalStrengthBySide(app.scenario.units)),
+      currentStrength: totalStrengthBySide(app.state.units),
       losses: clone(app.state.losses),
       ridgeOccupiers,
       roadOccupiers,
@@ -1561,14 +1663,15 @@
     el.aarSubtitle.textContent = tr("aar.subtitle", { turn: data.turn, reason: data.reason });
     el.aarSummary.replaceChildren(
       aarCard(tr("text.result"), data.reason),
-      aarCard(tr("text.phaseOrders"), [
-        data.ridgeOccupiers.length ? `${tr("terrain.highland")}: ${data.ridgeOccupiers.join(", ")}` : `${tr("terrain.highland")}: --`,
-        data.roadOccupiers.length ? `${tr("text.defenderHex")}: ${data.roadOccupiers.join(", ")}` : `${tr("text.attackerHexes")}: --`,
+      victoryImpactCard(data.side),
+      aarCard(tr("text.objectives"), [
+        data.ridgeOccupiers.length ? `${tr("text.ridgeObjectives")}: ${data.ridgeOccupiers.join(", ")}` : `${tr("text.ridgeObjectives")}: --`,
+        data.roadOccupiers.length ? `${tr("text.coastalRoadObjectives")}: ${data.roadOccupiers.join(", ")}` : `${tr("text.coastalRoadObjectives")}: --`,
       ].join("\n")),
     );
     el.aarLosses.replaceChildren(
-      lossCard("axis", data.losses.axis),
-      lossCard("allied", data.losses.allied),
+      lossCard("axis", data),
+      lossCard("allied", data),
     );
     el.aarEliminated.replaceChildren(sectionTitle(tr("aar.eliminated")));
     if (data.eliminated.length) {
@@ -1585,12 +1688,7 @@
     } else {
       el.aarEliminated.append(aarCard("", tr("aar.noEliminated")));
     }
-    el.aarBattles.replaceChildren(sectionTitle(tr("aar.battles")));
-    if (!data.battles.length) {
-      el.aarBattles.append(aarCard("", tr("text.noDeclared")));
-    } else {
-      for (const battle of data.battles) el.aarBattles.append(battleReportCard(battle));
-    }
+    renderBattleRecordSection(data.battles);
   }
 
   function sectionTitle(text) {
@@ -1610,14 +1708,64 @@
       strong.textContent = title;
       card.append(strong);
     }
-    const span = document.createElement("span");
-    span.textContent = body;
-    card.append(span);
+    if (body instanceof Node) {
+      card.append(body);
+    } else {
+      const span = document.createElement("span");
+      span.textContent = body;
+      card.append(span);
+    }
     return card;
   }
 
-  function lossCard(side, loss) {
-    return aarCard(sideLabel(side), `${tr("aar.losses")}: ${loss.units} / ${tr("text.attack")}: ${loss.combat}`);
+  function victoryImpactCard(side) {
+    const body = document.createElement("span");
+    if (side === "axis") {
+      body.textContent = tr("text.axisImpact");
+    } else if (side === "allied") {
+      body.append(document.createTextNode(tr("text.alliedImpactPrefix")));
+      const link = document.createElement("a");
+      link.href = "https://zh.wikipedia.org/wiki/%E8%8B%8F%E4%BC%8A%E5%A3%AB%E8%BF%90%E6%B2%B3";
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = tr("text.alliedImpactLink");
+      body.append(link, document.createTextNode(tr("text.alliedImpactSuffix")));
+    } else {
+      body.textContent = "--";
+    }
+    return aarCard(tr("text.victoryImpact"), body);
+  }
+
+  function lossCard(side, data) {
+    const loss = data.losses[side];
+    const lines = [
+      `${tr("text.initialStrength")}: ${data.initialStrength[side] ?? 0}`,
+      `${tr("text.currentStrength")}: ${data.currentStrength[side] ?? 0}`,
+      `${tr("text.eliminatedUnits")}: ${loss.units}`,
+      `${tr("text.lostStrength")}: ${loss.combat}`,
+    ];
+    return aarCard(sideLabel(side), lines.join("\n"));
+  }
+
+  function renderBattleRecordSection(battles) {
+    el.aarBattles.replaceChildren(sectionTitle(tr("aar.battles")));
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "aar-toggle-button";
+    toggle.textContent = tr("text.showBattleRecord");
+    const list = document.createElement("div");
+    list.className = "aar-battle-records";
+    list.hidden = true;
+    if (!battles.length) {
+      list.append(aarCard("", tr("text.noDeclared")));
+    } else {
+      for (const battle of battles) list.append(battleReportCard(battle));
+    }
+    toggle.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      toggle.textContent = list.hidden ? tr("text.showBattleRecord") : tr("text.hideBattleRecord");
+    });
+    el.aarBattles.append(toggle, list);
   }
 
   function battleReportCard(report) {
@@ -1814,7 +1962,7 @@
       return;
     }
     if (app.state.combatMode === "declare") {
-      drawCombatComposer();
+      el.combatComposer.textContent = tr("text.declareInOperations");
       return;
     }
     const battle = currentBattle();
@@ -1877,12 +2025,78 @@
     el.combatComposer.append(card);
   }
 
+  function declarationFocusCard() {
+    const defender = unitById(app.state.selectedDefenderId);
+    const attackers = app.state.selectedAttackers.map(unitById).filter(Boolean);
+    const card = document.createElement("div");
+    card.className = "operation-card declaration-focus";
+    if (defender) card.dataset.severity = "good";
+
+    const title = document.createElement("strong");
+    title.textContent = tr("text.currentDeclaration");
+    card.append(title);
+    card.append(line(`${tr("text.defenderOnly")}: ${defender ? hexLabel(defender.hexId) : "--"}`));
+
+    const row = document.createElement("div");
+    row.className = "pill-row";
+    if (attackers.length) attackers.forEach((unit) => row.append(pill(hexLabel(unit.hexId))));
+    else row.append(pill("--"));
+
+    const odds = document.createElement("div");
+    odds.className = "odds-preview";
+    odds.textContent = previewOddsText(attackers, defender);
+
+    const actions = document.createElement("div");
+    actions.className = "composer-actions";
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = tr("text.addBattle");
+    add.disabled = !defender || !attackers.length;
+    add.addEventListener("click", declareBattle);
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.textContent = tr("text.clear");
+    clear.addEventListener("click", () => {
+      app.state.selectedDefenderId = null;
+      app.state.selectedAttackers = [];
+      draw();
+    });
+    actions.append(add, clear);
+
+    card.append(line(`${tr("text.selectedAttackers")}:`), row, odds, actions);
+    if (!defender) card.append(line(tr("text.chooseDefender")));
+    return card;
+  }
+
   function drawOperationsBoard() {
     el.operationsFocus.replaceChildren();
     el.battleList.replaceChildren();
     if (app.state.retreatTask) {
       const unit = unitById(app.state.retreatTask.unitIds[app.state.retreatTask.index]);
       el.operationsFocus.append(operationCard(tr("text.phaseOrders"), tr("text.retreatPrompt", { unit: unitName(unit) }), "danger"));
+      appendCombatListForCurrentMode();
+      return;
+    }
+    if (app.state.advanceTask) {
+      const card = operationCard(tr("text.phaseOrders"), tr("text.advancePrompt", { hex: hexLabel(app.state.advanceTask.targetHexId) }), "good");
+      const skip = document.createElement("button");
+      skip.type = "button";
+      skip.className = "inline-skip-button";
+      skip.textContent = tr("text.skip");
+      skip.addEventListener("click", () => advanceUnit("skip"));
+      card.append(skip);
+      el.operationsFocus.append(card);
+      appendCombatListForCurrentMode();
+      return;
+    }
+    if (isCombatPhase() && app.state.combatMode === "declare") {
+      el.operationsFocus.append(declarationFocusCard());
+      appendBattleListTitle(tr("text.declaredBattles"));
+      if (!app.state.declaredCombats.length) {
+        el.battleList.append(operationCard("", tr("text.noDeclared"), ""));
+      } else {
+        app.state.declaredCombats.forEach((battle, index) => el.battleList.append(declaredBattleRow(battle, index)));
+      }
       return;
     }
     if (app.state.lastCombatResult) {
@@ -1893,7 +2107,16 @@
         `${tr("text.result")}: ${combatResultLabel(result.result)}`,
         ...(result.events || []).map((event) => event.text),
       ].join("\n");
-      el.operationsFocus.append(operationCard(tr("text.currentBattle"), details, result.events?.some((event) => event.type === "eliminated") ? "danger" : "good"));
+      el.operationsFocus.append(operationCard(tr("text.combatSummary"), details, result.events?.some((event) => event.type === "eliminated") ? "danger" : "good"));
+    } else if (isCombatPhase() && app.state.combatMode === "resolve") {
+      const battle = currentBattle();
+      const details = battle
+        ? [
+          `${tr("text.defenderHex")}: ${hexLabel(battle.defenderHexId)}`,
+          `${tr("text.odds")}: ${battle.oddsShort || compactOddsText(battle.oddsAtDeclaration)}`,
+        ].join("\n")
+        : tr("text.allDone");
+      el.operationsFocus.append(operationCard(tr("text.combatSummary"), details, battle ? "" : "good"));
     } else {
       el.operationsFocus.append(operationCard(tr("text.phaseOrders"), phaseLabel(phase().id), ""));
     }
@@ -1904,8 +2127,27 @@
         app.state.declaredCombats.forEach((battle, index) => el.battleList.append(declaredBattleRow(battle, index)));
       }
     } else if (isCombatPhase()) {
+      appendBattleListTitle(tr("text.declaredBattles"));
       app.state.declaredCombats.forEach((battle) => el.battleList.append(resolutionBattleRow(battle)));
     }
+  }
+
+  function appendCombatListForCurrentMode() {
+    if (!isCombatPhase()) return;
+    appendBattleListTitle(tr("text.declaredBattles"));
+    if (app.state.combatMode === "declare") {
+      if (!app.state.declaredCombats.length) el.battleList.append(operationCard("", tr("text.noDeclared"), ""));
+      else app.state.declaredCombats.forEach((battle, index) => el.battleList.append(declaredBattleRow(battle, index)));
+      return;
+    }
+    app.state.declaredCombats.forEach((battle) => el.battleList.append(resolutionBattleRow(battle)));
+  }
+
+  function appendBattleListTitle(text) {
+    const title = document.createElement("div");
+    title.className = "battle-list-title";
+    title.textContent = text;
+    el.battleList.append(title);
   }
 
   function operationCard(title, body, severity = "") {
@@ -1929,16 +2171,23 @@
   function declaredBattleRow(battle, index) {
     const row = document.createElement("div");
     row.className = "battle-row";
+    row.dataset.declaration = "true";
     const title = document.createElement("strong");
     title.textContent = `#${index + 1} · ${hexLabel(battle.defenderHexId)}`;
     const meta = document.createElement("div");
     meta.className = "operation-meta";
-    [battle.attackerHexIds.map(hexLabel).join(", "), battle.oddsShort || compactOddsText(battle.oddsAtDeclaration), phaseLabel(battle.phaseId)].forEach((text) => {
+    [battle.oddsShort || compactOddsText(battle.oddsAtDeclaration), phaseLabel(battle.phaseId)].forEach((text) => {
       const item = document.createElement("span");
       item.textContent = text;
       meta.append(item);
     });
-    row.append(title, meta);
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "battle-cancel-button";
+    cancel.textContent = "X";
+    cancel.title = tr("text.cancel");
+    cancel.addEventListener("click", () => cancelDeclaredBattle(battle.id));
+    row.append(title, meta, cancel);
     return row;
   }
 
@@ -1950,7 +2199,7 @@
     const title = document.createElement("strong");
     title.textContent = `${hexLabel(battle.defenderHexId)} · ${battle.resultCode ? combatResultLabel(battle.resultCode) : compactOddsText(battle.oddsShort || battle.oddsAtDeclaration)}`;
     const detail = document.createElement("small");
-    detail.textContent = battle.roll ? `${tr("text.die")}: ${battle.roll} · ${tr("text.odds")}: ${battle.oddsShort}` : `${tr("text.odds")}: ${battle.oddsShort || "--"}`;
+    detail.textContent = battle.roll ? `${tr("text.die")}: ${battle.roll}` : phaseLabel(battle.phaseId);
     row.append(title, detail);
     return row;
   }
