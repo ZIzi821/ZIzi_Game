@@ -1141,7 +1141,8 @@
       }
       task.stepOrigins[unit.id] ||= task.origins[unit.id] || unit.hexId;
       task.remainingSteps ||= task.steps;
-      app.legalRetreatSteps = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id]);
+      const currentHexId = task.transit?.unitId === unit.id ? task.transit.throughHexId : unit.hexId;
+      app.legalRetreatSteps = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id], currentHexId);
       app.legalRetreats = new Set(app.legalRetreatSteps);
       if (app.legalRetreatSteps.size) {
         log(tr("text.retreatNeeded", { unit: unitName(unit), steps: task.remainingSteps }));
@@ -1149,6 +1150,7 @@
         return;
       }
       eliminateUnit(unit.id, task.battleId);
+      task.transit = null;
       task.index += 1;
       task.remainingSteps = task.steps;
     }
@@ -1160,22 +1162,41 @@
     if (!task || !app.legalRetreatSteps.has(hexId)) return;
     const unit = unitById(task.unitIds[task.index]);
     if (!unit) return;
-    const from = unit.hexId;
-    await animateUnitPath(unit, [from, hexId]);
+    const transit = task.transit?.unitId === unit.id ? task.transit : null;
+    const path = transit ? [...transit.path, hexId] : [unit.hexId, hexId];
+    const occupant = liveUnitAt(hexId);
+    const friendlyOccupied = occupant && occupant.id !== unit.id && occupant.side === unit.side;
+    if (friendlyOccupied) {
+      const nextRemaining = Math.max(task.remainingSteps - 1, 0);
+      task.transit = {
+        unitId: unit.id,
+        throughHexId: hexId,
+        path,
+      };
+      task.remainingSteps = nextRemaining > 0 ? nextRemaining : 1;
+      addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
+      log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
+      if (nextRemaining <= 0) log(tr("text.retreatExtra", { unit: unitName(unit) }));
+      const continuation = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id], hexId);
+      if (!continuation.size) {
+        eliminateUnit(unit.id, task.battleId);
+        task.transit = null;
+        task.index += 1;
+        task.remainingSteps = task.steps;
+      }
+      prepareCurrentRetreat();
+      return;
+    }
+    await animateUnitPath(unit, path);
     unit.hexId = hexId;
+    task.transit = null;
     task.remainingSteps -= 1;
     addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
     log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
     if (task.remainingSteps <= 0) {
-      const stackedFriendly = liveUnitsAt(hexId).some((other) => other.id !== unit.id && other.side === unit.side);
-      if (stackedFriendly) {
-        task.remainingSteps = 1;
-        log(tr("text.retreatExtra", { unit: unitName(unit) }));
-      } else {
-        unit.disrupted = Boolean(task.disruptAfterRetreat);
-        task.index += 1;
-        task.remainingSteps = task.steps;
-      }
+      unit.disrupted = Boolean(task.disruptAfterRetreat);
+      task.index += 1;
+      task.remainingSteps = task.steps;
     }
     prepareCurrentRetreat();
   }
@@ -1225,14 +1246,33 @@
     draw();
   }
 
-  function legalRetreatStepDestinations(unit, originHexId) {
+  function legalRetreatStepDestinations(unit, originHexId, currentHexId = unit.hexId) {
     const result = new Set();
-    const currentDistance = hexDistance(unit.hexId, originHexId);
-    for (const nextId of neighborsOf(unit.hexId)) {
+    const currentDistance = hexDistance(currentHexId, originHexId);
+    for (const nextId of neighborsOf(currentHexId)) {
       const nextHex = hexById(nextId);
       if (!terrainRule(nextHex).passable) continue;
       const occupant = liveUnitAt(nextId);
       if (occupant && occupant.side !== unit.side) continue;
+      if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
+      if (hexDistance(nextId, originHexId) <= currentDistance) continue;
+      if (occupant && occupant.id !== unit.id && occupant.side === unit.side) {
+        const continuation = legalRetreatContinuationAfterFriendly(unit, nextId, originHexId);
+        if (!continuation.size) continue;
+      }
+      result.add(nextId);
+    }
+    return result;
+  }
+
+  function legalRetreatContinuationAfterFriendly(unit, friendlyHexId, originHexId) {
+    const result = new Set();
+    const currentDistance = hexDistance(friendlyHexId, originHexId);
+    for (const nextId of neighborsOf(friendlyHexId)) {
+      const nextHex = hexById(nextId);
+      if (!terrainRule(nextHex).passable) continue;
+      const occupant = liveUnitAt(nextId);
+      if (occupant && occupant.id !== unit.id) continue;
       if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
       if (hexDistance(nextId, originHexId) <= currentDistance) continue;
       result.add(nextId);
