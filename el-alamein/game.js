@@ -1,8 +1,10 @@
 (function () {
   "use strict";
 
-  const SAVE_KEY = "zizi-el-alamein-save-v1";
-  const DIRECTIONS = ["N", "NE", "SE", "S", "SW", "NW"];
+  const SAVE_KEY = "zizi-el-alamein-save-v2";
+  const LEGACY_SAVE_KEY = "zizi-el-alamein-save-v1";
+  const CHECKPOINT_KEY = "zizi-el-alamein-turn-checkpoint-v1";
+  const LANG_KEY = "zizi-el-alamein-lang";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
@@ -10,15 +12,320 @@
     attack: "rgba(168, 72, 50, 0.40)",
     defender: "rgba(178, 49, 49, 0.60)",
     declaredAttack: "rgba(34, 124, 118, 0.22)",
-    declaredDefender: "rgba(216, 150, 44, 0.26)",
+    declaredDefender: "rgba(168, 72, 50, 0.32)",
     currentAttack: "rgba(0, 166, 166, 0.52)",
     currentDefender: "rgba(178, 49, 49, 0.58)",
     retreat: "rgba(236, 167, 42, 0.46)",
-    objective: "rgba(255, 238, 128, 0.30)",
+  };
+
+  const UNIT_EN = {
+    u01: "1st South African Division, 1st Infantry Brigade",
+    u02: "1st South African Division, 2nd Infantry Brigade",
+    u03: "1st South African Division, 3rd Infantry Brigade",
+    u04: "44th Division, 131st Infantry Brigade",
+    u05: "44th Division, 132nd Infantry Brigade",
+    u06: "44th Division, 133rd Infantry Brigade",
+    u07: "9th Australian Division, 22nd Infantry Brigade",
+    u08: "9th Australian Division, 24th Infantry Brigade",
+    u09: "9th Australian Division, 26th Infantry Brigade",
+    u10: "5th Indian Division, 5th Infantry Brigade",
+    u11: "5th Indian Division, 9th Infantry Brigade",
+    u12: "2nd New Zealand Division, 5th Infantry Brigade",
+    u13: "2nd New Zealand Division, 6th Infantry Brigade",
+    u14: "7th Armoured Division, 4th Armoured Brigade",
+    u15: "7th Armoured Division, 7th Armoured Brigade",
+    u16: "7th Armoured Division, Motor Brigade",
+    u17: "8th Armoured Division, 23rd Armoured Brigade",
+    u18: "10th Armoured Division, 8th Armoured Brigade",
+    u19: "22nd Armoured Brigade",
+    u20: "164th Division, 382nd Infantry Regiment",
+    u21: "164th Division, 125th Infantry Regiment",
+    u22: "164th Division, 433rd Infantry Regiment",
+    u23: "15th Panzer Division, 115th Panzergrenadier Regiment",
+    u24: "15th Panzer Division, 8th Panzer Regiment",
+    u25: "21st Panzer Division, 5th Panzer Regiment",
+    u26: "21st Panzer Division, 104th Panzergrenadier Regiment",
+    u27: "21st Panzer Division, 200th Panzergrenadier Regiment",
+    u28: "90th Light Division, 155th Panzergrenadier Regiment",
+    u29: "90th Light Division, 361st Panzergrenadier Regiment",
+    u30: "Ramcke Parachute Brigade",
+    u31: "Pavia Infantry Division",
+    u32: "Brescia Infantry Division",
+    u33: "Trento Infantry Division",
+    u34: "Bologna Infantry Division",
+    u35: "Folgore Parachute Division",
+    u36: "Littorio Armoured Division",
+    u37: "Ariete Armoured Division",
+    u38: "Trieste Motorised Division",
+    u39: "161st Indian Motor Brigade",
+  };
+
+  const I18N = {
+    zh: {
+      app: { title: "阿拉曼战役" },
+      menu: {
+        eyebrow: "北非战役",
+        copy: "装甲矛头、沙漠阵地与沿海道路的四回合战役。",
+        start: "开始战役",
+        continue: "继续本回合",
+        load: "读取存档",
+        noSave: "没有可读取的存档。",
+        noCheckpoint: "没有回合开始检查点。",
+        loaded: "已读取存档。",
+        continued: "已回到本回合开始。",
+      },
+      ui: {
+        eyebrow: "本地热座兵棋",
+        menu: "主菜单",
+        new: "新战役",
+        save: "保存",
+        load: "读取",
+        charts: "表格",
+        aar: "战报",
+        finishDeclarations: "完成宣告",
+        resolveBattle: "结算下一战斗",
+        done: "战斗结束",
+        endPhase: "结束阶段",
+        selectedUnit: "选中单位",
+        combat: "战斗",
+        operationsKicker: "Operations Board",
+        operations: "战情板",
+        log: "记录",
+        openLog: "打开",
+        closeLog: "收起",
+        noSelection: "未选择单位",
+      },
+      charts: { crt: "战斗结果表", tec: "地形效果表", turn: "回合记录表" },
+      aar: {
+        eyebrow: "战后报告",
+        returnMap: "返回地图",
+        menu: "主菜单",
+        title: "{side}胜利",
+        pendingTitle: "战役进行中",
+        subtitle: "第 {turn} 回合 · {reason}",
+        losses: "损失统计",
+        eliminated: "被歼灭单位",
+        battles: "战斗记录",
+        noEliminated: "尚无单位被歼灭。",
+      },
+      side: { axis: "轴心国", allied: "英军" },
+      nationality: { german: "德军", italian: "意军", "british-commonwealth": "英联邦" },
+      phase: {
+        "axis-move": "轴心国移动阶段",
+        "axis-combat": "轴心国战斗阶段",
+        "allied-move": "英军移动阶段",
+        "allied-combat": "英军战斗阶段",
+      },
+      terrain: {
+        desert: "沙漠",
+        highland: "高地",
+        settlement: "集落",
+        coast: "海岸",
+        mediterranean: "地中海",
+        britishPosition: "英军阵地",
+      },
+      text: {
+        ready: "可行动",
+        disrupted: "混乱",
+        attack: "攻击",
+        defense: "防御",
+        odds: "赔率",
+        die: "骰点",
+        result: "结果",
+        defenderHex: "守方格",
+        attackerHexes: "攻击格",
+        selectedDefender: "守方",
+        selectedAttackers: "攻方",
+        addBattle: "加入战斗",
+        clear: "清除",
+        noDeclared: "尚未宣告战斗。",
+        declaredCount: "已宣告 {count} 场战斗。",
+        phaseOrders: "阶段命令",
+        currentBattle: "当前战斗",
+        retreatPrompt: "{unit} 撤退：选择下一格",
+        advancePrompt: "战后推进：点击参战单位进入 {hex}",
+        skip: "跳过",
+        undoMove: "取消移动",
+        saved: "局面已保存。",
+        loaded: "已读取存档。",
+        noSave: "没有找到本地存档。",
+        badSave: "存档无法读取。",
+        newGame: "战役已开始。",
+        noLegalAttackers: "该守军周围没有可参战单位。",
+        battleCancelled: "已取消当前宣告。",
+        battleDeclared: "宣告战斗：{attackers} 攻击 {defender}。",
+        declarationsComplete: "宣告完成，进入战斗结算。",
+        combatComplete: "所有宣告战斗已经结算完毕。",
+        battleSkipped: "跳过一场已失效的战斗。",
+        moved: "{unit} 移动到 {hex}，剩余移动力 {mp}。",
+        undoMoved: "{unit} 取消移动，回到 {hex}。",
+        cannotMove: "{unit} 不能移动。",
+        alreadyMoved: "{unit} 本阶段已经移动。",
+        targetOccupied: "目标格已有单位。",
+        retreatNeeded: "{unit} 需要撤退 {steps} 格。",
+        retreated: "{unit} 撤退到 {hex}。",
+        retreatExtra: "{unit} 终点被友军占据，必须继续撤退 1 格。",
+        eliminated: "{unit}被歼灭了！",
+        advance: "{unit} 战后推进到 {hex}。",
+        recover: "{unit} 从混乱中恢复。",
+        enterPhase: "进入{phase}。",
+        turnStart: "进入第 {turn} 回合。",
+        checkpoint: "已保存本回合开始检查点。",
+        noBattle: "本阶段没有宣告战斗。",
+        allDone: "宣告战斗已经全部结算。",
+        pendingCombat: "仍有宣告战斗未结算。",
+        exitWin: "{unit} 从西侧地图边撤出。",
+        fourTurnWin: "4 回合结束，轴心国未达成胜利。",
+        ridgeWin: "{unit} 占领阿拉姆哈勒法岭目标阵地。",
+        roadWin: "{unit} 占领阿拉曼以东沿海道路。",
+      },
+      result: {
+        AE: "攻方歼灭",
+        AR: "攻方撤退 1 格",
+        DE: "守方歼灭",
+        DR: "守方撤退 {steps} 格",
+        Skipped: "失效",
+      },
+    },
+    en: {
+      app: { title: "El Alamein" },
+      menu: {
+        eyebrow: "North African Campaign",
+        copy: "A four-turn desert campaign of armoured thrusts, prepared positions, and the coastal road.",
+        start: "Start Campaign",
+        continue: "Continue Turn",
+        load: "Load Save",
+        noSave: "No saved game found.",
+        noCheckpoint: "No turn-start checkpoint found.",
+        loaded: "Saved game loaded.",
+        continued: "Returned to the start of this turn.",
+      },
+      ui: {
+        eyebrow: "Local Hotseat Wargame",
+        menu: "Main Menu",
+        new: "New Campaign",
+        save: "Save",
+        load: "Load",
+        charts: "Charts",
+        aar: "Report",
+        finishDeclarations: "Finish Declarations",
+        resolveBattle: "Resolve Next Combat",
+        done: "Combat Complete",
+        endPhase: "End Phase",
+        selectedUnit: "Selected Unit",
+        combat: "Combat",
+        operationsKicker: "Operations Board",
+        operations: "Operations Board",
+        log: "Log",
+        openLog: "Open",
+        closeLog: "Close",
+        noSelection: "No unit selected",
+      },
+      charts: { crt: "Combat Results Table", tec: "Terrain Effects Chart", turn: "Turn Record Track" },
+      aar: {
+        eyebrow: "After Action Report",
+        returnMap: "Return to Map",
+        menu: "Main Menu",
+        title: "{side} Victory",
+        pendingTitle: "Campaign in Progress",
+        subtitle: "Turn {turn} · {reason}",
+        losses: "Losses",
+        eliminated: "Eliminated Units",
+        battles: "Combat Record",
+        noEliminated: "No units have been eliminated.",
+      },
+      side: { axis: "Axis", allied: "Allied" },
+      nationality: { german: "German", italian: "Italian", "british-commonwealth": "British Commonwealth" },
+      phase: {
+        "axis-move": "Axis Movement Phase",
+        "axis-combat": "Axis Combat Phase",
+        "allied-move": "Allied Movement Phase",
+        "allied-combat": "Allied Combat Phase",
+      },
+      terrain: {
+        desert: "Desert",
+        highland: "High Ground",
+        settlement: "Settlement",
+        coast: "Coast",
+        mediterranean: "Mediterranean",
+        britishPosition: "British Position",
+      },
+      text: {
+        ready: "Ready",
+        disrupted: "Disrupted",
+        attack: "Attack",
+        defense: "Defense",
+        odds: "Odds",
+        die: "Die",
+        result: "Result",
+        defenderHex: "Defender Hex",
+        attackerHexes: "Attacker Hexes",
+        selectedDefender: "Defender",
+        selectedAttackers: "Attackers",
+        addBattle: "Add Combat",
+        clear: "Clear",
+        noDeclared: "No combats declared.",
+        declaredCount: "{count} combats declared.",
+        phaseOrders: "Phase Orders",
+        currentBattle: "Current Combat",
+        retreatPrompt: "{unit} retreats: choose next hex",
+        advancePrompt: "Advance after combat: click an attacking unit to enter {hex}",
+        skip: "Skip",
+        undoMove: "Undo Move",
+        saved: "Game saved.",
+        loaded: "Saved game loaded.",
+        noSave: "No local save found.",
+        badSave: "Save could not be loaded.",
+        newGame: "Campaign started.",
+        noLegalAttackers: "No eligible attacking units are adjacent to that defender.",
+        battleCancelled: "Current declaration cancelled.",
+        battleDeclared: "Declared combat: {attackers} attack {defender}.",
+        declarationsComplete: "Declarations complete. Resolving combat.",
+        combatComplete: "All declared combats have been resolved.",
+        battleSkipped: "Skipped an invalid combat.",
+        moved: "{unit} moved to {hex}, {mp} MP remaining.",
+        undoMoved: "{unit} undid movement and returned to {hex}.",
+        cannotMove: "{unit} cannot move.",
+        alreadyMoved: "{unit} has already moved this phase.",
+        targetOccupied: "The destination hex is occupied.",
+        retreatNeeded: "{unit} must retreat {steps} hexes.",
+        retreated: "{unit} retreated to {hex}.",
+        retreatExtra: "{unit} ended on a friendly unit and must retreat 1 more hex.",
+        eliminated: "{unit} was eliminated!",
+        advance: "{unit} advanced after combat to {hex}.",
+        recover: "{unit} recovered from disruption.",
+        enterPhase: "Entered {phase}.",
+        turnStart: "Turn {turn} begins.",
+        checkpoint: "Turn-start checkpoint saved.",
+        noBattle: "No combats were declared this phase.",
+        allDone: "All declared combats are resolved.",
+        pendingCombat: "Declared combats remain unresolved.",
+        exitWin: "{unit} exited from the western map edge.",
+        fourTurnWin: "Four turns ended without an Axis victory.",
+        ridgeWin: "{unit} occupied an Alam Halfa Ridge objective position.",
+        roadWin: "{unit} occupied the coastal road east of El Alamein.",
+      },
+      result: {
+        AE: "Attacker Eliminated",
+        AR: "Attacker Retreat 1 Hex",
+        DE: "Defender Eliminated",
+        DR: "Defender Retreat {steps} Hexes",
+        Skipped: "Invalid",
+      },
+    },
   };
 
   const el = {
     body: document.body,
+    menuView: document.getElementById("menuView"),
+    gameView: document.getElementById("gameView"),
+    aarView: document.getElementById("aarView"),
+    menuStatus: document.getElementById("menuStatus"),
+    langZhButton: document.getElementById("langZhButton"),
+    langEnButton: document.getElementById("langEnButton"),
+    startCampaignButton: document.getElementById("startCampaignButton"),
+    continueCampaignButton: document.getElementById("continueCampaignButton"),
+    menuLoadButton: document.getElementById("menuLoadButton"),
     mapImage: document.getElementById("mapImage"),
     hexLayer: document.getElementById("hexLayer"),
     unitLayer: document.getElementById("unitLayer"),
@@ -30,7 +337,7 @@
     selectedUnit: document.getElementById("selectedUnit"),
     combatComposer: document.getElementById("combatComposer"),
     battleList: document.getElementById("battleList"),
-    taskPanel: document.getElementById("taskPanel"),
+    operationsFocus: document.getElementById("operationsFocus"),
     logBlock: document.getElementById("logBlock"),
     logToggleButton: document.getElementById("logToggleButton"),
     logList: document.getElementById("logList"),
@@ -38,34 +345,21 @@
     finishDeclarationsButton: document.getElementById("finishDeclarationsButton"),
     resolveBattleButton: document.getElementById("resolveBattleButton"),
     endPhaseButton: document.getElementById("endPhaseButton"),
+    menuButton: document.getElementById("menuButton"),
     newGameButton: document.getElementById("newGameButton"),
     saveButton: document.getElementById("saveButton"),
     loadButton: document.getElementById("loadButton"),
     chartsButton: document.getElementById("chartsButton"),
-    onlineStatus: document.getElementById("onlineStatus"),
-    roomCodeInput: document.getElementById("roomCodeInput"),
-    createRoomButton: document.getElementById("createRoomButton"),
-    joinRoomButton: document.getElementById("joinRoomButton"),
-    leaveRoomButton: document.getElementById("leaveRoomButton"),
-    claimAxisButton: document.getElementById("claimAxisButton"),
-    claimAlliedButton: document.getElementById("claimAlliedButton"),
-    spectatorButton: document.getElementById("spectatorButton"),
-    onlineSetupButton: document.getElementById("onlineSetupButton"),
-    onlineSetupDialog: document.getElementById("onlineSetupDialog"),
-    supabaseUrlInput: document.getElementById("supabaseUrlInput"),
-    supabaseAnonKeyInput: document.getElementById("supabaseAnonKeyInput"),
-    saveSupabaseConfigButton: document.getElementById("saveSupabaseConfigButton"),
-    testSupabaseButton: document.getElementById("testSupabaseButton"),
-    copySchemaButton: document.getElementById("copySchemaButton"),
-    schemaSqlText: document.getElementById("schemaSqlText"),
-    setupStatus: document.getElementById("setupStatus"),
+    aarButton: document.getElementById("aarButton"),
+    returnMapButton: document.getElementById("returnMapButton"),
+    aarMenuButton: document.getElementById("aarMenuButton"),
+    aarTitle: document.getElementById("aarTitle"),
+    aarSubtitle: document.getElementById("aarSubtitle"),
+    aarSummary: document.getElementById("aarSummary"),
+    aarLosses: document.getElementById("aarLosses"),
+    aarEliminated: document.getElementById("aarEliminated"),
+    aarBattles: document.getElementById("aarBattles"),
     chartsDialog: document.getElementById("chartsDialog"),
-    victoryDialog: document.getElementById("victoryDialog"),
-    victoryTitle: document.getElementById("victoryTitle"),
-    victoryBody: document.getElementById("victoryBody"),
-    combatResultDialog: document.getElementById("combatResultDialog"),
-    combatResultTitle: document.getElementById("combatResultTitle"),
-    combatResultBody: document.getElementById("combatResultBody"),
     crtImage: document.getElementById("crtImage"),
     tecImage: document.getElementById("tecImage"),
     turnTrackImage: document.getElementById("turnTrackImage"),
@@ -78,30 +372,20 @@
     hexes: [],
     hexById: new Map(),
     state: null,
+    lang: localStorage.getItem(LANG_KEY) || "zh",
     reachable: new Map(),
     legalRetreats: new Set(),
+    legalRetreatSteps: new Set(),
     animating: false,
     logExpanded: false,
-    online: {
-      client: null,
-      configured: false,
-      connected: false,
-      roomCode: "",
-      role: "spectator",
-      playerId: "",
-      players: {},
-      revision: 0,
-      channel: null,
-      syncing: false,
-      pendingSyncReason: "",
-      applyingRemote: false,
-      status: "本地模式 / Local",
-      statusMode: "local",
-    },
   };
 
-  function clone(value) {
-    return JSON.parse(JSON.stringify(value));
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+
+  function tr(key, params = {}) {
+    const table = I18N[app.lang] || I18N.zh;
+    const value = key.split(".").reduce((node, part) => node?.[part], table) ?? key;
+    return String(value).replace(/\{(\w+)\}/g, (_, name) => params[name] ?? "");
   }
 
   function phase() {
@@ -148,28 +432,46 @@
     return phase().type === "movement";
   }
 
-  function log(message) {
-    app.state.log.push(`[T${app.state.turn}] ${message}`);
-    if (app.state.log.length > 160) app.state.log.shift();
-  }
-
   function sideLabel(side) {
-    return side === "axis" ? "轴心国 / Axis" : "英军 / Allied";
+    return tr(`side.${side}`);
   }
 
   function nationalityLabel(nationality) {
-    if (nationality === "german") return "德军";
-    if (nationality === "italian") return "意军";
-    return "英联邦";
+    return tr(`nationality.${nationality}`);
   }
 
   function phaseLabel(id) {
-    return app.rules.phases.find((item) => item.id === id)?.label || id;
+    return tr(`phase.${id}`);
+  }
+
+  function unitName(unit) {
+    if (!unit) return "--";
+    return app.lang === "en" ? (UNIT_EN[unit.id] || unit.name) : unit.name;
+  }
+
+  function hexLabel(hexId) {
+    const hex = hexById(hexId);
+    if (!hex) return "--";
+    const row = String(hex.row + 2).padStart(2, "0");
+    const col = String(hex.col + 3).padStart(2, "0");
+    return `${row}${col}`;
+  }
+
+  function log(message) {
+    app.state.log.push(`[T${app.state.turn}] ${message}`);
+    if (app.state.log.length > 180) app.state.log.shift();
+  }
+
+  function makeStats() {
+    return {
+      axis: { units: 0, combat: 0 },
+      allied: { units: 0, combat: 0 },
+    };
   }
 
   function makeInitialState() {
     return {
-      version: 1,
+      version: 2,
       turn: 1,
       phaseIndex: 0,
       selectedUnitId: null,
@@ -184,11 +486,36 @@
       lastMove: null,
       retreatTask: null,
       advanceTask: null,
-      log: ["阿拉曼战役已载入。"],
+      lastCombatResult: null,
+      battleReports: [],
+      eliminatedUnitIds: [],
+      losses: makeStats(),
+      log: [tr("text.newGame")],
       winner: null,
-      winnerDialogShown: false,
       units: clone(app.scenario.units),
     };
+  }
+
+  function normalizeState(state) {
+    if (!state || !Array.isArray(state.units)) throw new Error("Bad state");
+    state.version = 2;
+    state.selectedUnitId = null;
+    state.selectedDefenderId = null;
+    state.selectedAttackers ||= [];
+    state.declaredCombats ||= [];
+    state.movedUnits ||= [];
+    state.usedAttackers ||= [];
+    state.usedDefenders ||= [];
+    state.log ||= [];
+    state.combatMode ||= "declare";
+    state.battleReports ||= [];
+    state.eliminatedUnitIds ||= [];
+    state.losses ||= makeStats();
+    state.lastMove = null;
+    state.retreatTask = null;
+    state.advanceTask = null;
+    state.lastCombatResult ||= null;
+    return state;
   }
 
   async function init() {
@@ -203,10 +530,10 @@
       app.hexById = new Map(app.hexes.map((hex) => [hex.id, hex]));
       app.state = makeInitialState();
       wireUi();
-      initOnline();
       loadImages();
+      applyLanguage();
+      updateMenu();
       draw();
-      centerOnOpeningFront();
     } catch (error) {
       showMissingData(error);
     }
@@ -232,577 +559,178 @@
 
   function wireUi() {
     el.boardSurface.addEventListener("click", onBoardClick);
-    el.newGameButton.addEventListener("click", () => {
-      resetGame();
-    });
+    el.langZhButton.addEventListener("click", () => setLanguage("zh"));
+    el.langEnButton.addEventListener("click", () => setLanguage("en"));
+    el.startCampaignButton.addEventListener("click", startNewCampaign);
+    el.continueCampaignButton.addEventListener("click", continueCheckpoint);
+    el.menuLoadButton.addEventListener("click", () => loadGame({ fromMenu: true }));
+    el.menuButton.addEventListener("click", showMenu);
+    el.newGameButton.addEventListener("click", startNewCampaign);
     el.saveButton.addEventListener("click", saveGame);
-    el.loadButton.addEventListener("click", loadGame);
+    el.loadButton.addEventListener("click", () => loadGame({ fromMenu: false }));
     el.chartsButton.addEventListener("click", () => el.chartsDialog.showModal());
+    el.aarButton.addEventListener("click", () => openAar(false));
+    el.returnMapButton.addEventListener("click", showGame);
+    el.aarMenuButton.addEventListener("click", showMenu);
     el.endPhaseButton.addEventListener("click", endPhase);
     el.finishDeclarationsButton.addEventListener("click", finishDeclarations);
     el.resolveBattleButton.addEventListener("click", resolveNextBattle);
-    el.createRoomButton?.addEventListener("click", createOnlineRoom);
-    el.joinRoomButton?.addEventListener("click", joinOnlineRoomFromInput);
-    el.leaveRoomButton?.addEventListener("click", leaveOnlineRoom);
-    el.claimAxisButton?.addEventListener("click", () => claimOnlineRole("axis"));
-    el.claimAlliedButton?.addEventListener("click", () => claimOnlineRole("allied"));
-    el.spectatorButton?.addEventListener("click", () => claimOnlineRole("spectator"));
-    el.onlineSetupButton?.addEventListener("click", openOnlineSetup);
-    el.saveSupabaseConfigButton?.addEventListener("click", saveSupabaseConfigFromDialog);
-    el.testSupabaseButton?.addEventListener("click", testSupabaseConfigFromDialog);
-    el.copySchemaButton?.addEventListener("click", copySchemaSql);
-    el.logToggleButton?.addEventListener("click", () => {
+    el.logToggleButton.addEventListener("click", () => {
       app.logExpanded = !app.logExpanded;
       drawLog();
     });
-    el.roomCodeInput?.addEventListener("input", () => {
-      el.roomCodeInput.value = normalizeRoomCode(el.roomCodeInput.value);
-    });
   }
 
-  function resetGame() {
-    if (app.online.connected && app.online.role === "spectator") {
-      log("旁观者不能重置联机房间。");
-      draw();
-      return;
-    }
-    if (app.online.connected && !window.confirm("重置当前联机房间？/ Reset this online room?")) return;
+  function setLanguage(lang) {
+    app.lang = lang === "en" ? "en" : "zh";
+    localStorage.setItem(LANG_KEY, app.lang);
+    applyLanguage();
+    updateMenu();
+    draw();
+    if (!el.aarView.hidden) renderAar();
+  }
+
+  function applyLanguage() {
+    document.documentElement.lang = app.lang === "en" ? "en" : "zh-CN";
+    el.body.dataset.lang = app.lang;
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+      node.textContent = tr(node.dataset.i18n);
+    });
+    el.langZhButton.dataset.active = String(app.lang === "zh");
+    el.langEnButton.dataset.active = String(app.lang === "en");
+  }
+
+  function setMenuStatus(text = "") {
+    el.menuStatus.textContent = text;
+  }
+
+  function updateMenu() {
+    el.continueCampaignButton.disabled = !localStorage.getItem(CHECKPOINT_KEY);
+    el.menuLoadButton.disabled = !(localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY));
+  }
+
+  function setView(view) {
+    el.body.dataset.view = view;
+    el.aarView.hidden = view !== "aar";
+    if (view === "game") window.setTimeout(centerOnOpeningFront, 30);
+  }
+
+  function showMenu() {
+    setView("menu");
+    updateMenu();
+  }
+
+  function showGame() {
+    setView("game");
+    draw();
+  }
+
+  function startNewCampaign() {
     app.state = makeInitialState();
     app.reachable.clear();
     app.legalRetreats.clear();
+    app.legalRetreatSteps.clear();
+    saveTurnCheckpoint();
+    showGame();
+    log(tr("text.newGame"));
     draw();
-    syncOnlineState("reset");
   }
 
   function saveGame() {
     localStorage.setItem(SAVE_KEY, JSON.stringify(app.state));
-    log("局面已保存。");
+    log(tr("text.saved"));
+    updateMenu();
     draw();
   }
 
-  function loadGame() {
-    if (app.online.connected) {
-      log("联机房间中不能读取本地存档。");
-      draw();
-      return;
-    }
-    const raw = localStorage.getItem(SAVE_KEY);
+  function loadGame(options = {}) {
+    const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(LEGACY_SAVE_KEY);
     if (!raw) {
-      log("没有找到本地存档。");
-      draw();
+      setMenuStatus(tr("menu.noSave"));
+      if (!options.fromMenu) {
+        log(tr("text.noSave"));
+        draw();
+      }
       return;
     }
     try {
-      const parsed = JSON.parse(raw);
-      if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.units)) throw new Error("Bad save");
-      app.state = parsed;
-      app.state.selectedUnitId = null;
-      app.state.selectedDefenderId = null;
-      app.state.selectedAttackers = [];
-      app.state.retreatTask = null;
-      app.state.advanceTask = null;
-      app.state.lastMove = null;
-      app.state.combatCompleteNotified = Boolean(app.state.combatCompleteNotified);
-      app.state.winnerDialogShown = Boolean(app.state.winnerDialogShown);
-      app.reachable.clear();
-      app.legalRetreats.clear();
-      log("已读取本地存档。");
-      draw();
+      app.state = normalizeState(JSON.parse(raw));
+      clearTransientState();
+      log(tr("text.loaded"));
+      setMenuStatus(tr("menu.loaded"));
+      showGame();
     } catch (_) {
-      log("存档无法读取。");
+      setMenuStatus(tr("menu.noSave"));
+      if (!options.fromMenu) log(tr("text.badSave"));
       draw();
     }
   }
 
-  function initOnline() {
-    app.online.playerId = localStorage.getItem("zizi-el-alamein-player-id") || makePlayerId();
-    localStorage.setItem("zizi-el-alamein-player-id", app.online.playerId);
-    const config = supabaseConfig();
-    app.online.configured = Boolean(config.url && config.anonKey);
-    const queryRoom = normalizeRoomCode(new URLSearchParams(window.location.search).get("room") || "");
-    const storedRoom = normalizeRoomCode(localStorage.getItem("zizi-el-alamein-room") || "");
-    if (el.roomCodeInput) el.roomCodeInput.value = queryRoom || storedRoom;
-    setOnlineStatus(app.online.configured ? "可联机：输入房间码或创建房间。" : "本地模式：先填写 Supabase 配置。", app.online.configured ? "local" : "error");
+  function saveTurnCheckpoint() {
+    const snapshot = clone(app.state);
+    snapshot.selectedUnitId = null;
+    snapshot.selectedDefenderId = null;
+    snapshot.selectedAttackers = [];
+    snapshot.retreatTask = null;
+    snapshot.advanceTask = null;
+    snapshot.lastMove = null;
+    localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(snapshot));
+    updateMenu();
   }
 
-  function supabaseConfig() {
-    const stored = storedSupabaseConfig();
-    const config = stored.url || stored.anonKey ? stored : (window.EL_ALAMEIN_SUPABASE || {});
-    return {
-      url: config.url || config.supabaseUrl || "",
-      anonKey: config.anonKey || config.supabaseAnonKey || "",
-    };
-  }
-
-  function storedSupabaseConfig() {
+  function continueCheckpoint() {
+    const raw = localStorage.getItem(CHECKPOINT_KEY);
+    if (!raw) {
+      setMenuStatus(tr("menu.noCheckpoint"));
+      return;
+    }
     try {
-      return JSON.parse(localStorage.getItem("zizi-el-alamein-supabase") || "{}") || {};
+      app.state = normalizeState(JSON.parse(raw));
+      clearTransientState();
+      setMenuStatus(tr("menu.continued"));
+      showGame();
     } catch (_) {
-      return {};
+      setMenuStatus(tr("menu.noCheckpoint"));
     }
   }
 
-  function setSetupStatus(message, mode = "local") {
-    if (!el.setupStatus) return;
-    el.setupStatus.textContent = message;
-    el.setupStatus.dataset.mode = mode;
-  }
-
-  async function openOnlineSetup() {
-    const config = supabaseConfig();
-    if (el.supabaseUrlInput) el.supabaseUrlInput.value = config.url;
-    if (el.supabaseAnonKeyInput) el.supabaseAnonKeyInput.value = config.anonKey;
-    setSetupStatus(app.online.configured ? "已读取 Supabase 配置。" : "填写 URL 和 anon key 后保存。", app.online.configured ? "ok" : "local");
-    await loadSchemaSqlPreview();
-    if (el.onlineSetupDialog && !el.onlineSetupDialog.open) el.onlineSetupDialog.showModal();
-  }
-
-  async function loadSchemaSqlPreview() {
-    if (!el.schemaSqlText || el.schemaSqlText.value) return;
-    try {
-      const response = await fetch("supabase/schema.sql", { cache: "no-store" });
-      el.schemaSqlText.value = response.ok ? await response.text() : "";
-    } catch (_) {
-      el.schemaSqlText.value = "";
-    }
-  }
-
-  function readSupabaseConfigFromDialog() {
-    return {
-      url: String(el.supabaseUrlInput?.value || "").trim(),
-      anonKey: String(el.supabaseAnonKeyInput?.value || "").trim(),
-    };
-  }
-
-  function saveSupabaseConfigFromDialog(options = {}) {
-    const config = readSupabaseConfigFromDialog();
-    if (!config.url || !config.anonKey) {
-      setSetupStatus("URL 和 anon key 都要填写。", "error");
-      return false;
-    }
-    localStorage.setItem("zizi-el-alamein-supabase", JSON.stringify(config));
-    app.online.client = null;
-    app.online.configured = true;
-    setOnlineStatus("Supabase 配置已保存，可以创建或加入房间。", "local");
-    if (!options.silent) setSetupStatus("已保存到这个浏览器。", "ok");
-    drawOnlinePanel();
-    return true;
-  }
-
-  async function testSupabaseConfigFromDialog() {
-    if (!saveSupabaseConfigFromDialog({ silent: true })) return;
-    setSetupStatus("正在测试连接...", "local");
-    if (!(await ensureSupabaseClient())) {
-      setSetupStatus("Supabase 客户端没有加载成功。", "error");
-      return;
-    }
-    const { error } = await app.online.client
-      .from("el_alamein_rooms")
-      .select("code")
-      .limit(1);
-    if (error) {
-      setSetupStatus(`连接到了 Supabase，但表不可用：${error.message}`, "error");
-      return;
-    }
-    setSetupStatus("连接成功，房间表可用。", "ok");
-  }
-
-  async function copySchemaSql() {
-    await loadSchemaSqlPreview();
-    const sql = el.schemaSqlText?.value || "";
-    if (!sql) {
-      setSetupStatus("没有读取到 SQL 文件。", "error");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(sql);
-      setSetupStatus("建表 SQL 已复制。", "ok");
-    } catch (_) {
-      el.schemaSqlText.focus();
-      el.schemaSqlText.select();
-      document.execCommand("copy");
-      setSetupStatus("建表 SQL 已选中并复制。", "ok");
-    }
-  }
-
-  function makePlayerId() {
-    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-    return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  }
-
-  function normalizeRoomCode(value) {
-    return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  }
-
-  function generateRoomCode() {
-    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    const values = new Uint32Array(6);
-    window.crypto?.getRandomValues?.(values);
-    for (let index = 0; index < 6; index += 1) {
-      const value = values[index] || Math.floor(Math.random() * alphabet.length);
-      code += alphabet[value % alphabet.length];
-    }
-    return code;
-  }
-
-  function setOnlineStatus(message, mode = "local") {
-    app.online.status = message;
-    app.online.statusMode = mode;
-    if (el.onlineStatus) {
-      el.onlineStatus.textContent = message;
-      el.onlineStatus.dataset.mode = mode;
-    }
-  }
-
-  function onlineRoleLabel(role = app.online.role) {
-    if (role === "axis") return "轴心 / Axis";
-    if (role === "allied") return "英军 / Allied";
-    return "旁观 / Watch";
-  }
-
-  async function ensureSupabaseClient() {
-    if (app.online.client) return true;
-    const config = supabaseConfig();
-    if (!config.url || !config.anonKey) {
-      setOnlineStatus("缺少 Supabase 配置：填写 el-alamein/supabase-config.js。", "error");
-      drawOnlinePanel();
-      return false;
-    }
-    try {
-      if (!window.supabase?.createClient) {
-        await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-      }
-      app.online.client = window.supabase.createClient(config.url, config.anonKey);
-      app.online.configured = true;
-      return true;
-    } catch (error) {
-      setOnlineStatus(`Supabase 加载失败：${error.message}`, "error");
-      drawOnlinePanel();
-      return false;
-    }
-  }
-
-  function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[src="${src}"]`);
-      if (existing) {
-        existing.addEventListener("load", resolve, { once: true });
-        existing.addEventListener("error", () => reject(new Error(src)), { once: true });
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.addEventListener("load", resolve, { once: true });
-      script.addEventListener("error", () => reject(new Error(src)), { once: true });
-      document.head.append(script);
-    });
-  }
-
-  async function createOnlineRoom() {
-    if (!(await ensureSupabaseClient())) return;
-    const code = normalizeRoomCode(el.roomCodeInput?.value) || generateRoomCode();
-    if (el.roomCodeInput) el.roomCodeInput.value = code;
-    const room = {
-      code,
-      revision: 1,
-      state: snapshotStateForOnline(),
-      players: {},
-      updated_by: app.online.playerId,
-      updated_at: new Date().toISOString(),
-    };
-    setOnlineStatus(`正在创建房间 ${code}...`, "local");
-    const { data, error } = await app.online.client
-      .from("el_alamein_rooms")
-      .insert(room)
-      .select("code, state, players, revision, updated_by")
-      .single();
-    if (error) {
-      setOnlineStatus(`创建失败：${error.message}`, "error");
-      return;
-    }
-    await connectOnlineRoom(data);
-  }
-
-  async function joinOnlineRoomFromInput() {
-    if (!(await ensureSupabaseClient())) return;
-    const code = normalizeRoomCode(el.roomCodeInput?.value);
-    if (!code) {
-      setOnlineStatus("请输入房间码。", "error");
-      return;
-    }
-    setOnlineStatus(`正在加入房间 ${code}...`, "local");
-    const { data, error } = await app.online.client
-      .from("el_alamein_rooms")
-      .select("code, state, players, revision, updated_by")
-      .eq("code", code)
-      .maybeSingle();
-    if (error || !data) {
-      setOnlineStatus(error ? `加入失败：${error.message}` : "没有找到这个房间。", "error");
-      return;
-    }
-    await connectOnlineRoom(data);
-  }
-
-  async function connectOnlineRoom(room) {
-    await unsubscribeOnlineRoom();
-    app.online.connected = true;
-    app.online.roomCode = normalizeRoomCode(room.code);
-    app.online.revision = Number(room.revision || 0);
-    app.online.players = room.players || {};
-    app.online.role = roleFromPlayers(app.online.players) || "spectator";
-    localStorage.setItem("zizi-el-alamein-room", app.online.roomCode);
-    updateRoomUrl(app.online.roomCode);
-    applyOnlineRoom(room, { force: true });
-    app.online.channel = app.online.client
-      .channel(`el-alamein-${app.online.roomCode}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "el_alamein_rooms",
-        filter: `code=eq.${app.online.roomCode}`,
-      }, (payload) => applyOnlineRoom(payload.new))
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setOnlineStatus(`房间 ${app.online.roomCode} 已连接，你是 ${onlineRoleLabel()}。`, "connected");
-          drawOnlinePanel();
-        }
-      });
-    draw();
-  }
-
-  async function unsubscribeOnlineRoom() {
-    if (app.online.channel && app.online.client) {
-      await app.online.client.removeChannel(app.online.channel);
-    }
-    app.online.channel = null;
-  }
-
-  async function leaveOnlineRoom() {
-    await unsubscribeOnlineRoom();
-    app.online.connected = false;
-    app.online.roomCode = "";
-    app.online.role = "spectator";
-    app.online.players = {};
-    app.online.revision = 0;
-    localStorage.removeItem("zizi-el-alamein-room");
-    updateRoomUrl("");
-    setOnlineStatus(app.online.configured ? "已离开房间，回到本地模式。" : "本地模式 / Local", "local");
-    draw();
-  }
-
-  async function claimOnlineRole(role) {
-    if (!app.online.connected) {
-      setOnlineStatus("先创建或加入一个房间。", "error");
-      return;
-    }
-    const players = { ...(app.online.players || {}) };
-    for (const side of ["axis", "allied"]) {
-      if (players[side] === app.online.playerId) delete players[side];
-    }
-    if (role !== "spectator") {
-      if (players[role] && players[role] !== app.online.playerId) {
-        setOnlineStatus(`${onlineRoleLabel(role)} 已有人占用。`, "error");
-        return;
-      }
-      players[role] = app.online.playerId;
-    }
-    const { data, error } = await app.online.client
-      .from("el_alamein_rooms")
-      .update({ players, updated_by: app.online.playerId, updated_at: new Date().toISOString() })
-      .eq("code", app.online.roomCode)
-      .select("players")
-      .single();
-    if (error) {
-      setOnlineStatus(`阵营更新失败：${error.message}`, "error");
-      return;
-    }
-    app.online.players = data.players || players;
-    app.online.role = roleFromPlayers(app.online.players) || "spectator";
-    setOnlineStatus(`房间 ${app.online.roomCode} 已连接，你是 ${onlineRoleLabel()}。`, "connected");
-    drawOnlinePanel();
-  }
-
-  function roleFromPlayers(players) {
-    if (players?.axis === app.online.playerId) return "axis";
-    if (players?.allied === app.online.playerId) return "allied";
-    return "spectator";
-  }
-
-  function updateRoomUrl(code) {
-    const url = new URL(window.location.href);
-    if (code) url.searchParams.set("room", code);
-    else url.searchParams.delete("room");
-    window.history.replaceState(null, "", url);
-  }
-
-  function canControlPhase() {
-    if (!app.online.connected) return true;
-    return app.online.role === activeSide();
-  }
-
-  function requirePhaseControl() {
-    if (canControlPhase()) return true;
-    log(`联机等待 ${sideLabel(activeSide())} 操作。你当前是 ${onlineRoleLabel()}。`);
-    draw();
-    return false;
-  }
-
-  function snapshotStateForOnline() {
-    const state = clone(app.state);
-    state.selectedUnitId = null;
-    state.selectedDefenderId = null;
-    state.selectedAttackers = [];
-    if (state.retreatTask?.battle) delete state.retreatTask.battle;
-    if (state.winner) state.winnerDialogShown = false;
-    return state;
-  }
-
-  function sanitizeOnlineState(remoteState) {
-    const state = clone(remoteState);
-    if (!state || state.version !== 1 || !Array.isArray(state.units)) throw new Error("Bad remote state");
-    state.selectedUnitId = null;
-    state.selectedDefenderId = null;
-    state.selectedAttackers = [];
-    state.declaredCombats ||= [];
-    state.movedUnits ||= [];
-    state.usedAttackers ||= [];
-    state.usedDefenders ||= [];
-    state.log ||= [];
-    state.combatMode ||= "declare";
-    state.combatCompleteNotified = Boolean(state.combatCompleteNotified);
-    if (state.winner) state.winnerDialogShown = false;
-    return state;
-  }
-
-  function refreshDerivedStateAfterRemote() {
+  function clearTransientState() {
+    app.state.selectedUnitId = null;
+    app.state.selectedDefenderId = null;
+    app.state.selectedAttackers = [];
+    app.state.retreatTask = null;
+    app.state.advanceTask = null;
+    app.state.lastMove = null;
     app.reachable.clear();
     app.legalRetreats.clear();
-    const task = app.state.retreatTask;
-    if (!task) return;
-    const unit = unitById(task.unitIds[task.index]);
-    if (unit && !unit.eliminated) {
-      const originHexId = task.origins?.[unit.id] || unit.hexId;
-      app.legalRetreats = legalRetreatDestinations(unit, task.steps, originHexId);
-    }
-  }
-
-  function applyOnlineRoom(room, options = {}) {
-    if (!room || normalizeRoomCode(room.code) !== app.online.roomCode) return;
-    const incomingRevision = Number(room.revision || 0);
-    app.online.players = room.players || {};
-    app.online.role = roleFromPlayers(app.online.players) || "spectator";
-    const shouldApplyState = options.force || room.updated_by !== app.online.playerId || incomingRevision > app.online.revision;
-    app.online.revision = Math.max(app.online.revision, incomingRevision);
-    if (room.state && shouldApplyState) {
-      try {
-        app.online.applyingRemote = true;
-        app.state = sanitizeOnlineState(room.state);
-        refreshDerivedStateAfterRemote();
-      } catch (error) {
-        setOnlineStatus(`远端局面无法读取：${error.message}`, "error");
-      } finally {
-        app.online.applyingRemote = false;
-      }
-    }
-    if (app.online.connected) {
-      setOnlineStatus(`房间 ${app.online.roomCode} 已连接，你是 ${onlineRoleLabel()}。`, "connected");
-    }
-    draw();
-    presentVictoryDialog();
-  }
-
-  function syncOnlineState(reason) {
-    if (!app.online.connected || app.online.applyingRemote) return;
-    app.online.pendingSyncReason = reason || app.online.pendingSyncReason;
-    if (app.online.syncing) return;
-    pushOnlineState();
-  }
-
-  async function pushOnlineState() {
-    if (!app.online.connected || app.online.syncing) return;
-    app.online.syncing = true;
-    const reason = app.online.pendingSyncReason;
-    app.online.pendingSyncReason = "";
-    const nextRevision = app.online.revision + 1;
-    const payload = {
-      state: snapshotStateForOnline(),
-      revision: nextRevision,
-      updated_by: app.online.playerId,
-      updated_at: new Date().toISOString(),
-    };
-    const { data, error } = await app.online.client
-      .from("el_alamein_rooms")
-      .update(payload)
-      .eq("code", app.online.roomCode)
-      .eq("revision", app.online.revision)
-      .select("code, state, players, revision, updated_by")
-      .maybeSingle();
-    app.online.syncing = false;
-    if (error) {
-      setOnlineStatus(`同步失败：${error.message}`, "error");
-      drawOnlinePanel();
-      return;
-    }
-    if (!data) {
-      await reloadOnlineRoom("房间状态有新版本，已重新同步。");
-      return;
-    }
-    app.online.revision = Number(data.revision || nextRevision);
-    app.online.players = data.players || app.online.players;
-    app.online.role = roleFromPlayers(app.online.players) || "spectator";
-    setOnlineStatus(`房间 ${app.online.roomCode} 已同步：${reason || "update"}。`, "connected");
-    drawOnlinePanel();
-    if (app.online.pendingSyncReason) pushOnlineState();
-  }
-
-  async function reloadOnlineRoom(message) {
-    const { data, error } = await app.online.client
-      .from("el_alamein_rooms")
-      .select("code, state, players, revision, updated_by")
-      .eq("code", app.online.roomCode)
-      .maybeSingle();
-    if (error || !data) {
-      setOnlineStatus(error ? `重新同步失败：${error.message}` : "房间已不存在。", "error");
-      return;
-    }
-    setOnlineStatus(message, "connected");
-    applyOnlineRoom(data, { force: true });
+    app.legalRetreatSteps.clear();
   }
 
   function centerOnOpeningFront() {
-    requestAnimationFrame(() => {
-      el.boardViewport.scrollLeft = 420;
-      el.boardViewport.scrollTop = 260;
-    });
+    el.boardViewport.scrollLeft = 360;
+    el.boardViewport.scrollTop = 0;
   }
 
   function onBoardClick(event) {
-    if (app.state.winner) return;
-    if (app.animating) return;
+    if (app.animating || el.body.dataset.view !== "game") return;
     const rect = el.boardSurface.getBoundingClientRect();
+    const scaleX = app.scenario.board.width / rect.width;
+    const scaleY = app.scenario.board.height / rect.height;
     const point = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
     };
     const hex = nearestHex(point);
     if (!hex) return;
-
     if (app.state.retreatTask) {
-      if (!requirePhaseControl()) return;
       chooseRetreatHex(hex.id);
       return;
     }
-
-    if (isMovementPhase() && app.state.selectedUnitId) {
-      if (!requirePhaseControl()) return;
+    if (app.reachable.has(hex.id)) {
       attemptMove(hex.id);
       return;
     }
-
     if (isCombatPhase() && app.state.combatMode === "declare") {
-      if (!requirePhaseControl()) return;
       chooseCombatHex(hex.id);
     }
   }
@@ -813,56 +741,46 @@
       const score = Math.hypot(hex.center.x - point.x, hex.center.y - point.y);
       if (!best || score < best.score) best = { hex, score };
     }
-    return best?.score <= 58 ? best.hex : null;
+    return best?.score < 58 ? best.hex : null;
   }
 
   function onUnitClick(event, unitId) {
     event.stopPropagation();
-    if (app.state.winner) return;
     if (app.animating) return;
     const unit = unitById(unitId);
     if (!unit || unit.eliminated) return;
-
-    if (app.state.retreatTask) {
-      return;
-    }
-
     if (app.state.advanceTask) {
-      if (!requirePhaseControl()) return;
       if (app.state.advanceTask.attackerIds.includes(unit.id)) advanceUnit(unit.id);
-      else log("请选择参与本次攻击的单位进行战后挺进。");
-      draw();
       return;
     }
-
-    if (isCombatPhase() && app.state.combatMode === "declare") {
-      if (!requirePhaseControl()) return;
-      if (unit.side !== activeSide()) {
-        setCombatDefender(unit);
-      } else {
-        toggleCombatAttacker(unit);
-      }
-    } else {
-      selectUnit(unit);
+    if (app.state.retreatTask) return;
+    if (isMovementPhase()) {
+      if (unit.side === activeSide()) selectUnit(unit);
+      return;
     }
-    draw();
+    if (isCombatPhase() && app.state.combatMode === "declare") {
+      if (unit.side === activeSide()) toggleCombatAttacker(unit);
+      else setCombatDefender(unit);
+      draw();
+    }
   }
 
   function selectUnit(unit) {
-    if (isMovementPhase() && app.state.lastMove && app.state.lastMove.unitId !== unit.id) {
-      clearLastMove();
-    }
-    if (isMovementPhase() && app.state.selectedUnitId === unit.id) {
-      if (canUndoLastMove(unit)) return;
+    if (app.state.lastMove && app.state.lastMove.unitId !== unit.id) clearLastMove();
+    if (app.state.selectedUnitId === unit.id && !canUndoLastMove(unit)) {
       app.state.selectedUnitId = null;
       app.reachable.clear();
+      draw();
       return;
     }
     app.state.selectedUnitId = unit.id;
+    app.state.selectedDefenderId = null;
+    app.state.selectedAttackers = [];
     app.reachable.clear();
-    if (isMovementPhase() && canControlPhase() && unit.side === activeSide() && !unit.disrupted && !app.state.movedUnits.includes(unit.id)) {
+    if (unit.side === activeSide() && !unit.disrupted && !app.state.movedUnits.includes(unit.id)) {
       app.reachable = reachableHexes(unit);
     }
+    draw();
   }
 
   function clearLastMove() {
@@ -872,25 +790,22 @@
   function canUndoLastMove(unit = unitById(app.state.selectedUnitId)) {
     const move = app.state.lastMove;
     return Boolean(
-      move &&
-      unit &&
-      move.unitId === unit.id &&
-      move.turn === app.state.turn &&
-      move.phaseIndex === app.state.phaseIndex &&
-      isMovementPhase() &&
-      !app.state.winner &&
-      !app.animating
+      move
+      && unit
+      && move.unitId === unit.id
+      && isMovementPhase()
+      && move.turn === app.state.turn
+      && move.phaseIndex === app.state.phaseIndex
+      && !app.state.winner
+      && !app.animating
     );
   }
 
-  function delay(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
+  const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
   async function animateUnitPath(unit, path) {
-    const steps = Array.isArray(path) && path.length ? path : [unit.hexId];
     app.animating = true;
-    for (const hexId of steps.slice(1)) {
+    for (const hexId of path.slice(1)) {
       unit.hexId = hexId;
       draw();
       await delay(70);
@@ -908,11 +823,21 @@
 
   function setCombatDefender(unit) {
     if (unit.side === activeSide() || unit.disrupted || app.state.usedDefenders.includes(unit.id)) return;
-    app.state.selectedDefenderId = unit.id;
-    app.state.selectedAttackers = neighborsOf(unit.hexId)
+    if (app.state.selectedDefenderId === unit.id) {
+      app.state.selectedDefenderId = null;
+      app.state.selectedAttackers = [];
+      log(tr("text.battleCancelled"));
+      return;
+    }
+    const attackers = neighborsOf(unit.hexId)
       .map(liveUnitAt)
-      .filter((attacker) => canAttack(attacker, unit))
-      .map((attacker) => attacker.id);
+      .filter((attacker) => canAttack(attacker, unit));
+    if (!attackers.length) {
+      log(tr("text.noLegalAttackers"));
+      return;
+    }
+    app.state.selectedDefenderId = unit.id;
+    app.state.selectedAttackers = attackers.map((attacker) => attacker.id);
   }
 
   function toggleCombatAttacker(unit) {
@@ -936,52 +861,47 @@
   }
 
   function declareBattle() {
-    if (!requirePhaseControl()) return;
     const defender = unitById(app.state.selectedDefenderId);
     const attackers = app.state.selectedAttackers.map(unitById).filter(Boolean);
-    if (!defender || !attackers.length) {
-      log("战斗宣告需要守方和至少一个攻方单位。");
-      draw();
-      return;
-    }
-    if (attackers.some((attacker) => !canAttack(attacker, defender))) {
-      log("宣告失败：攻击单位必须相邻且未参加其他战斗。");
-      draw();
-      return;
-    }
+    if (!defender || !attackers.length) return;
+    if (attackers.some((attacker) => !canAttack(attacker, defender))) return;
+    const odds = calculateOdds(attackers, defender);
     const battle = {
       id: `b${Date.now()}-${app.state.declaredCombats.length}`,
+      turn: app.state.turn,
       phaseId: phase().id,
+      side: activeSide(),
       defenderId: defender.id,
       defenderHexId: defender.hexId,
       attackerIds: attackers.map((unit) => unit.id),
       attackerOrigins: Object.fromEntries(attackers.map((unit) => [unit.id, unit.hexId])),
-      oddsAtDeclaration: formatOddsWithDefense(calculateOdds(attackers, defender)),
+      attackerHexIds: attackers.map((unit) => unit.hexId),
+      oddsAtDeclaration: formatOddsWithDefense(odds),
+      oddsShort: formatOdds(odds),
       resolved: false,
       result: null,
+      events: [],
     };
     app.state.declaredCombats.push(battle);
     app.state.combatCompleteNotified = false;
     app.state.usedDefenders.push(defender.id);
     app.state.usedAttackers.push(...attackers.map((unit) => unit.id));
-    log(`宣告战斗：${attackers.map((unit) => unit.name).join(" + ")} 攻击 ${defender.name}。`);
+    log(tr("text.battleDeclared", {
+      attackers: attackers.map(unitName).join(" + "),
+      defender: unitName(defender),
+    }));
     app.state.selectedDefenderId = null;
     app.state.selectedAttackers = [];
     draw();
-    syncOnlineState("declare-combat");
   }
 
   function finishDeclarations() {
     if (!isCombatPhase() || app.state.combatMode !== "declare") return;
-    if (!requirePhaseControl()) return;
     app.state.combatMode = "resolve";
     app.state.combatCompleteNotified = !app.state.declaredCombats.length;
-    log(app.state.declaredCombats.length ? "战斗宣告完成，进入结算。" : "本阶段没有宣告战斗。");
+    log(app.state.declaredCombats.length ? tr("text.declarationsComplete") : tr("text.noBattle"));
     draw();
-    syncOnlineState("finish-declarations");
-    if (app.state.declaredCombats.length) {
-      window.setTimeout(() => resolveNextBattle(), 80);
-    }
+    if (app.state.declaredCombats.length) window.setTimeout(() => resolveNextBattle(), 90);
   }
 
   function currentBattle() {
@@ -1003,19 +923,17 @@
     if (app.state.retreatTask || app.state.advanceTask || hasPendingBattles()) return;
     if (!app.state.combatCompleteNotified) {
       app.state.combatCompleteNotified = true;
-      log("所有宣告战斗已结算完成。");
+      log(tr("text.allDone"));
     }
   }
 
   function resolveNextBattle() {
     if (!isCombatPhase() || app.state.combatMode !== "resolve") return;
-    if (!requirePhaseControl()) return;
     if (app.state.retreatTask || app.state.advanceTask) return;
     const battle = currentBattle();
     if (!battle) {
       markCombatCompleteOnce();
       draw();
-      syncOnlineState("combat-complete");
       return;
     }
     const defender = unitById(battle.defenderId);
@@ -1023,24 +941,35 @@
     if (!defender || defender.eliminated || !attackers.length) {
       battle.resolved = true;
       battle.result = "Skipped";
-      log("跳过一场已失效的战斗。");
+      app.state.lastCombatResult = { battleId: battle.id, result: "Skipped", events: [] };
+      log(tr("text.battleSkipped"));
       markCombatCompleteOnce();
       draw();
-      syncOnlineState("skip-combat");
       return;
     }
-
     const odds = calculateOdds(attackers, defender);
     const roll = Math.floor(Math.random() * 6) + 1;
     const result = app.rules.crt.rows[String(roll)][odds.columnIndex];
     battle.result = `${roll}/${odds.column}/${result}`;
+    battle.resultCode = result;
+    battle.roll = roll;
+    battle.crtColumn = odds.column;
     battle.oddsAtResolution = formatOddsWithDefense(odds);
-    log(`战斗结算：${odds.attack}:${odds.defense} -> ${odds.column}，骰 ${roll}，结果 ${result}。`);
-    showCombatResultDialog(battle, odds, roll, result);
+    battle.oddsShort = formatOdds(odds);
+    battle.events = [];
+    app.state.lastCombatResult = {
+      battleId: battle.id,
+      result,
+      roll,
+      column: odds.column,
+      odds: formatOdds(odds),
+      defenderHex: hexLabel(battle.defenderHexId),
+      events: battle.events,
+    };
+    log(`${tr("text.currentBattle")}: ${formatBattleTitle(battle)} · ${tr("text.result")} ${combatResultLabel(result)}`);
     applyCombatResult(battle, result);
     markCombatCompleteOnce();
     draw();
-    syncOnlineState("resolve-combat");
   }
 
   function calculateOdds(attackers, defender) {
@@ -1053,14 +982,7 @@
     for (let index = 0; index < thresholds.length; index += 1) {
       if (ratio >= thresholds[index]) columnIndex = index;
     }
-    return {
-      attack,
-      defense,
-      defenseInfo,
-      ratio,
-      columnIndex,
-      column: app.rules.crt.columns[columnIndex],
-    };
+    return { attack, defense, defenseInfo, ratio, columnIndex, column: app.rules.crt.columns[columnIndex] };
   }
 
   function formatOdds(odds) {
@@ -1071,102 +993,66 @@
   function formatOddsWithDefense(odds) {
     if (!odds) return "--";
     const detail = formatDefenseDetail(odds.defenseInfo);
-    return detail ? `${formatOdds(odds)}；${detail}` : formatOdds(odds);
+    return detail ? `${formatOdds(odds)}; ${detail}` : formatOdds(odds);
   }
 
   function formatDefenseDetail(info) {
     if (!info || !info.effects.length) return "";
-    const effects = info.effects.join("，");
-    return `守方 ${info.base} x ${info.multiplier} = ${info.total}（${effects}）`;
-  }
-
-  function previewOddsText(attackers, defender) {
-    if (!defender || !attackers.length) return "赔率：--";
-    return `赔率：${formatOddsWithDefense(calculateOdds(attackers, defender))}`;
-  }
-
-  function showCombatResultDialog(battle, odds, roll, result) {
-    if (!el.combatResultDialog || !el.combatResultBody) return;
-    const defender = unitById(battle.defenderId);
-    const attackers = battle.attackerIds.map(unitById).filter(Boolean);
-    el.combatResultTitle.textContent = `战斗结果：${result}`;
-    el.combatResultBody.replaceChildren();
-    const lines = [
-      `${attackers.map((unit) => unit.name).join(" + ")} -> ${defender?.name || "?"}`,
-      `守方格：${battle.defenderHexId}`,
-      `赔率：${formatOddsWithDefense(odds)}`,
-      `骰点：${roll}`,
-      `结果：${combatResultLabel(result)}`,
-    ];
-    for (const line of lines) {
-      const item = document.createElement("p");
-      item.textContent = line;
-      el.combatResultBody.append(item);
-    }
-    if (!el.combatResultDialog.open) {
-      try {
-        el.combatResultDialog.showModal();
-      } catch (_) {
-        el.combatResultDialog.setAttribute("open", "");
-      }
-    }
-  }
-
-  function combatResultLabel(result) {
-    if (result === "AE") return "攻方消灭";
-    if (result === "AR") return "攻方撤退 1 格";
-    if (result === "DE") return "守方消灭";
-    const match = result.match(/^DR(\d+)$/);
-    if (match) return `守方撤退 ${match[1]} 格`;
-    return result;
-  }
-
-  function defenseMultiplier(unit) {
-    return defenseBreakdown(unit).multiplier;
+    const effects = info.effects.join(", ");
+    return `${tr("text.defense")} ${info.base} x ${info.multiplier} = ${info.total} (${effects})`;
   }
 
   function defenseBreakdown(unit) {
     const hex = hexById(unit.hexId);
     const terrain = terrainRule(hex);
+    const terrainMultiplier = Number(terrain.defenseMultiplier || 1);
     const effects = [];
-    let multiplier = Number(terrain.defenseMultiplier || 1);
-    if (multiplier > 1) effects.push(`${terrain.label} x${multiplier}`);
+    let multiplier = terrainMultiplier;
+    if (terrainMultiplier > 1) effects.push(`${terrainName(hex?.terrain)} x${terrainMultiplier}`);
 
     const positionRule = app.rules.britishPosition;
     if (hex?.britishPosition && unit.side === positionRule.appliesOnlyToSide) {
       const positionMultiplier = Number(positionRule.defenseMultiplier || 1);
-      if (positionMultiplier > 1) {
-        if (positionRule.stacksWithHighland) {
-          multiplier *= positionMultiplier;
-          effects.push(`${positionRule.label} x${positionMultiplier}`);
-        } else {
-          multiplier = Math.max(multiplier, positionMultiplier);
-          const note = Number(terrain.defenseMultiplier || 1) > 1 ? "，不叠加" : "";
-          effects.push(`${positionRule.label} x${positionMultiplier}${note}`);
-        }
+      if (positionMultiplier > multiplier) {
+        multiplier = positionMultiplier;
+        effects.length = 0;
+        effects.push(`${tr("terrain.britishPosition")} x${positionMultiplier}`);
+      } else if (positionMultiplier > 1 && terrainMultiplier <= 1) {
+        multiplier = Math.max(multiplier, positionMultiplier);
+        effects.push(`${tr("terrain.britishPosition")} x${positionMultiplier}`);
       }
-    } else if (hex?.britishPosition) {
-      effects.push(`${positionRule.label} 仅英军`);
     }
+    return { base: unit.combat, multiplier, total: unit.combat * multiplier, effects };
+  }
 
-    return {
-      base: unit.combat,
-      multiplier,
-      total: unit.combat * multiplier,
-      effects,
-    };
+  function terrainName(key) {
+    return tr(`terrain.${key || "desert"}`);
+  }
+
+  function previewOddsText(attackers, defender) {
+    if (!defender || !attackers.length) return `${tr("text.odds")}: --`;
+    return `${tr("text.odds")}: ${formatOddsWithDefense(calculateOdds(attackers, defender))}`;
+  }
+
+  function combatResultLabel(result) {
+    if (result === "AE" || result === "AR" || result === "DE" || result === "Skipped") return tr(`result.${result}`);
+    const match = result.match(/^DR(\d+)$/);
+    if (match) return tr("result.DR", { steps: match[1] });
+    return result;
   }
 
   function applyCombatResult(battle, result) {
     if (result === "AE") {
-      for (const id of battle.attackerIds) eliminateUnit(id);
+      for (const id of battle.attackerIds) eliminateUnit(id, battle.id);
       battle.resolved = true;
+      archiveBattleReport(battle);
       return;
     }
     if (result === "DE") {
-      eliminateUnit(battle.defenderId);
+      eliminateUnit(battle.defenderId, battle.id);
       battle.resolved = true;
       startAdvanceTask(battle);
+      archiveBattleReport(battle);
       return;
     }
     if (result === "AR") {
@@ -1195,17 +1081,50 @@
     }
   }
 
-  function eliminateUnit(id) {
+  function eliminateUnit(id, battleId = null) {
     const unit = unitById(id);
     if (!unit || unit.eliminated) return;
     unit.eliminated = true;
     unit.disrupted = false;
-    log(`${unit.name} 被消灭。`);
+    app.state.eliminatedUnitIds.push(unit.id);
+    app.state.losses[unit.side].units += 1;
+    app.state.losses[unit.side].combat += unit.combat;
+    if (battleId) addBattleEvent(battleId, { type: "eliminated", unitId: unit.id, text: tr("text.eliminated", { unit: unitName(unit) }) });
+    log(tr("text.eliminated", { unit: unitName(unit) }));
+  }
+
+  function addBattleEvent(battleId, event) {
+    const battle = battleById(battleId);
+    if (!battle) return;
+    battle.events ||= [];
+    battle.events.push(event);
+    if (app.state.lastCombatResult?.battleId === battleId) app.state.lastCombatResult.events = battle.events;
+  }
+
+  function archiveBattleReport(battle) {
+    if (app.state.battleReports.some((item) => item.id === battle.id)) return;
+    app.state.battleReports.push({
+      id: battle.id,
+      turn: battle.turn,
+      phaseId: battle.phaseId,
+      side: battle.side,
+      defenderId: battle.defenderId,
+      defenderHexId: battle.defenderHexId,
+      attackerIds: battle.attackerIds,
+      attackerHexIds: battle.attackerHexIds,
+      odds: battle.oddsShort,
+      roll: battle.roll,
+      column: battle.crtColumn,
+      result: battle.resultCode || battle.result,
+      events: clone(battle.events || []),
+    });
   }
 
   function startRetreatTask(task) {
     task.battleId = task.battle?.id || task.battleId;
     task.index = 0;
+    task.remainingSteps = task.steps;
+    task.stepOrigins = {};
     app.state.retreatTask = task;
     prepareCurrentRetreat();
   }
@@ -1217,42 +1136,61 @@
       const unit = unitById(task.unitIds[task.index]);
       if (!unit || unit.eliminated) {
         task.index += 1;
+        task.remainingSteps = task.steps;
         continue;
       }
-      const originHexId = task.origins[unit.id] || unit.hexId;
-      app.legalRetreats = legalRetreatDestinations(unit, task.steps, originHexId);
-      if (app.legalRetreats.size) {
-        log(`${unit.name} 需要撤退 ${task.steps} 格。`);
+      task.stepOrigins[unit.id] ||= task.origins[unit.id] || unit.hexId;
+      task.remainingSteps ||= task.steps;
+      app.legalRetreatSteps = legalRetreatStepDestinations(unit, task.stepOrigins[unit.id]);
+      app.legalRetreats = new Set(app.legalRetreatSteps);
+      if (app.legalRetreatSteps.size) {
+        log(tr("text.retreatNeeded", { unit: unitName(unit), steps: task.remainingSteps }));
         draw();
         return;
       }
-      eliminateUnit(unit.id);
-      log(`${unit.name} 无法合法撤退。`);
+      eliminateUnit(unit.id, task.battleId);
       task.index += 1;
+      task.remainingSteps = task.steps;
     }
     finishRetreatTask();
   }
 
-  function chooseRetreatHex(hexId) {
-    if (!requirePhaseControl()) return;
+  async function chooseRetreatHex(hexId) {
     const task = app.state.retreatTask;
-    if (!task || !app.legalRetreats.has(hexId)) return;
+    if (!task || !app.legalRetreatSteps.has(hexId)) return;
     const unit = unitById(task.unitIds[task.index]);
+    if (!unit) return;
+    const from = unit.hexId;
+    await animateUnitPath(unit, [from, hexId]);
     unit.hexId = hexId;
-    unit.disrupted = Boolean(task.disruptAfterRetreat);
-    log(task.disruptAfterRetreat ? `${unit.name} 撤退到 ${hexId} 并进入混乱。` : `${unit.name} 撤退到 ${hexId}。`);
-    task.index += 1;
+    task.remainingSteps -= 1;
+    addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
+    log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
+    if (task.remainingSteps <= 0) {
+      const stackedFriendly = liveUnitsAt(hexId).some((other) => other.id !== unit.id && other.side === unit.side);
+      if (stackedFriendly) {
+        task.remainingSteps = 1;
+        log(tr("text.retreatExtra", { unit: unitName(unit) }));
+      } else {
+        unit.disrupted = Boolean(task.disruptAfterRetreat);
+        task.index += 1;
+        task.remainingSteps = task.steps;
+      }
+    }
     prepareCurrentRetreat();
-    syncOnlineState("retreat");
   }
 
   function finishRetreatTask() {
     const task = app.state.retreatTask;
     if (!task) return;
     const battle = battleById(task.battleId) || task.battle;
-    if (battle) battle.resolved = true;
+    if (battle) {
+      battle.resolved = true;
+      archiveBattleReport(battle);
+    }
     app.state.retreatTask = null;
     app.legalRetreats.clear();
+    app.legalRetreatSteps.clear();
     if (task.advanceAfter && battle) startAdvanceTask(battle);
     markCombatCompleteOnce();
     draw();
@@ -1266,47 +1204,53 @@
       return unit && !unit.eliminated && neighborsOf(unit.hexId).includes(targetHexId);
     });
     if (!eligible.length) return;
-    app.state.advanceTask = {
-      battleId: battle.id,
-      targetHexId,
-      attackerIds: eligible,
-    };
+    app.state.advanceTask = { battleId: battle.id, targetHexId, attackerIds: eligible };
   }
 
   function advanceUnit(unitId) {
-    if (!requirePhaseControl()) return;
     const task = app.state.advanceTask;
     if (!task || unitId === "skip") {
       app.state.advanceTask = null;
       draw();
-      syncOnlineState("advance-skip");
       return;
     }
     const unit = unitById(unitId);
     if (unit && !unit.eliminated && !liveUnitAt(task.targetHexId)) {
       unit.hexId = task.targetHexId;
-      log(`${unit.name} 战后挺进。`);
+      addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
+      log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
     draw();
-    syncOnlineState("advance");
+  }
+
+  function legalRetreatStepDestinations(unit, originHexId) {
+    const result = new Set();
+    const currentDistance = hexDistance(unit.hexId, originHexId);
+    for (const nextId of neighborsOf(unit.hexId)) {
+      const nextHex = hexById(nextId);
+      if (!terrainRule(nextHex).passable) continue;
+      const occupant = liveUnitAt(nextId);
+      if (occupant && occupant.side !== unit.side) continue;
+      if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
+      if (hexDistance(nextId, originHexId) <= currentDistance) continue;
+      result.add(nextId);
+    }
+    return result;
   }
 
   function legalRetreatDestinations(unit, requiredSteps, originHexId) {
     const result = new Set();
-    const origin = hexById(originHexId);
     const maxSteps = requiredSteps + 6;
     const seen = new Set();
     const queue = [{ hexId: unit.hexId, steps: 0 }];
-
     while (queue.length) {
       const current = queue.shift();
       const key = `${current.hexId}:${current.steps}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const currentDistance = hexDistance(current.hexId, originHexId);
-
       if (current.steps >= requiredSteps) {
         const occupant = liveUnitAt(current.hexId);
         if (!occupant || occupant.id === unit.id) {
@@ -1315,14 +1259,13 @@
         }
       }
       if (current.steps >= maxSteps) continue;
-
       for (const nextId of neighborsOf(current.hexId)) {
         const nextHex = hexById(nextId);
         if (!terrainRule(nextHex).passable) continue;
         const occupant = liveUnitAt(nextId);
         if (occupant && occupant.side !== unit.side) continue;
         if (isEnemyZoc(nextId, unit.side, unit.id)) continue;
-        if (hexDistance(nextId, origin.id) <= currentDistance) continue;
+        if (hexDistance(nextId, originHexId) <= currentDistance) continue;
         queue.push({ hexId: nextId, steps: current.steps + 1 });
       }
     }
@@ -1331,16 +1274,15 @@
   }
 
   async function attemptMove(destinationHexId) {
-    if (!requirePhaseControl()) return;
     const unit = unitById(app.state.selectedUnitId);
     if (!unit || unit.side !== activeSide() || unit.eliminated) return;
     if (unit.disrupted) {
-      log(`${unit.name} 正在混乱，不能移动。`);
+      log(tr("text.cannotMove", { unit: unitName(unit) }));
       draw();
       return;
     }
     if (app.state.movedUnits.includes(unit.id)) {
-      log(`${unit.name} 本阶段已经移动。`);
+      log(tr("text.alreadyMoved", { unit: unitName(unit) }));
       draw();
       return;
     }
@@ -1348,7 +1290,7 @@
     if (!route) return;
     const occupant = liveUnitAt(destinationHexId);
     if (occupant && occupant.id !== unit.id) {
-      log("目标格已有单位。");
+      log(tr("text.targetOccupied"));
       draw();
       return;
     }
@@ -1359,22 +1301,13 @@
     await animateUnitPath(unit, path);
     unit.hexId = destinationHexId;
     app.state.movedUnits.push(unit.id);
-    app.state.lastMove = {
-      unitId: unit.id,
-      fromHexId,
-      toHexId: destinationHexId,
-      path,
-      movedUnitsBefore,
-      turn: app.state.turn,
-      phaseIndex: app.state.phaseIndex,
-    };
-    log(`${unit.name} 移动到 ${destinationHexId}，剩余移动力 ${route.remaining}。`);
+    app.state.lastMove = { unitId: unit.id, fromHexId, toHexId: destinationHexId, path, movedUnitsBefore, turn: app.state.turn, phaseIndex: app.state.phaseIndex };
+    log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (unit.side === "allied" && app.scenario.objectives.alliedWestExitEdge.includes(destinationHexId) && route.remaining > 0) {
-      setWinner("allied", `${unit.name} 从西侧边缘脱出。`);
+      setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }));
     }
     app.state.selectedUnitId = unit.id;
     draw();
-    syncOnlineState("move");
   }
 
   async function undoLastMove() {
@@ -1388,9 +1321,8 @@
     app.state.movedUnits = move.movedUnitsBefore || app.state.movedUnits.filter((id) => id !== unit.id);
     app.state.selectedUnitId = unit.id;
     app.state.lastMove = null;
-    log(`${unit.name} 取消移动，回到 ${move.fromHexId}。`);
+    log(tr("text.undoMoved", { unit: unitName(unit), hex: hexLabel(move.fromHexId) }));
     draw();
-    syncOnlineState("undo-move");
   }
 
   function reachableHexes(unit) {
@@ -1400,12 +1332,10 @@
     const startInZoc = isEnemyZoc(startHexId, unit.side, unit.id);
     const queue = [{ hexId: startHexId, spent: 0, firstStep: true, path: [startHexId] }];
     const bestSpent = new Map([[startHexId, 0]]);
-
     while (queue.length) {
       const current = queue.shift();
       const currentInZoc = isEnemyZoc(current.hexId, unit.side, unit.id);
       if (!current.firstStep && currentInZoc) continue;
-
       for (const nextId of neighborsOf(current.hexId)) {
         const nextHex = hexById(nextId);
         const rule = terrainRule(nextHex);
@@ -1415,16 +1345,13 @@
         const nextInZoc = isEnemyZoc(nextId, unit.side, unit.id);
         if (currentInZoc && nextInZoc) continue;
         if (startInZoc && nextInZoc) continue;
-        const cost = Number(rule.movement || 1);
-        const spent = current.spent + cost;
+        const spent = current.spent + Number(rule.movement || 1);
         if (spent > allowance) continue;
         if (bestSpent.has(nextId) && bestSpent.get(nextId) <= spent) continue;
         bestSpent.set(nextId, spent);
         const remaining = allowance - spent;
         const path = current.path.concat(nextId);
-        if (!occupant || occupant.id === unit.id) {
-          result.set(nextId, { spent, remaining, path });
-        }
+        if (!occupant || occupant.id === unit.id) result.set(nextId, { spent, remaining, path });
         queue.push({ hexId: nextId, spent, firstStep: false, path });
       }
     }
@@ -1477,27 +1404,44 @@
 
   function endPhase() {
     if (app.state.winner) return;
-    if (!requirePhaseControl()) return;
     if (app.state.retreatTask || app.state.advanceTask) {
-      log("先完成当前任务。");
+      log(tr("text.retreatPrompt", { unit: "" }));
       draw();
       return;
     }
-    if (isCombatPhase() && app.state.combatMode === "resolve" && app.state.declaredCombats.some((battle) => !battle.resolved)) {
-      log("还有未结算的战斗。");
+    if (isCombatPhase() && app.state.combatMode === "resolve" && hasPendingBattles()) {
+      log(tr("text.pendingCombat"));
       draw();
       return;
     }
     if (isCombatPhase() && app.state.combatMode === "declare" && app.state.declaredCombats.length) {
-      log("请先完成战斗宣告。");
+      log(tr("ui.finishDeclarations"));
       draw();
       return;
     }
-
-    if (isCombatPhase()) {
-      recoverSide(activeSide());
+    if (isCombatPhase()) recoverSide(activeSide());
+    clearPhaseState();
+    if (app.state.phaseIndex === app.rules.phases.length - 1) {
+      if (checkAxisObjectiveVictory()) {
+        draw();
+        return;
+      }
+      if (app.state.turn >= app.rules.turns.length) {
+        setWinner("allied", tr("text.fourTurnWin"));
+      } else {
+        app.state.turn += 1;
+        app.state.phaseIndex = 0;
+        log(tr("text.turnStart", { turn: app.state.turn }));
+        saveTurnCheckpoint();
+      }
+    } else {
+      app.state.phaseIndex += 1;
+      log(tr("text.enterPhase", { phase: phaseLabel(phase().id) }));
     }
+    draw();
+  }
 
+  function clearPhaseState() {
     app.state.selectedUnitId = null;
     app.state.selectedDefenderId = null;
     app.state.selectedAttackers = [];
@@ -1510,33 +1454,14 @@
     app.state.combatMode = "declare";
     app.reachable.clear();
     app.legalRetreats.clear();
-
-    if (app.state.phaseIndex === app.rules.phases.length - 1) {
-      if (checkAxisObjectiveVictory()) {
-        draw();
-        syncOnlineState("axis-objective-victory");
-        return;
-      }
-      if (app.state.turn >= app.rules.turns.length) {
-        setWinner("allied", "4 回合结束，轴心国未达成胜利。");
-      } else {
-        app.state.turn += 1;
-        app.state.phaseIndex = 0;
-        log(`进入第 ${app.state.turn} 回合。`);
-      }
-    } else {
-      app.state.phaseIndex += 1;
-      log(`进入 ${phaseLabel(phase().id)}。`);
-    }
-    draw();
-    syncOnlineState("end-phase");
+    app.legalRetreatSteps.clear();
   }
 
   function recoverSide(side) {
     for (const unit of app.state.units) {
       if (!unit.eliminated && unit.side === side && unit.disrupted) {
         unit.disrupted = false;
-        log(`${unit.name} 从混乱恢复。`);
+        log(tr("text.recover", { unit: unitName(unit) }));
       }
     }
   }
@@ -1548,132 +1473,184 @@
     const ridgeUnit = axisUnits.find((unit) => ridge.has(unit.hexId));
     const roadUnit = axisUnits.find((unit) => road.has(unit.hexId));
     if (ridgeUnit) {
-      setWinner("axis", `${ridgeUnit.name} 占领阿拉姆哈勒法岭目标阵地。`);
+      setWinner("axis", tr("text.ridgeWin", { unit: unitName(ridgeUnit) }));
       return true;
     }
     if (roadUnit) {
-      setWinner("axis", `${roadUnit.name} 占领阿拉曼以东沿海道路。`);
+      setWinner("axis", tr("text.roadWin", { unit: unitName(roadUnit) }));
       return true;
     }
     return false;
   }
 
   function setWinner(side, reason) {
-    app.state.winner = { side, reason, summary: buildVictorySummary(side, reason) };
-    app.state.winnerDialogShown = false;
-    log(`${sideLabel(side)} 胜利：${reason}`);
-    presentVictoryDialog();
+    app.state.winner = { side, reason, turn: app.state.turn, report: buildAarData(side, reason) };
+    log(`${sideLabel(side)}: ${reason}`);
+    openAar(true);
   }
 
-  function buildVictorySummary(side, reason) {
-    const eliminated = app.state.units.filter((unit) => unit.eliminated).map((unit) => unit.name);
+  function buildAarData(side = app.state.winner?.side || null, reason = app.state.winner?.reason || tr("aar.pendingTitle")) {
+    const eliminated = app.state.eliminatedUnitIds.map(unitById).filter(Boolean);
     const axisUnits = liveUnits().filter((unit) => unit.side === "axis");
-    const alliedUnits = liveUnits().filter((unit) => unit.side === "allied");
     const ridge = new Set(app.scenario.objectives.alamHalfaRidge);
     const road = new Set(app.scenario.objectives.coastalRoadEast);
-    const west = new Set(app.scenario.objectives.alliedWestExitEdge);
-    const ridgeOccupiers = axisUnits.filter((unit) => ridge.has(unit.hexId)).map((unit) => unit.name);
-    const roadOccupiers = axisUnits.filter((unit) => road.has(unit.hexId)).map((unit) => unit.name);
-    const westEdgeAllies = alliedUnits.filter((unit) => west.has(unit.hexId)).map((unit) => unit.name);
+    const ridgeOccupiers = axisUnits.filter((unit) => ridge.has(unit.hexId)).map(unitName);
+    const roadOccupiers = axisUnits.filter((unit) => road.has(unit.hexId)).map(unitName);
     return {
-      title: `${sideLabel(side)} 胜利`,
-      lines: [
-        `胜利方式：${reason}`,
-        eliminated.length ? `已歼灭部队：${eliminated.join("、")}` : "已歼灭部队：无",
-        ridgeOccupiers.length ? `阿拉姆哈勒法岭目标：${ridgeOccupiers.join("、")} 占领` : "阿拉姆哈勒法岭目标：未被轴心占领",
-        roadOccupiers.length ? `阿拉曼以东沿海道路：${roadOccupiers.join("、")} 占领或切断` : "阿拉曼以东沿海道路：未被轴心占领或切断",
-        westEdgeAllies.length ? `西侧脱出边：${westEdgeAllies.join("、")} 位于边缘` : "西侧脱出边：无英军停留",
-      ],
+      side,
+      reason,
+      turn: app.state.turn,
+      eliminated,
+      losses: clone(app.state.losses),
+      ridgeOccupiers,
+      roadOccupiers,
+      battles: clone(app.state.battleReports),
     };
   }
 
-  function presentVictoryDialog() {
-    if (!app.state.winner || app.state.winnerDialogShown || !el.victoryDialog) return;
-    const summary = app.state.winner.summary || buildVictorySummary(app.state.winner.side, app.state.winner.reason);
-    el.victoryTitle.textContent = summary.title;
-    el.victoryBody.replaceChildren();
-    for (const line of summary.lines) {
-      const item = document.createElement("p");
-      item.textContent = line;
-      el.victoryBody.append(item);
-    }
-    app.state.winnerDialogShown = true;
-    if (!el.victoryDialog.open) {
-      try {
-        el.victoryDialog.showModal();
-      } catch (_) {
-        el.victoryDialog.setAttribute("open", "");
+  function openAar(final = false) {
+    renderAar(final);
+    setView("aar");
+  }
+
+  function renderAar() {
+    const data = buildAarData();
+    const winnerSide = app.state.winner?.side || "";
+    el.aarView.dataset.winner = winnerSide || "pending";
+    el.aarTitle.textContent = app.state.winner ? tr("aar.title", { side: sideLabel(winnerSide) }) : tr("aar.pendingTitle");
+    el.aarSubtitle.textContent = tr("aar.subtitle", { turn: data.turn, reason: data.reason });
+    el.aarSummary.replaceChildren(
+      aarCard(tr("text.result"), data.reason),
+      aarCard(tr("text.phaseOrders"), [
+        data.ridgeOccupiers.length ? `${tr("terrain.highland")}: ${data.ridgeOccupiers.join(", ")}` : `${tr("terrain.highland")}: --`,
+        data.roadOccupiers.length ? `${tr("text.defenderHex")}: ${data.roadOccupiers.join(", ")}` : `${tr("text.attackerHexes")}: --`,
+      ].join("\n")),
+    );
+    el.aarLosses.replaceChildren(
+      lossCard("axis", data.losses.axis),
+      lossCard("allied", data.losses.allied),
+    );
+    el.aarEliminated.replaceChildren(sectionTitle(tr("aar.eliminated")));
+    if (data.eliminated.length) {
+      const list = document.createElement("div");
+      list.className = "counter-list";
+      for (const unit of data.eliminated) {
+        const img = document.createElement("img");
+        img.src = unit.image;
+        img.alt = unitName(unit);
+        img.title = `${unitName(unit)} (${unit.combat})`;
+        list.append(img);
       }
+      el.aarEliminated.append(list);
+    } else {
+      el.aarEliminated.append(aarCard("", tr("aar.noEliminated")));
     }
+    el.aarBattles.replaceChildren(sectionTitle(tr("aar.battles")));
+    if (!data.battles.length) {
+      el.aarBattles.append(aarCard("", tr("text.noDeclared")));
+    } else {
+      for (const battle of data.battles) el.aarBattles.append(battleReportCard(battle));
+    }
+  }
+
+  function sectionTitle(text) {
+    const node = document.createElement("div");
+    node.className = "aar-card";
+    const strong = document.createElement("strong");
+    strong.textContent = text;
+    node.append(strong);
+    return node;
+  }
+
+  function aarCard(title, body) {
+    const card = document.createElement("div");
+    card.className = "aar-card";
+    if (title) {
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      card.append(strong);
+    }
+    const span = document.createElement("span");
+    span.textContent = body;
+    card.append(span);
+    return card;
+  }
+
+  function lossCard(side, loss) {
+    return aarCard(sideLabel(side), `${tr("aar.losses")}: ${loss.units} / ${tr("text.attack")}: ${loss.combat}`);
+  }
+
+  function battleReportCard(report) {
+    const battle = battleById(report.id) || report;
+    const title = `${hexLabel(report.defenderHexId)} · ${combatResultLabel(report.result || "Skipped")}`;
+    const body = [
+      `${tr("text.attackerHexes")}: ${(report.attackerHexIds || []).map(hexLabel).join(", ")}`,
+      `${tr("text.odds")}: ${report.odds || "--"} · ${tr("text.die")}: ${report.roll || "--"}`,
+      ...(battle.events || report.events || []).map((event) => event.text),
+    ].filter(Boolean).join("\n");
+    return aarCard(title, body);
   }
 
   function draw() {
     if (!app.state) return;
+    applyLanguage();
     drawStatus();
     drawHexLayer();
     drawUnits();
     drawSelectedUnit();
     drawCombatPanel();
-    drawTaskPanel();
+    drawOperationsBoard();
     drawLog();
-    drawOnlinePanel();
+    updateMenu();
   }
 
   function drawStatus() {
     const turn = app.rules.turns[app.state.turn - 1];
-    const canAct = canControlPhase();
-    el.turnLabel.textContent = `${turn?.label || `Turn ${app.state.turn}`} · ${sideLabel(activeSide())}`;
-    el.phaseLabel.textContent = phase().label;
+    el.turnLabel.textContent = `${turnLabel(turn)} · ${sideLabel(activeSide())}`;
+    el.phaseLabel.textContent = phaseLabel(phase().id);
     el.boardBadge.textContent = boardBadgeText();
     el.finishDeclarationsButton.hidden = !(isCombatPhase() && app.state.combatMode === "declare");
     el.resolveBattleButton.hidden = !(isCombatPhase() && app.state.combatMode === "resolve");
-    if (isCombatPhase() && app.state.combatMode === "resolve") {
-      const pendingBattle = currentBattle();
-      el.resolveBattleButton.disabled = Boolean(app.state.winner || !canAct || app.state.retreatTask || app.state.advanceTask || !pendingBattle);
-      el.resolveBattleButton.textContent = pendingBattle ? "结算下一战 / Roll" : "战斗已结束 / Done";
-    } else {
-      el.resolveBattleButton.disabled = Boolean(app.state.winner || !canAct);
-      el.resolveBattleButton.textContent = "结算下一战 / Roll";
-    }
-    el.finishDeclarationsButton.disabled = Boolean(app.state.winner || !canAct);
-    el.endPhaseButton.disabled = Boolean(app.state.winner || !canAct);
+    const pendingBattle = isCombatPhase() && app.state.combatMode === "resolve" ? currentBattle() : null;
+    el.resolveBattleButton.disabled = Boolean(app.state.winner || app.state.retreatTask || app.state.advanceTask || !pendingBattle);
+    el.resolveBattleButton.textContent = pendingBattle ? tr("ui.resolveBattle") : tr("ui.done");
+    el.finishDeclarationsButton.disabled = Boolean(app.state.winner);
+    el.endPhaseButton.disabled = Boolean(app.state.winner);
     if (app.state.winner) {
       el.winnerBanner.hidden = false;
-      el.winnerBanner.textContent = `${sideLabel(app.state.winner.side)} 胜利：${app.state.winner.reason}`;
+      el.winnerBanner.textContent = `${sideLabel(app.state.winner.side)} · ${app.state.winner.reason}`;
     } else {
       el.winnerBanner.hidden = true;
       el.winnerBanner.textContent = "";
     }
   }
 
+  function turnLabel(turn) {
+    if (!turn) return `Turn ${app.state.turn}`;
+    return app.lang === "en" ? turn.label.split(" / ")[0] : turn.label.split(" / ")[1] || turn.label;
+  }
+
   function boardBadgeText() {
     if (app.state.retreatTask) {
       const unit = unitById(app.state.retreatTask.unitIds[app.state.retreatTask.index]);
-      return unit ? `${unit.name} 撤退中` : "撤退中";
+      return unit ? tr("text.retreatPrompt", { unit: unitName(unit) }) : tr("text.retreatPrompt", { unit: "" });
     }
-    if (app.state.advanceTask) return "选择战后挺进单位";
-    if (isMovementPhase()) return `${sideLabel(activeSide())} 移动阶段`;
-    if (isCombatPhase() && app.state.combatMode === "declare") return `${sideLabel(activeSide())} 宣告战斗`;
-    if (isCombatPhase()) return `${sideLabel(activeSide())} 结算战斗`;
-    return "";
+    if (app.state.advanceTask) return tr("text.advancePrompt", { hex: hexLabel(app.state.advanceTask.targetHexId) });
+    return phaseLabel(phase().id);
   }
 
   function drawBattleHighlights(ctx) {
     if (!isCombatPhase()) return;
     if (app.state.combatMode === "declare") {
       for (const battle of app.state.declaredCombats) {
-        for (const attackerId of battle.attackerIds) {
-          drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.declaredAttack, 3);
-        }
+        for (const attackerId of battle.attackerIds) drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.declaredAttack, 3);
         drawHex(ctx, hexById(unitById(battle.defenderId)?.hexId), HIGHLIGHT.declaredDefender, 3);
       }
       return;
     }
     const battle = currentBattle();
     if (!battle) return;
-    for (const attackerId of battle.attackerIds) {
-      drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.currentAttack, 5);
-    }
+    for (const attackerId of battle.attackerIds) drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.currentAttack, 5);
     drawHex(ctx, hexById(unitById(battle.defenderId)?.hexId || battle.defenderHexId), HIGHLIGHT.currentDefender, 5);
   }
 
@@ -1685,7 +1662,7 @@
     for (const hexId of app.reachable.keys()) drawHex(ctx, hexById(hexId), HIGHLIGHT.reachable, 3);
     if (app.state.selectedDefenderId) drawHex(ctx, hexById(unitById(app.state.selectedDefenderId)?.hexId), HIGHLIGHT.defender, 5);
     for (const attackerId of app.state.selectedAttackers) drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.attack, 4);
-    for (const hexId of app.legalRetreats) drawHex(ctx, hexById(hexId), HIGHLIGHT.retreat, 4);
+    for (const hexId of app.legalRetreatSteps) drawHex(ctx, hexById(hexId), HIGHLIGHT.retreat, 4);
     if (app.state.advanceTask) drawHex(ctx, hexById(app.state.advanceTask.targetHexId), HIGHLIGHT.attack, 5);
   }
 
@@ -1695,10 +1672,7 @@
     const points = [];
     for (let i = 0; i < 6; i += 1) {
       const angle = Math.PI / 180 * (-90 + 60 * i);
-      points.push({
-        x: hex.center.x + Math.cos(angle) * radius,
-        y: hex.center.y + Math.sin(angle) * radius,
-      });
+      points.push({ x: hex.center.x + Math.cos(angle) * radius, y: hex.center.y + Math.sin(angle) * radius });
     }
     ctx.save();
     ctx.beginPath();
@@ -1743,11 +1717,11 @@
       node.dataset.battleRole = unitBattleRole(unit.id);
       node.style.left = `${hex.center.x}px`;
       node.style.top = `${hex.center.y}px`;
-      node.title = `${unit.name} ${unit.combat}-${unit.movement}`;
+      node.title = `${unitName(unit)} ${unit.combat}-${unit.movement}`;
       node.addEventListener("click", (event) => onUnitClick(event, unit.id));
       const image = document.createElement("img");
       image.src = unit.image;
-      image.alt = unit.name;
+      image.alt = unitName(unit);
       node.append(image);
       if (unit.disrupted) {
         const disrupted = document.createElement("span");
@@ -1763,136 +1737,190 @@
     const unit = unitById(app.state.selectedUnitId) || unitById(app.state.selectedDefenderId);
     if (!unit) {
       el.selectedUnit.className = "selected-unit empty";
-      el.selectedUnit.textContent = "--";
+      el.selectedUnit.textContent = tr("ui.noSelection");
       return;
     }
     el.selectedUnit.className = "selected-unit";
-    el.selectedUnit.replaceChildren(unitCard(unit));
-  }
-
-  function unitCard(unit) {
     const wrap = document.createElement("div");
     wrap.className = "unit-card";
     const image = document.createElement("img");
     image.src = unit.image;
-    image.alt = unit.name;
+    image.alt = unitName(unit);
     const meta = document.createElement("div");
     meta.className = "unit-meta";
     const title = document.createElement("strong");
-    title.textContent = unit.name;
+    title.textContent = unitName(unit);
     const stats = document.createElement("span");
     stats.textContent = `${sideLabel(unit.side)} · ${nationalityLabel(unit.nationality)} · ${unit.combat}-${unit.movement}`;
     const state = document.createElement("span");
-    state.textContent = unit.disrupted ? "混乱 / Disrupted" : "Ready";
+    state.textContent = unit.disrupted ? tr("text.disrupted") : tr("text.ready");
     meta.append(title, stats, state);
     wrap.append(image, meta);
     if (canUndoLastMove(unit)) {
       const undo = document.createElement("button");
       undo.type = "button";
       undo.className = "undo-move-button";
-      undo.textContent = "取消移动 / Undo Move";
+      undo.textContent = tr("text.undoMove");
       undo.addEventListener("click", undoLastMove);
       wrap.append(undo);
     }
-    return wrap;
+    el.selectedUnit.replaceChildren(wrap);
   }
 
   function drawCombatPanel() {
     el.combatComposer.replaceChildren();
-    el.battleList.replaceChildren();
-
     if (!isCombatPhase()) {
       el.combatComposer.textContent = "--";
       return;
     }
-
     if (app.state.combatMode === "declare") {
-      const defender = unitById(app.state.selectedDefenderId);
-      const attackers = app.state.selectedAttackers.map(unitById).filter(Boolean);
-      const defenderLine = document.createElement("div");
-      defenderLine.innerHTML = `<strong>守方:</strong> ${defender ? defender.name : "--"}`;
-      const attackerLine = document.createElement("div");
-      attackerLine.innerHTML = `<strong>攻方:</strong>`;
-      const row = document.createElement("div");
-      row.className = "pill-row";
-      if (attackers.length) attackers.forEach((unit) => row.append(pill(unit.name)));
-      else row.append(pill("--"));
-      const odds = document.createElement("div");
-      odds.className = "odds-preview";
-      odds.textContent = previewOddsText(attackers, defender);
-      const actions = document.createElement("div");
-      actions.className = "composer-actions";
-      const add = document.createElement("button");
-      add.type = "button";
-      add.textContent = "加入战斗 / Add";
-      add.disabled = !defender || !attackers.length;
-      add.addEventListener("click", declareBattle);
-      const clear = document.createElement("button");
-      clear.type = "button";
-      clear.textContent = "清空 / Clear";
-      clear.addEventListener("click", () => {
-        app.state.selectedDefenderId = null;
-        app.state.selectedAttackers = [];
-        draw();
-      });
-      actions.append(add, clear);
-      const declared = document.createElement("div");
-      declared.className = "declared-summary";
-      declared.textContent = app.state.declaredCombats.length ? `已宣告 ${app.state.declaredCombats.length} 场战斗。` : "尚未宣告战斗。";
-      el.combatComposer.append(defenderLine, attackerLine, row, odds, actions, declared);
+      drawCombatComposer();
       return;
     }
-
-    const activeBattle = currentBattle();
-    if (activeBattle) {
-      const defender = unitById(activeBattle.defenderId);
-      const attackers = activeBattle.attackerIds.map(unitById).filter(Boolean);
-      const odds = activeBattle.result
-        ? activeBattle.oddsAtResolution
-        : activeBattle.oddsAtDeclaration || formatOddsWithDefense(calculateOdds(attackers, defender));
-      const card = document.createElement("div");
-      card.className = "current-combat-card";
-      const title = document.createElement("strong");
-      title.textContent = `当前战斗：${activeBattle.defenderHexId}`;
-      const line = document.createElement("p");
-      line.textContent = `${attackers.map((unit) => unit.name).join(" + ")} -> ${defender?.name || "?"}`;
-      const detail = document.createElement("p");
-      detail.textContent = odds;
-      card.append(title, line, detail);
-      el.combatComposer.append(card);
-    } else {
-      el.combatComposer.textContent = app.state.declaredCombats.length ? "所有宣告战斗已结算完成。" : "本阶段没有宣告战斗。";
+    const battle = currentBattle();
+    if (!battle) {
+      el.combatComposer.textContent = app.state.declaredCombats.length ? tr("text.allDone") : tr("text.noBattle");
+      return;
     }
-
+    const card = document.createElement("div");
+    card.className = "composer-card";
+    const title = document.createElement("strong");
+    title.textContent = `${tr("text.currentBattle")} · ${hexLabel(battle.defenderHexId)}`;
+    const detail = document.createElement("span");
+    detail.textContent = compactOddsText(battle.oddsAtResolution || battle.oddsAtDeclaration || "--");
+    card.append(title, detail);
     if (app.state.advanceTask) {
-      const prompt = document.createElement("div");
-      prompt.className = "advance-prompt";
-      const text = document.createElement("span");
-      text.textContent = `战后挺进：点击参与攻击单位进入 ${app.state.advanceTask.targetHexId}`;
+      const row = document.createElement("div");
+      row.className = "mini-actions";
+      const label = document.createElement("span");
+      label.textContent = tr("text.advancePrompt", { hex: hexLabel(app.state.advanceTask.targetHexId) });
       const skip = document.createElement("button");
       skip.type = "button";
-      skip.textContent = "跳过 / Skip";
+      skip.textContent = tr("text.skip");
       skip.addEventListener("click", () => advanceUnit("skip"));
-      prompt.append(text, skip);
-      el.combatComposer.append(prompt);
+      row.append(label, skip);
+      card.append(row);
     }
+    el.combatComposer.append(card);
+  }
 
-    for (const battle of app.state.declaredCombats) {
-      const row = document.createElement("div");
-      row.className = "battle-row";
-      row.dataset.resolved = String(battle.resolved);
-      row.dataset.current = String(activeBattle?.id === battle.id);
-      const title = document.createElement("strong");
-      title.textContent = `守方格：${battle.defenderHexId}`;
-      const detail = document.createElement("small");
-      detail.textContent = compactOddsText(battle.oddsAtResolution || battle.oddsAtDeclaration || phaseLabel(battle.phaseId));
-      row.append(title, document.createElement("br"), detail);
-      el.battleList.append(row);
+  function drawCombatComposer() {
+    const defender = unitById(app.state.selectedDefenderId);
+    const attackers = app.state.selectedAttackers.map(unitById).filter(Boolean);
+    const card = document.createElement("div");
+    card.className = "composer-card";
+    card.append(line(`${tr("text.selectedDefender")}: ${defender ? `${unitName(defender)} · ${hexLabel(defender.hexId)}` : "--"}`));
+    const row = document.createElement("div");
+    row.className = "pill-row";
+    if (attackers.length) attackers.forEach((unit) => row.append(pill(`${unitName(unit)} · ${hexLabel(unit.hexId)}`)));
+    else row.append(pill("--"));
+    const odds = document.createElement("div");
+    odds.className = "odds-preview";
+    odds.textContent = previewOddsText(attackers, defender);
+    const actions = document.createElement("div");
+    actions.className = "composer-actions";
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = tr("text.addBattle");
+    add.disabled = !defender || !attackers.length;
+    add.addEventListener("click", declareBattle);
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.textContent = tr("text.clear");
+    clear.addEventListener("click", () => {
+      app.state.selectedDefenderId = null;
+      app.state.selectedAttackers = [];
+      draw();
+    });
+    actions.append(add, clear);
+    card.append(line(`${tr("text.selectedAttackers")}:`), row, odds, actions);
+    el.combatComposer.append(card);
+  }
+
+  function drawOperationsBoard() {
+    el.operationsFocus.replaceChildren();
+    el.battleList.replaceChildren();
+    if (app.state.retreatTask) {
+      const unit = unitById(app.state.retreatTask.unitIds[app.state.retreatTask.index]);
+      el.operationsFocus.append(operationCard(tr("text.phaseOrders"), tr("text.retreatPrompt", { unit: unitName(unit) }), "danger"));
+      return;
+    }
+    if (app.state.lastCombatResult) {
+      const result = app.state.lastCombatResult;
+      const details = [
+        `${tr("text.defenderHex")}: ${result.defenderHex}`,
+        `${tr("text.odds")}: ${result.odds} · ${tr("text.die")}: ${result.roll}`,
+        `${tr("text.result")}: ${combatResultLabel(result.result)}`,
+        ...(result.events || []).map((event) => event.text),
+      ].join("\n");
+      el.operationsFocus.append(operationCard(tr("text.currentBattle"), details, result.events?.some((event) => event.type === "eliminated") ? "danger" : "good"));
+    } else {
+      el.operationsFocus.append(operationCard(tr("text.phaseOrders"), phaseLabel(phase().id), ""));
+    }
+    if (isCombatPhase() && app.state.combatMode === "declare") {
+      if (!app.state.declaredCombats.length) {
+        el.battleList.append(operationCard("", tr("text.noDeclared"), ""));
+      } else {
+        app.state.declaredCombats.forEach((battle, index) => el.battleList.append(declaredBattleRow(battle, index)));
+      }
+    } else if (isCombatPhase()) {
+      app.state.declaredCombats.forEach((battle) => el.battleList.append(resolutionBattleRow(battle)));
     }
   }
 
+  function operationCard(title, body, severity = "") {
+    const card = document.createElement("div");
+    card.className = "operation-card";
+    if (severity) card.dataset.severity = severity;
+    if (title) {
+      const strong = document.createElement("strong");
+      strong.textContent = title;
+      card.append(strong);
+    }
+    String(body || "").split("\n").forEach((text) => {
+      const p = document.createElement("p");
+      p.textContent = text;
+      if (text.includes("歼灭") || text.includes("eliminated")) p.className = "eliminated-line";
+      card.append(p);
+    });
+    return card;
+  }
+
+  function declaredBattleRow(battle, index) {
+    const row = document.createElement("div");
+    row.className = "battle-row";
+    const title = document.createElement("strong");
+    title.textContent = `#${index + 1} · ${hexLabel(battle.defenderHexId)}`;
+    const meta = document.createElement("div");
+    meta.className = "operation-meta";
+    [battle.attackerHexIds.map(hexLabel).join(", "), battle.oddsShort || compactOddsText(battle.oddsAtDeclaration), phaseLabel(battle.phaseId)].forEach((text) => {
+      const item = document.createElement("span");
+      item.textContent = text;
+      meta.append(item);
+    });
+    row.append(title, meta);
+    return row;
+  }
+
+  function resolutionBattleRow(battle) {
+    const row = document.createElement("div");
+    row.className = "battle-row";
+    row.dataset.resolved = String(battle.resolved);
+    row.dataset.current = String(currentBattle()?.id === battle.id);
+    const title = document.createElement("strong");
+    title.textContent = `${hexLabel(battle.defenderHexId)} · ${battle.resultCode ? combatResultLabel(battle.resultCode) : compactOddsText(battle.oddsShort || battle.oddsAtDeclaration)}`;
+    const detail = document.createElement("small");
+    detail.textContent = battle.roll ? `${tr("text.die")}: ${battle.roll} · ${tr("text.odds")}: ${battle.oddsShort}` : `${tr("text.odds")}: ${battle.oddsShort || "--"}`;
+    row.append(title, detail);
+    return row;
+  }
+
   function compactOddsText(text) {
-    return String(text || "--").split("；")[0];
+    return String(text || "--").split(";")[0];
+  }
+
+  function formatBattleTitle(battle) {
+    return `${battle.attackerHexIds.map(hexLabel).join(", ")} -> ${hexLabel(battle.defenderHexId)}`;
   }
 
   function pill(text) {
@@ -1902,50 +1930,15 @@
     return node;
   }
 
-  function drawTaskPanel() {
-    if (!el.taskPanel) return;
-    el.taskPanel.replaceChildren();
-    if (app.state.retreatTask) {
-      const task = app.state.retreatTask;
-      const unit = unitById(task.unitIds[task.index]);
-      el.taskPanel.append(textNode(unit ? `${unit.name}: ${task.result}, ${task.steps} 格` : "撤退中"));
-      return;
-    }
-    if (app.state.advanceTask) {
-      const task = app.state.advanceTask;
-      el.taskPanel.append(textNode(`目标格 ${task.targetHexId}`));
-      const actions = document.createElement("div");
-      actions.className = "task-actions";
-      for (const id of task.attackerIds) {
-        const unit = unitById(id);
-        if (!unit) continue;
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = `${unit.name} 挺进`;
-        button.addEventListener("click", () => advanceUnit(id));
-        actions.append(button);
-      }
-      const skip = document.createElement("button");
-      skip.type = "button";
-      skip.textContent = "跳过 / Skip";
-      skip.addEventListener("click", () => advanceUnit("skip"));
-      actions.append(skip);
-      el.taskPanel.append(actions);
-      return;
-    }
-    el.taskPanel.textContent = "--";
-  }
-
-  function textNode(text) {
+  function line(text) {
     const node = document.createElement("div");
     node.textContent = text;
     return node;
   }
 
   function drawLog() {
-    if (!el.logList) return;
-    if (el.logBlock) el.logBlock.dataset.expanded = String(app.logExpanded);
-    if (el.logToggleButton) el.logToggleButton.textContent = app.logExpanded ? "收起 / Close" : "打开 / Open";
+    el.logBlock.dataset.expanded = String(app.logExpanded);
+    el.logToggleButton.textContent = app.logExpanded ? tr("ui.closeLog") : tr("ui.openLog");
     el.logList.replaceChildren();
     const messages = app.logExpanded ? app.state.log.slice(-80) : app.state.log.slice(-1);
     for (const message of messages) {
@@ -1954,36 +1947,6 @@
       el.logList.append(item);
     }
     if (app.logExpanded) el.logList.scrollTop = el.logList.scrollHeight;
-  }
-
-  function drawOnlinePanel() {
-    if (!el.onlineStatus) return;
-    el.onlineStatus.textContent = app.online.status;
-    el.onlineStatus.dataset.mode = app.online.statusMode;
-    if (el.roomCodeInput && app.online.roomCode) el.roomCodeInput.value = app.online.roomCode;
-
-    const connected = app.online.connected;
-    const players = app.online.players || {};
-    if (el.createRoomButton) el.createRoomButton.disabled = connected;
-    if (el.joinRoomButton) el.joinRoomButton.disabled = connected;
-    if (el.leaveRoomButton) el.leaveRoomButton.disabled = !connected;
-
-    const axisTaken = Boolean(players.axis && players.axis !== app.online.playerId);
-    const alliedTaken = Boolean(players.allied && players.allied !== app.online.playerId);
-    if (el.claimAxisButton) {
-      el.claimAxisButton.disabled = !connected || axisTaken;
-      el.claimAxisButton.dataset.active = String(app.online.role === "axis");
-      el.claimAxisButton.textContent = axisTaken ? "轴心已占 / Axis" : "轴心 / Axis";
-    }
-    if (el.claimAlliedButton) {
-      el.claimAlliedButton.disabled = !connected || alliedTaken;
-      el.claimAlliedButton.dataset.active = String(app.online.role === "allied");
-      el.claimAlliedButton.textContent = alliedTaken ? "英军已占 / Allied" : "英军 / Allied";
-    }
-    if (el.spectatorButton) {
-      el.spectatorButton.disabled = !connected;
-      el.spectatorButton.dataset.active = String(app.online.role === "spectator");
-    }
   }
 
   init();
