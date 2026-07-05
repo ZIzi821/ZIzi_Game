@@ -66,7 +66,7 @@
       app: { title: "阿拉曼战役" },
       menu: {
         eyebrow: "北非战役",
-        copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败第8军团。",
+        copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败英国第八集团军。",
         start: "开始战役",
         continue: "继续本回合",
         load: "读取存档",
@@ -317,7 +317,7 @@
   };
 
   Object.assign(I18N.zh.menu, {
-    copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败第8军团。",
+    copy: "北非战场上轴心国军队在埃及、叙利亚地区主动发起的最后一次大规模攻势，计划在同盟国增援到来而导致轴心国无法在非洲获得胜利之前借由这次战役击败英国第八集团军。",
     continue: "继续游戏",
     continued: "已回到上次离开的局面。",
     noCheckpoint: "没有可继续的局面。",
@@ -345,8 +345,9 @@
     currentStrength: "当前总战力",
     eliminatedUnits: "被歼灭单位",
     lostStrength: "损失战力",
-    victoryImpact: "战役影响",
-    objectives: "目标态势",
+    eliminatedTarget: "歼灭",
+    victoryImpact: "胜利宣言",
+    objectives: "胜利条件",
     ridgeObjectives: "阿拉姆哈勒法岭",
     coastalRoadObjectives: "沿海道路",
     showBattleRecord: "展开战斗记录",
@@ -354,7 +355,7 @@
     axisImpact: "隆美尔和他的战士们将继续追歼残敌，在中东完成与南方面军的伟大会师！",
     alliedImpactPrefix: "历史上，",
     alliedImpactLink: "轴心军攻占苏伊士运河地区的最后希望破灭了",
-    alliedImpactSuffix: "，英军第8集团军由此稳住埃及防线，并为随后转入反攻奠定基础。",
+    alliedImpactSuffix: "，英国第八集团军由此稳住埃及防线，并为随后转入反攻奠定基础。",
   });
   Object.assign(I18N.en.text, {
     currentDeclaration: "Current Declaration",
@@ -373,8 +374,9 @@
     currentStrength: "Current Combat Strength",
     eliminatedUnits: "Eliminated Units",
     lostStrength: "Combat Strength Lost",
+    eliminatedTarget: "Eliminated",
     victoryImpact: "Operational Impact",
-    objectives: "Objective Situation",
+    objectives: "Victory Conditions",
     ridgeObjectives: "Alam Halfa Ridge",
     coastalRoadObjectives: "Coastal Road",
     showBattleRecord: "Expand Combat Record",
@@ -408,12 +410,21 @@
     roadCut: "被切断",
     roadElAlamein: "占领了阿拉曼",
     roadElAlameinCut: "占领了阿拉曼并切断",
-    casualtyReport: "战损与歼灭单位",
+    roadCutTitle: "同盟国的沿海道路被切断",
+    roadCutText: "英国第八集团军的士气会比他们的淡水先耗尽",
+    roadElAlameinTitle: "非洲军团征服阿拉曼",
+    roadElAlameinText: "隆美尔打开了通往亚历山大港的大门",
+    ridgeControlTitle: "非洲军团控制阿拉姆哈勒法岭",
+    ridgeControlText: "在一览无余的沙漠上英军失去了南翼防线最重要的支撑点",
+    ridgeFullTitle: "非洲军团完全控制阿拉姆哈勒法岭",
+    ridgeFullText: "在一览无余的沙漠上我们拿下了这个英军南翼防线最重要的支撑点",
+    noObjectiveReached: "尚未达成胜利条件。",
+    casualtyReport: "战力与歼灭单位",
     germanGroup: "德军",
     italianGroup: "意大利军",
     commonwealthGroup: "英联邦",
     mechanizedTag: "机械化",
-    nonMechanizedTag: "步兵/非机械化",
+    nonMechanizedTag: "非机械化",
     noEliminated: "无被歼灭单位",
     axisImpact: "隆美尔和他的战士们将继续追歼残敌，在中东完成与南方面军的伟大会师！",
   });
@@ -432,6 +443,15 @@
     roadCut: "Cut",
     roadElAlamein: "El Alamein occupied",
     roadElAlameinCut: "El Alamein occupied and road cut",
+    roadCutTitle: "Allied coastal road cut",
+    roadCutText: "The Eighth Army's morale will run out before its fresh water.",
+    roadElAlameinTitle: "Afrika Korps conquers El Alamein",
+    roadElAlameinText: "Rommel has opened the road to Alexandria.",
+    ridgeControlTitle: "Afrika Korps controls Alam Halfa Ridge",
+    ridgeControlText: "On the open desert, the British have lost the key support of their southern flank.",
+    ridgeFullTitle: "Afrika Korps fully controls Alam Halfa Ridge",
+    ridgeFullText: "Across the open desert, the key support of the British southern flank is ours.",
+    noObjectiveReached: "No victory condition has been achieved.",
     casualtyReport: "Losses and Eliminated Units",
     germanGroup: "German",
     italianGroup: "Italian",
@@ -441,8 +461,8 @@
     noEliminated: "No eliminated units",
   });
   Object.assign(I18N.zh.aar, {
-    losses: "战损与歼灭单位",
-    eliminated: "战损与歼灭单位",
+    losses: "战力与歼灭单位",
+    eliminated: "战力与歼灭单位",
   });
   Object.assign(I18N.en.aar, {
     losses: "Losses and Eliminated Units",
@@ -948,7 +968,6 @@
   }
 
   function selectUnit(unit) {
-    if (app.state.lastMove && app.state.lastMove.unitId !== unit.id) clearLastMove();
     if (app.state.selectedUnitId === unit.id && !canUndoLastMove(unit)) {
       app.state.selectedUnitId = null;
       app.reachable.clear();
@@ -963,10 +982,6 @@
       app.reachable = reachableHexes(unit);
     }
     draw();
-  }
-
-  function clearLastMove() {
-    app.state.lastMove = null;
   }
 
   function canUndoLastMove(unit = unitById(app.state.selectedUnitId)) {
@@ -1563,6 +1578,13 @@
     });
   }
 
+  function isSideZoc(hexId, side, ignoreUnitId = null) {
+    return liveUnits().some((unit) => {
+      if (unit.id === ignoreUnitId || unit.side !== side || unit.disrupted) return false;
+      return neighborsOf(unit.hexId).includes(hexId);
+    });
+  }
+
   function neighborsOf(hexId) {
     const hex = hexById(hexId);
     if (!hex) return [];
@@ -1690,6 +1712,20 @@
     const ridge = new Set(app.scenario.objectives.alamHalfaRidge);
     const road = new Set(app.scenario.objectives.coastalRoadEast);
     const ridgeOccupiedHexes = new Set(axisUnits.filter((unit) => ridge.has(unit.hexId)).map((unit) => unit.hexId));
+    const ridgeStates = app.scenario.objectives.alamHalfaRidge.map((hexId) => {
+      const occupant = liveUnitAt(hexId);
+      return {
+        hexId,
+        occupantSide: occupant?.side || null,
+        axisZoc: isSideZoc(hexId, "axis"),
+      };
+    });
+    const ridgeControl = ridgeStates.some((item) => item.occupantSide === "axis");
+    const ridgeFullControl = ridgeControl && ridgeStates.every((item) => {
+      if (item.occupantSide === "axis") return true;
+      if (item.occupantSide === "allied") return false;
+      return item.axisZoc;
+    });
     const roadOccupiedHexes = new Set(axisUnits.filter((unit) => road.has(unit.hexId)).map((unit) => unit.hexId));
     const elAlameinHexId = "c12r03";
     const elAlameinOccupied = roadOccupiedHexes.has(elAlameinHexId);
@@ -1706,6 +1742,8 @@
       objectives: {
         ridgeOccupied: ridgeOccupiedHexes.size,
         ridgeTotal: ridge.size,
+        ridgeControl,
+        ridgeFullControl,
         roadOccupied: roadOccupiedHexes.size,
         elAlameinOccupied,
         roadCut,
@@ -1784,13 +1822,31 @@
   function objectivesCard(data) {
     const body = document.createElement("div");
     body.className = "objective-status";
-    body.append(
-      objectiveLine(tr("text.ridgeObjectives"), ridgeStatusText(data.objectives)),
-      objectiveLine(tr("text.coastalRoadObjectives"), roadStatusText(data.objectives)),
-    );
+    const achieved = objectiveAchievements(data.objectives);
+    if (achieved.length) {
+      achieved.forEach((item) => body.append(objectiveLine(item.title, item.text)));
+    } else {
+      body.append(objectiveLine(tr("text.objectives"), tr("text.noObjectiveReached")));
+    }
     const card = aarCard(tr("text.objectives"), body);
     card.classList.add("objectives-card");
     return card;
+  }
+
+  function objectiveAchievements(objectives) {
+    const achieved = [];
+    if (objectives.ridgeFullControl) {
+      achieved.push({ title: tr("text.ridgeFullTitle"), text: tr("text.ridgeFullText") });
+    } else if (objectives.ridgeControl) {
+      achieved.push({ title: tr("text.ridgeControlTitle"), text: tr("text.ridgeControlText") });
+    }
+    if (objectives.roadCut) {
+      achieved.push({ title: tr("text.roadCutTitle"), text: tr("text.roadCutText") });
+    }
+    if (objectives.elAlameinOccupied) {
+      achieved.push({ title: tr("text.roadElAlameinTitle"), text: tr("text.roadElAlameinText") });
+    }
+    return achieved;
   }
 
   function objectiveLine(label, value) {
@@ -1804,19 +1860,6 @@
     return row;
   }
 
-  function ridgeStatusText(objectives) {
-    if ((objectives.ridgeOccupied || 0) >= (objectives.ridgeTotal || 2)) return tr("text.ridgeFull");
-    if ((objectives.ridgeOccupied || 0) > 0) return tr("text.ridgeKey");
-    return tr("text.ridgeNone");
-  }
-
-  function roadStatusText(objectives) {
-    if (objectives.elAlameinOccupied && objectives.roadCut) return tr("text.roadElAlameinCut");
-    if (objectives.elAlameinOccupied) return tr("text.roadElAlamein");
-    if (objectives.roadCut) return tr("text.roadCut");
-    return tr("text.roadOpen");
-  }
-
   function casualtyReportCard(data) {
     const body = document.createElement("div");
     body.className = "casualty-report";
@@ -1827,31 +1870,39 @@
   }
 
   function casualtySideCard(side, data) {
+    const targetSide = enemySide(side);
     const sideBox = document.createElement("section");
     sideBox.className = "casualty-side";
     sideBox.dataset.side = side;
     const heading = document.createElement("h3");
     heading.textContent = sideLabel(side);
-    const loss = data.losses[side] || { units: 0, combat: 0 };
+    const target = document.createElement("p");
+    target.className = "casualty-target";
+    target.textContent = `${tr("text.eliminatedTarget")}: ${sideLabel(targetSide)}`;
+    const loss = data.losses[targetSide] || { units: 0, combat: 0 };
     const stats = document.createElement("div");
     stats.className = "casualty-stats";
     [
-      [tr("text.initialStrength"), data.initialStrength[side] ?? 0],
-      [tr("text.currentStrength"), data.currentStrength[side] ?? 0],
+      [tr("text.initialStrength"), data.initialStrength[targetSide] ?? 0],
+      [tr("text.currentStrength"), data.currentStrength[targetSide] ?? 0],
       [tr("text.eliminatedUnits"), loss.units],
       [tr("text.lostStrength"), loss.combat],
     ].forEach(([label, value]) => {
       const item = document.createElement("span");
-      item.innerHTML = `<small>${label}</small><b>${value}</b>`;
+      const small = document.createElement("small");
+      small.textContent = label;
+      const strong = document.createElement("b");
+      strong.textContent = value;
+      item.append(small, strong);
       stats.append(item);
     });
 
     const groups = document.createElement("div");
     groups.className = "casualty-groups";
-    casualtyGroupsForSide(side, data.eliminatedBySide[side] || []).forEach((group) => {
+    casualtyGroupsForSide(targetSide, data.eliminatedBySide[targetSide] || []).forEach((group) => {
       groups.append(casualtyGroupLine(group.label, group.units));
     });
-    sideBox.append(heading, stats, groups);
+    sideBox.append(heading, target, stats, groups);
     return sideBox;
   }
 
@@ -1889,7 +1940,12 @@
     const token = document.createElement("span");
     token.className = "casualty-unit";
     token.dataset.mechanized = String(isMechanizedUnit(unit));
-    token.textContent = `${isMechanizedUnit(unit) ? tr("text.mechanizedTag") : tr("text.nonMechanizedTag")} · ${unitName(unit)} (${unit.combat})`;
+    const image = document.createElement("img");
+    image.src = unit.image;
+    image.alt = unitName(unit);
+    const text = document.createElement("span");
+    text.textContent = `${isMechanizedUnit(unit) ? tr("text.mechanizedTag") : tr("text.nonMechanizedTag")} · ${unitName(unit)} (${unit.combat})`;
+    token.append(image, text);
     return token;
   }
 
@@ -1957,6 +2013,7 @@
     el.boardBadge.textContent = boardBadgeText();
     el.finishDeclarationsButton.hidden = !(isCombatPhase() && app.state.combatMode === "declare");
     el.resolveBattleButton.hidden = !(isCombatPhase() && app.state.combatMode === "resolve");
+    el.endPhaseButton.hidden = isCombatPhase() && app.state.combatMode === "declare";
     const pendingBattle = isCombatPhase() && app.state.combatMode === "resolve" ? currentBattle() : null;
     el.resolveBattleButton.disabled = Boolean(app.state.winner || app.state.retreatTask || app.state.advanceTask || !pendingBattle);
     el.resolveBattleButton.textContent = pendingBattle ? tr("ui.resolveBattle") : tr("ui.done");
@@ -1981,7 +2038,7 @@
       const unit = unitById(app.state.retreatTask.unitIds[app.state.retreatTask.index]);
       return unit ? tr("text.retreatPrompt", { unit: unitName(unit) }) : tr("text.retreatPrompt", { unit: "" });
     }
-    if (app.state.advanceTask) return tr("text.advancePrompt", { hex: hexLabel(app.state.advanceTask.targetHexId) });
+    if (app.state.advanceTask) return phaseLabel(phase().id);
     return phaseLabel(phase().id);
   }
 
@@ -2135,18 +2192,6 @@
     const detail = document.createElement("span");
     detail.textContent = compactOddsText(battle.oddsAtResolution || battle.oddsAtDeclaration || "--");
     card.append(title, detail);
-    if (app.state.advanceTask) {
-      const row = document.createElement("div");
-      row.className = "mini-actions";
-      const label = document.createElement("span");
-      label.textContent = tr("text.advancePrompt", { hex: hexLabel(app.state.advanceTask.targetHexId) });
-      const skip = document.createElement("button");
-      skip.type = "button";
-      skip.textContent = tr("text.skip");
-      skip.addEventListener("click", () => advanceUnit("skip"));
-      row.append(label, skip);
-      card.append(row);
-    }
     el.combatComposer.append(card);
   }
 
@@ -2257,6 +2302,9 @@
       el.operationsFocus.append(operationCard(tr("text.combatSummary"), details, battle ? "" : "good"));
     } else {
       el.operationsFocus.append(operationCard(tr("text.phaseOrders"), phaseLabel(phase().id), ""));
+      if (isMovementPhase() && canUndoLastMove(unitById(app.state.lastMove?.unitId))) {
+        el.operationsFocus.append(lastMoveUndoCard());
+      }
     }
     if (isCombatPhase() && app.state.combatMode === "declare") {
       if (!app.state.declaredCombats.length) {
@@ -2320,6 +2368,24 @@
       return card;
     }
     return null;
+  }
+
+  function lastMoveUndoCard() {
+    const move = app.state.lastMove;
+    const unit = unitById(move?.unitId);
+    const card = operationCard(
+      tr("text.undoMove"),
+      unit ? `${unitName(unit)}: ${hexLabel(move.toHexId)} -> ${hexLabel(move.fromHexId)}` : "--",
+      "good",
+    );
+    card.classList.add("operation-instruction-card");
+    const undo = document.createElement("button");
+    undo.type = "button";
+    undo.className = "inline-skip-button";
+    undo.textContent = tr("text.undoMove");
+    undo.addEventListener("click", undoLastMove);
+    card.append(undo);
+    return card;
   }
 
   function appendCombatListForCurrentMode() {

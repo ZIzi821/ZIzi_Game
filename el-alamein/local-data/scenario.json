@@ -1825,7 +1825,7 @@
           "x": 1082.4,
           "y": 64
         },
-        "terrain": "desert",
+        "terrain": "mediterranean",
         "road": false,
         "britishPosition": false,
         "objective": []
@@ -1838,7 +1838,7 @@
           "x": 1127.5,
           "y": 142
         },
-        "terrain": "desert",
+        "terrain": "mediterranean",
         "road": false,
         "britishPosition": false,
         "objective": []

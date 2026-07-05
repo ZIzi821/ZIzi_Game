@@ -679,14 +679,21 @@ body[data-view="aar"] .game-view {
   backdrop-filter: blur(2px);
 }
 
-.aar-shell > div:first-child {
+.aar-header {
   grid-column: 1 / -1;
-  background: rgba(31, 39, 31, 0.7);
+  position: relative;
+  overflow: hidden;
+  padding: clamp(18px, 3vw, 34px);
+  background:
+    linear-gradient(90deg, rgba(20, 28, 20, 0.92), rgba(88, 70, 35, 0.38)),
+    rgba(31, 39, 31, 0.7);
+  box-shadow: inset 0 -4px 0 rgba(201, 168, 87, 0.5);
 }
 
 .aar-actions {
   grid-column: 1 / -1;
   justify-content: flex-end;
+  background: rgba(31, 39, 31, 0.52);
 }
 
 .aar-actions button {
@@ -695,8 +702,24 @@ body[data-view="aar"] .game-view {
 
 .aar-shell h2 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 4.2rem);
+  color: #ffe08a;
+  font-family: Georgia, "Times New Roman", "KaiTi", "STKaiti", serif;
+  font-size: clamp(2.6rem, 6vw, 6.2rem);
+  font-weight: 950;
+  letter-spacing: 0.04em;
   line-height: 0.95;
+  text-transform: uppercase;
+  text-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.36),
+    0 0 34px rgba(201, 168, 87, 0.28);
+}
+
+body[data-lang="zh"] .aar-shell h2 {
+  letter-spacing: 0.08em;
+}
+
+.aar-view[data-winner="allied"] .aar-shell h2 {
+  color: #bde8ec;
 }
 
 .aar-subtitle {
@@ -711,6 +734,12 @@ body[data-view="aar"] .game-view {
 .aar-battles {
   display: grid;
   gap: 10px;
+}
+
+.aar-summary,
+.aar-losses,
+.aar-battles {
+  grid-column: 1 / -1;
 }
 
 .aar-card {
@@ -745,23 +774,25 @@ body[data-view="aar"] .game-view {
   position: relative;
   overflow: hidden;
   border-left: 0;
-  border-top: 2px solid rgba(230, 200, 112, 0.86);
-  border-bottom: 2px solid rgba(130, 38, 30, 0.58);
+  border: 1px solid rgba(230, 200, 112, 0.72);
+  border-top: 4px solid rgba(230, 200, 112, 0.96);
+  border-bottom: 4px solid rgba(130, 38, 30, 0.72);
   background:
-    linear-gradient(135deg, rgba(185, 154, 74, 0.24), rgba(86, 38, 24, 0.18)),
+    radial-gradient(circle at top left, rgba(255, 231, 141, 0.22), transparent 34%),
+    linear-gradient(135deg, rgba(185, 154, 74, 0.28), rgba(86, 38, 24, 0.28)),
     rgba(255, 246, 214, 0.13);
-  padding: 18px clamp(16px, 3vw, 32px);
+  padding: clamp(18px, 4vw, 44px);
 }
 
 .aar-impact-card span {
   display: block;
-  max-width: 980px;
+  max-width: 1180px;
   color: #fff3c8;
   font-family: Georgia, "Times New Roman", "KaiTi", "STKaiti", serif;
-  font-size: clamp(1.45rem, 3.2vw, 3.1rem);
+  font-size: clamp(1.8rem, 4vw, 4rem);
   font-weight: 900;
-  line-height: 1.13;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
+  line-height: 1.08;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.34);
 }
 
 .objectives-card,
@@ -776,23 +807,28 @@ body[data-view="aar"] .game-view {
 
 .objective-line {
   display: grid;
-  grid-template-columns: minmax(120px, 0.44fr) 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 5px;
   align-items: center;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(230, 208, 148, 0.26);
-  background: rgba(255, 246, 214, 0.08);
+  border-left: 4px solid rgba(201, 168, 87, 0.82);
+  background:
+    linear-gradient(90deg, rgba(201, 168, 87, 0.14), rgba(255, 246, 214, 0.06)),
+    rgba(255, 246, 214, 0.08);
 }
 
 .objective-line span {
-  color: #dccb95;
+  color: #fff3c8;
   font-weight: 900;
+  font-size: 1.02rem;
 }
 
 .objective-line strong {
   margin: 0;
-  color: #fff3c8;
-  font-size: 1.05rem;
+  color: #dccb95;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .casualty-report {
@@ -820,20 +856,29 @@ body[data-view="aar"] .game-view {
 .casualty-side h3 {
   margin: 0;
   color: #fff3c8;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
+}
+
+.casualty-target {
+  margin: -4px 0 0;
+  color: #d7c28c;
+  font-weight: 900;
 }
 
 .casualty-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .casualty-stats span {
   display: grid;
+  flex: 1 1 132px;
   gap: 3px;
-  padding: 7px;
-  background: rgba(255, 246, 214, 0.1);
+  min-width: 118px;
+  padding: 8px 9px;
+  border: 1px solid rgba(230, 208, 148, 0.16);
+  background: rgba(255, 246, 214, 0.08);
 }
 
 .casualty-stats small {
@@ -872,13 +917,22 @@ body[data-view="aar"] .game-view {
 .casualty-none {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   min-height: 26px;
-  padding: 4px 7px;
+  padding: 4px 8px 4px 4px;
   border: 1px solid rgba(230, 208, 148, 0.32);
   background: rgba(255, 246, 214, 0.08);
   color: #ead7a4;
   font-size: 0.82rem;
   font-weight: 850;
+}
+
+.casualty-unit img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 .casualty-unit[data-mechanized="true"] {
