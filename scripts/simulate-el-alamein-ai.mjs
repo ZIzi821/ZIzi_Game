@@ -329,7 +329,7 @@ function attackerGroups(attackers) {
 }
 
 function combatThreshold(side) {
-  return side === "axis" ? 4.4 : 5.1;
+  return side === "axis" ? 3.6 : 5.1;
 }
 
 function scoreCombat(state, attackers, defender, odds) {
@@ -363,8 +363,8 @@ function scoreHex(state, unit, hexId, route = null) {
   let score = 0;
 
   if (unit.side === "axis") {
-    score += axisObjectiveScore(hexId) * 3.8;
-    score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 4.4 : 3.2);
+    score += axisObjectiveScore(hexId) * 4.4;
+    score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 5.2 : 3.5);
     score += axisProgress(unit, hexId);
     score += axisRearGuard(state, unit, hexId);
     score += attackSetup(state, unit, hexId) * 3.1;
@@ -444,8 +444,9 @@ function axisRearGuard(state, unit, hexId) {
     const exitThreat = alliedExitThreat(state, exitHexId);
     if (!exitThreat) continue;
     const exitDistance = distance(hexId, exitHexId);
-    if (exitDistance === 0) score += exitThreat * 3.8;
-    else if (exitDistance === 1) score += exitThreat * 0.7;
+    const guardSuitability = Number(unit.movement || 0) >= 9 && combat >= 4 ? 0.55 : 1;
+    if (exitDistance === 0) score += exitThreat * 5.8 * guardSuitability;
+    else if (exitDistance === 1) score += exitThreat * 0.9 * guardSuitability;
   }
   return score;
 }
