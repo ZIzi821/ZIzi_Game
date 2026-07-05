@@ -1881,8 +1881,8 @@
 
     if (side === "axis") {
       const targets = axisUnitTargetHexes(unit);
-      score += axisObjectiveScore(hexId) * 3.8;
-      score -= nearestDistance(hexId, targets) * (combat >= 4 ? 4.4 : 3.2);
+      score += axisObjectiveScore(hexId) * 4.4;
+      score -= nearestDistance(hexId, targets) * (combat >= 4 ? 5.2 : 3.5);
       score += axisProgressScore(unit, hexId);
       score += axisRearGuardScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * 3.1;
@@ -1954,7 +1954,28 @@
     const guardBias = Math.max(0, 5 - combat) * 1.35;
     const mobilityPenalty = Number(unit.movement || 0) >= 9 ? 0.8 : 2.35;
     const distanceToExit = nearestDistance(hexId, westExit);
-    return Math.max(0, 4 - distanceToExit) * (guardBias + mobilityPenalty) + (westExit.includes(hexId) ? 8 + guardBias * 1.8 : 0);
+    let score = Math.max(0, 4 - distanceToExit) * (guardBias + mobilityPenalty) + (westExit.includes(hexId) ? 8 + guardBias * 1.8 : 0);
+    for (const exitHexId of westExit) {
+      const exitThreat = alliedExitThreat(exitHexId);
+      if (!exitThreat) continue;
+      const distance = hexDistance(hexId, exitHexId);
+      const guardSuitability = Number(unit.movement || 0) >= 9 && combat >= 4 ? 0.55 : 1;
+      if (distance === 0) score += exitThreat * 5.8 * guardSuitability;
+      else if (distance === 1) score += exitThreat * 0.9 * guardSuitability;
+    }
+    return score;
+  }
+
+  function alliedExitThreat(exitHexId) {
+    return liveUnits()
+      .filter((unit) => unit.side === "allied" && !unit.disrupted)
+      .reduce((score, unit) => {
+        const distance = hexDistance(unit.hexId, exitHexId);
+        const allowance = movementAllowance(unit);
+        if (distance < allowance) return score + 18 + (allowance - distance) * 4 + Number(unit.combat || 0);
+        if (distance <= allowance + 1) return score + 5;
+        return score;
+      }, 0);
   }
 
   function alliedDefenseScore(hexId) {
@@ -2067,7 +2088,7 @@
   }
 
   function aiCombatThreshold() {
-    return activeSide() === "axis" ? 4.4 : 5.1;
+    return activeSide() === "axis" ? 3.6 : 5.1;
   }
 
   function scoreAiCombat(attackers, defender, odds) {

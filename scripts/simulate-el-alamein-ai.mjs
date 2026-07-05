@@ -439,7 +439,33 @@ function axisRearGuard(state, unit, hexId) {
   const guardBias = Math.max(0, 5 - combat) * 1.35;
   const mobilityPenalty = Number(unit.movement || 0) >= 9 ? 0.8 : 2.35;
   const distanceToExit = nearestDistance(hexId, westExit);
-  return Math.max(0, 4 - distanceToExit) * (guardBias + mobilityPenalty) + (westExit.includes(hexId) ? 8 + guardBias * 1.8 : 0);
+  let score = Math.max(0, 4 - distanceToExit) * (guardBias + mobilityPenalty) + (westExit.includes(hexId) ? 8 + guardBias * 1.8 : 0);
+  for (const exitHexId of westExit) {
+    const exitThreat = alliedExitThreat(state, exitHexId);
+    if (!exitThreat) continue;
+    const exitDistance = distance(hexId, exitHexId);
+    if (exitDistance === 0) score += exitThreat * 3.8;
+    else if (exitDistance === 1) score += exitThreat * 0.7;
+  }
+  return score;
+}
+
+function alliedExitThreat(state, exitHexId) {
+  return liveUnits(state.units)
+    .filter((unit) => unit.side === "allied" && !unit.disrupted)
+    .reduce((score, unit) => {
+      const exitDistance = distance(unit.hexId, exitHexId);
+      const allowance = movementAllowance(state, unit);
+      if (exitDistance < allowance) return score + 18 + (allowance - exitDistance) * 4 + Number(unit.combat || 0);
+      if (exitDistance <= allowance + 1) return score + 5;
+      return score;
+    }, 0);
+}
+
+function movementAllowance(state, unit) {
+  let movement = Number(unit.movement || 0);
+  if (unit.side === "allied" && state.turn === 1) movement = Math.max(1, Math.floor(movement * Number(rules.firstTurnAlliedMovementMultiplier || 1)));
+  return movement;
 }
 
 function alliedScreen(hexId) {
