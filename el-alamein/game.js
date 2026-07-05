@@ -1814,12 +1814,8 @@
       body.textContent = tr("text.axisImpact");
     } else if (side === "allied") {
       body.append(document.createTextNode(tr("text.alliedImpactPrefix")));
-      const link = document.createElement("a");
-      link.href = "https://zh.wikipedia.org/wiki/%E8%8B%8F%E4%BC%8A%E5%A3%AB%E8%BF%90%E6%B2%B3";
-      link.target = "_blank";
-      link.rel = "noopener";
-      link.textContent = tr("text.alliedImpactLink");
-      body.append(link, document.createTextNode(tr("text.alliedImpactSuffix")));
+      body.append(document.createTextNode(tr("text.alliedImpactLink")));
+      body.append(document.createTextNode(tr("text.alliedImpactSuffix")));
     } else {
       body.textContent = "--";
     }
