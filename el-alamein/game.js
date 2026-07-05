@@ -2650,7 +2650,7 @@
     el.phaseLabel.textContent = phaseLabel(phase().id);
     el.aiStatus.dataset.active = String(app.ai.mode !== "hotseat" && (app.ai.running || isAiTurn() || hasAiControlledTask()));
     el.aiStatus.textContent = app.ai.mode === "hotseat"
-      ? tr("ui.hotseatStatus")
+      ? ""
       : app.ai.waitingForHuman && isAiTurn()
         ? tr("ui.aiAwaitingInput")
         : app.ai.running || isAiTurn()
