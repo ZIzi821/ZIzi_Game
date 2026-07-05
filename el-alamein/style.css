@@ -108,6 +108,69 @@ button:disabled {
   color: #123b37;
 }
 
+.mode-choice {
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid rgba(104, 84, 45, 0.55);
+  background: rgba(255, 249, 226, 0.48);
+}
+
+.mode-choice p {
+  margin: 0 0 8px;
+  color: #4b4128;
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mode-choice-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mode-choice-buttons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding-inline: 8px;
+  overflow-wrap: anywhere;
+}
+
+.mode-choice-buttons button[data-game-mode="hotseat"] {
+  grid-column: 1 / -1;
+}
+
+.mode-choice-buttons button[data-active="true"] {
+  border-color: #1d625e;
+  background: linear-gradient(#e8f6ed, #b9d5c6);
+  color: #123b37;
+}
+
+.mode-side {
+  color: #211d17;
+  font-weight: 950;
+}
+
+.mode-flag {
+  width: 28px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(67, 53, 29, 0.4);
+  box-shadow: 0 1px 1px rgba(36, 29, 17, 0.18);
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+.mode-versus {
+  color: #57472b;
+  font-size: 0.78em;
+  text-transform: uppercase;
+}
+
 .menu-actions {
   margin-top: 18px;
 }
@@ -355,6 +418,22 @@ body[data-view="aar"] .game-view {
 .turn-line span {
   color: var(--muted);
   font-weight: 800;
+}
+
+.ai-status {
+  min-height: 1.35em;
+  margin-top: 8px;
+  color: #57472b;
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.ai-status[data-active="true"] {
+  padding: 6px 8px;
+  border: 1px solid rgba(45, 107, 69, 0.5);
+  background: rgba(232, 246, 237, 0.72);
+  color: #173e31;
 }
 
 .phase-actions {
@@ -1074,6 +1153,14 @@ body[data-lang="zh"] .aar-shell h2 {
 
   .operation-meta {
     grid-template-columns: 1fr;
+  }
+
+  .mode-choice-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-choice-buttons button[data-game-mode="hotseat"] {
+    grid-column: auto;
   }
 
   .objective-line,

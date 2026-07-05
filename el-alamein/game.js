@@ -6,6 +6,8 @@
   const CHECKPOINT_KEY = "zizi-el-alamein-turn-checkpoint-v1";
   const SESSION_KEY = "zizi-el-alamein-current-session-v1";
   const LANG_KEY = "zizi-el-alamein-lang";
+  const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
+  const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
@@ -477,6 +479,39 @@
     eliminated: "Losses and Eliminated Units",
   });
 
+  Object.assign(I18N.zh.menu, {
+    modeLabel: "选择模式",
+    hotseatMode: "热座模式",
+  });
+  Object.assign(I18N.en.menu, {
+    modeLabel: "Choose Mode",
+    hotseatMode: "Hotseat Mode",
+  });
+  Object.assign(I18N.zh.ui, {
+    aiThinking: "AI 正在指挥 {side}",
+    aiAwaitingInput: "AI 已完成动作，请点击阶段按钮继续",
+    aiWaiting: "你指挥 {side}，AI 指挥 {enemy}",
+    hotseatStatus: "热座模式：双方由真人操作",
+  });
+  Object.assign(I18N.en.ui, {
+    aiThinking: "AI is commanding {side}",
+    aiAwaitingInput: "AI has finished. Use the phase buttons to continue",
+    aiWaiting: "You command {side}; AI commands {enemy}",
+    hotseatStatus: "Hotseat mode: both sides are human",
+  });
+  Object.assign(I18N.zh.text, {
+    aiMovementDone: "AI 完成 {side} 移动。",
+    aiCombatDone: "AI 完成 {side} 战斗。",
+    aiNoMove: "AI 没有找到有利移动。",
+    aiNoCombat: "AI 没有宣告战斗。",
+  });
+  Object.assign(I18N.en.text, {
+    aiMovementDone: "AI completed {side} movement.",
+    aiCombatDone: "AI completed {side} combat.",
+    aiNoMove: "AI found no useful moves.",
+    aiNoCombat: "AI declared no combats.",
+  });
+
   const el = {
     body: document.body,
     menuView: document.getElementById("menuView"),
@@ -485,6 +520,9 @@
     menuStatus: document.getElementById("menuStatus"),
     langZhButton: document.getElementById("langZhButton"),
     langEnButton: document.getElementById("langEnButton"),
+    axisAiModeButton: document.getElementById("axisAiModeButton"),
+    alliedAiModeButton: document.getElementById("alliedAiModeButton"),
+    hotseatModeButton: document.getElementById("hotseatModeButton"),
     startCampaignButton: document.getElementById("startCampaignButton"),
     continueCampaignButton: document.getElementById("continueCampaignButton"),
     menuLoadButton: document.getElementById("menuLoadButton"),
@@ -496,6 +534,7 @@
     boardBadge: document.getElementById("boardBadge"),
     turnLabel: document.getElementById("turnLabel"),
     phaseLabel: document.getElementById("phaseLabel"),
+    aiStatus: document.getElementById("aiStatus"),
     selectedUnit: document.getElementById("selectedUnit"),
     combatComposer: document.getElementById("combatComposer"),
     battleList: document.getElementById("battleList"),
@@ -541,9 +580,27 @@
     retreatPaths: new Map(),
     animating: false,
     logExpanded: false,
+    ai: {
+      mode: getSavedGameMode(),
+      humanSide: humanSideForMode(getSavedGameMode()),
+      running: false,
+      scheduled: false,
+      waitingForHuman: false,
+    },
   };
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
+
+  function getSavedGameMode() {
+    const savedMode = localStorage.getItem(AI_GAME_MODE_KEY);
+    if (["axis-vs-ai", "allied-vs-ai", "hotseat"].includes(savedMode)) return savedMode;
+    return localStorage.getItem(AI_HUMAN_SIDE_KEY) === "allied" ? "allied-vs-ai" : "axis-vs-ai";
+  }
+
+  function humanSideForMode(mode) {
+    if (mode === "allied-vs-ai") return "allied";
+    return "axis";
+  }
 
   function tr(key, params = {}) {
     const table = I18N[app.lang] || I18N.zh;
@@ -744,6 +801,9 @@
     el.boardSurface.addEventListener("click", onBoardClick);
     el.langZhButton.addEventListener("click", () => setLanguage("zh"));
     el.langEnButton.addEventListener("click", () => setLanguage("en"));
+    el.axisAiModeButton.addEventListener("click", () => setGameMode("axis-vs-ai"));
+    el.alliedAiModeButton.addEventListener("click", () => setGameMode("allied-vs-ai"));
+    el.hotseatModeButton.addEventListener("click", () => setGameMode("hotseat"));
     el.startCampaignButton.addEventListener("click", startNewCampaign);
     el.continueCampaignButton.addEventListener("click", continueCampaign);
     el.menuLoadButton.addEventListener("click", () => loadGame({ fromMenu: true }));
@@ -781,6 +841,25 @@
     });
     el.langZhButton.dataset.active = String(app.lang === "zh");
     el.langEnButton.dataset.active = String(app.lang === "en");
+    drawAiControls();
+  }
+
+  function setGameMode(mode) {
+    app.ai.mode = ["axis-vs-ai", "allied-vs-ai", "hotseat"].includes(mode) ? mode : "axis-vs-ai";
+    app.ai.humanSide = humanSideForMode(app.ai.mode);
+    app.ai.waitingForHuman = false;
+    app.ai.scheduled = false;
+    localStorage.setItem(AI_GAME_MODE_KEY, app.ai.mode);
+    localStorage.setItem(AI_HUMAN_SIDE_KEY, app.ai.humanSide);
+    drawAiControls();
+    drawStatus();
+    scheduleAiTurn();
+  }
+
+  function drawAiControls() {
+    if (el.axisAiModeButton) el.axisAiModeButton.dataset.active = String(app.ai.mode === "axis-vs-ai");
+    if (el.alliedAiModeButton) el.alliedAiModeButton.dataset.active = String(app.ai.mode === "allied-vs-ai");
+    if (el.hotseatModeButton) el.hotseatModeButton.dataset.active = String(app.ai.mode === "hotseat");
   }
 
   function setMenuStatus(text = "") {
@@ -811,6 +890,9 @@
 
   function startNewCampaign() {
     localStorage.removeItem(SESSION_KEY);
+    app.ai.running = false;
+    app.ai.scheduled = false;
+    app.ai.waitingForHuman = false;
     app.state = makeInitialState();
     app.reachable.clear();
     app.legalRetreats.clear();
@@ -841,6 +923,9 @@
     }
     try {
       app.state = normalizeState(JSON.parse(raw), { preserveTransient: true });
+      app.ai.running = false;
+      app.ai.scheduled = false;
+      app.ai.waitingForHuman = false;
       restoreInteractiveState();
       log(tr("text.loaded"));
       setMenuStatus(tr("menu.loaded"));
@@ -880,6 +965,9 @@
     }
     try {
       app.state = normalizeState(JSON.parse(raw), { preserveTransient: Boolean(sessionRaw) });
+      app.ai.running = false;
+      app.ai.scheduled = false;
+      app.ai.waitingForHuman = false;
       if (sessionRaw) restoreInteractiveState();
       else clearTransientState();
       setMenuStatus(tr("menu.continued"));
@@ -923,6 +1011,7 @@
 
   function onBoardClick(event) {
     if (app.animating || el.body.dataset.view !== "game") return;
+    if (isHumanInputBlocked()) return;
     const rect = el.boardSurface.getBoundingClientRect();
     const scaleX = app.scenario.board.width / rect.width;
     const scaleY = app.scenario.board.height / rect.height;
@@ -957,6 +1046,7 @@
   function onUnitClick(event, unitId) {
     event.stopPropagation();
     if (app.animating) return;
+    if (isHumanInputBlocked()) return;
     const unit = unitById(unitId);
     if (!unit || unit.eliminated) return;
     if (app.state.advanceTask) {
@@ -1010,10 +1100,11 @@
 
   async function animateUnitPath(unit, path) {
     app.animating = true;
+    const stepDelay = app.ai.running && isMovementPhase() && isAiSide(unit.side) ? 140 : 70;
     for (const hexId of path.slice(1)) {
       unit.hexId = hexId;
       draw();
-      await delay(70);
+      await delay(stepDelay);
     }
     app.animating = false;
   }
@@ -1118,11 +1209,14 @@
 
   function finishDeclarations() {
     if (!isCombatPhase() || app.state.combatMode !== "declare") return;
+    const aiPhase = isAiTurn();
+    if (aiPhase) app.ai.waitingForHuman = false;
     app.state.combatMode = "resolve";
     app.state.combatCompleteNotified = !app.state.declaredCombats.length;
     log(app.state.declaredCombats.length ? tr("text.declarationsComplete") : tr("text.noBattle"));
+    if (aiPhase) app.ai.waitingForHuman = true;
     draw();
-    if (app.state.declaredCombats.length) window.setTimeout(() => resolveNextBattle(), 90);
+    if (app.state.declaredCombats.length && !aiPhase) window.setTimeout(() => resolveNextBattle(), 90);
   }
 
   function currentBattle() {
@@ -1151,9 +1245,12 @@
   function resolveNextBattle() {
     if (!isCombatPhase() || app.state.combatMode !== "resolve") return;
     if (app.state.retreatTask || app.state.advanceTask) return;
+    const aiPhase = isAiTurn();
+    if (aiPhase) app.ai.waitingForHuman = false;
     const battle = currentBattle();
     if (!battle) {
       markCombatCompleteOnce();
+      if (aiPhase) app.ai.waitingForHuman = true;
       draw();
       return;
     }
@@ -1165,6 +1262,7 @@
       app.state.lastCombatResult = { battleId: battle.id, result: "Skipped", events: [] };
       log(tr("text.battleSkipped"));
       markCombatCompleteOnce();
+      if (aiPhase) app.ai.waitingForHuman = true;
       draw();
       return;
     }
@@ -1190,6 +1288,7 @@
     log(`${tr("text.currentBattle")}: ${formatBattleTitle(battle)} · ${tr("text.result")} ${combatResultLabel(result)}`);
     applyCombatResult(battle, result);
     markCombatCompleteOnce();
+    if (aiPhase && !app.state.retreatTask && !app.state.advanceTask) app.ai.waitingForHuman = true;
     draw();
   }
 
@@ -1346,6 +1445,7 @@
     task.index = 0;
     task.remainingSteps = task.steps;
     task.origins ||= {};
+    task.controllerSide ||= task.battle?.side || battleById(task.battleId)?.side || activeSide();
     app.state.retreatTask = task;
     prepareCurrentRetreat();
   }
@@ -1621,6 +1721,292 @@
     return Infinity;
   }
 
+  function isAiSide(side) {
+    return Boolean(app.ai.mode !== "hotseat" && side && side !== app.ai.humanSide);
+  }
+
+  function isAiTurn() {
+    return Boolean(app.state && !app.state.winner && isAiSide(activeSide()));
+  }
+
+  function currentRetreatUnit() {
+    const task = app.state?.retreatTask;
+    return task ? unitById(task.unitIds[task.index]) : null;
+  }
+
+  function retreatControllerSide(task = app.state?.retreatTask) {
+    return task?.controllerSide || task?.battle?.side || battleById(task?.battleId)?.side || activeSide();
+  }
+
+  function hasAiControlledTask() {
+    if (!app.state || app.state.winner) return false;
+    if (app.state.retreatTask) return isAiSide(retreatControllerSide());
+    if (app.state.advanceTask) return isAiSide(activeSide());
+    return false;
+  }
+
+  function isHumanInputBlocked() {
+    return Boolean(app.ai.running || isAiTurn() || hasAiControlledTask());
+  }
+
+  function scheduleAiTurn() {
+    if (!app.state || app.state.winner || app.ai.running || app.ai.scheduled) return;
+    if (el.body.dataset.view !== "game") return;
+    if (app.ai.waitingForHuman && !hasAiControlledTask()) return;
+    if (!isAiTurn() && !hasAiControlledTask()) return;
+    app.ai.scheduled = true;
+    window.setTimeout(runAiTurn, 180);
+  }
+
+  async function runAiTurn() {
+    if (app.ai.running) return;
+    app.ai.scheduled = false;
+    if (!app.state || app.state.winner || el.body.dataset.view !== "game") return;
+    app.ai.running = true;
+    draw();
+    try {
+      await delay(180);
+      const handledTask = await resolveAiPendingTasks({ force: isAiTurn() });
+      if (handledTask && isAiTurn() && !app.state.winner) {
+        app.ai.waitingForHuman = true;
+        return;
+      }
+      if (app.ai.waitingForHuman || !isAiTurn() || app.state.winner) return;
+      if (isMovementPhase()) await runAiMovementPhase();
+      else if (isCombatPhase() && app.state.combatMode !== "declare") app.ai.waitingForHuman = true;
+      else if (isCombatPhase() && app.state.combatMode === "declare") await runAiCombatPhase();
+    } finally {
+      app.ai.running = false;
+      draw();
+    }
+  }
+
+  async function resolveAiPendingTasks(options = {}) {
+    let guard = 0;
+    let handled = false;
+    while (app.state && !app.state.winner && guard < 80) {
+      guard += 1;
+      if (app.state.retreatTask) {
+        const unit = currentRetreatUnit();
+        if (!unit) {
+          prepareCurrentRetreat({ silent: true });
+          continue;
+        }
+        if (!options.force && !isAiSide(retreatControllerSide())) return handled;
+        const destination = chooseAiRetreatDestination(unit);
+        if (!destination) return handled;
+        await chooseRetreatHex(destination);
+        handled = true;
+        await delay(130);
+        continue;
+      }
+      if (app.state.advanceTask) {
+        if (!options.force && !isAiSide(activeSide())) return handled;
+        advanceUnit(chooseAiAdvanceUnit() || "skip");
+        handled = true;
+        await delay(130);
+        continue;
+      }
+      return handled;
+    }
+    return handled;
+  }
+
+  async function runAiMovementPhase() {
+    let moved = 0;
+    const side = activeSide();
+    const units = liveUnits()
+      .filter((unit) => unit.side === side && !unit.disrupted)
+      .sort((a, b) => Number(b.movement || 0) - Number(a.movement || 0) || Number(b.combat || 0) - Number(a.combat || 0));
+
+    for (const unit of units) {
+      if (app.state.winner || !isAiTurn()) break;
+      if (app.state.movedUnits.includes(unit.id) || unit.eliminated) continue;
+      const order = chooseAiMove(unit);
+      if (!order) continue;
+      app.state.selectedUnitId = unit.id;
+      app.reachable = order.reachable;
+      await attemptMove(order.hexId);
+      moved += 1;
+      await delay(90);
+    }
+
+    app.state.selectedUnitId = null;
+    app.reachable.clear();
+    log(moved ? tr("text.aiMovementDone", { side: sideLabel(side) }) : tr("text.aiNoMove"));
+    app.ai.waitingForHuman = true;
+    draw();
+  }
+
+  async function runAiCombatPhase() {
+    const declared = declareAiCombats();
+    if (!declared) log(tr("text.aiNoCombat"));
+    app.ai.waitingForHuman = true;
+    draw();
+  }
+
+  function chooseAiMove(unit) {
+    const reachable = reachableHexes(unit);
+    if (!reachable.size) return null;
+    const currentScore = scoreAiHex(unit, unit.hexId, null);
+    let best = null;
+    for (const [hexId, route] of reachable.entries()) {
+      const score = scoreAiHex(unit, hexId, route);
+      if (!best || score > best.score) best = { hexId, route, score };
+    }
+    if (!best || best.score <= currentScore + 1.5) return null;
+    return { hexId: best.hexId, reachable };
+  }
+
+  function scoreAiHex(unit, hexId, route = null) {
+    const hex = hexById(hexId);
+    if (!hex) return -Infinity;
+    const side = unit.side;
+    const combat = Number(unit.combat || 0);
+    let score = 0;
+
+    if (side === "axis") {
+      score += axisObjectiveScore(hexId) * 2;
+      score -= nearestDistance(hexId, axisObjectiveHexes()) * 2.8;
+      score += adjacentEnemyScore(unit, hexId) * 4;
+    } else {
+      if (app.scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) score += 160;
+      score += alliedDefenseScore(hexId) * 2.1;
+      score -= nearestDistance(hexId, alliedAnchorHexes()) * 1.5;
+      score += adjacentEnemyScore(unit, hexId) * 2.4;
+    }
+
+    if (hex.terrain === "highland" || hex.terrain === "settlement") score += 8 + combat;
+    if (side === "allied" && hex.britishPosition) score += 14 + combat;
+    if (isEnemyZoc(hexId, side, unit.id)) score += combat >= 3 ? 5 : -7;
+    score += Number(route?.remaining || 0) * 0.25;
+    score += combat * 0.2;
+    return score;
+  }
+
+  function axisObjectiveHexes() {
+    return [...app.scenario.objectives.alamHalfaRidge, ...app.scenario.objectives.coastalRoadEast];
+  }
+
+  function alliedAnchorHexes() {
+    return [
+      ...app.scenario.objectives.alamHalfaRidge,
+      ...app.scenario.objectives.coastalRoadEast,
+      ...app.scenario.objectives.alliedWestExitEdge,
+    ];
+  }
+
+  function nearestDistance(hexId, targets) {
+    return Math.min(...targets.map((target) => hexDistance(hexId, target)));
+  }
+
+  function axisObjectiveScore(hexId) {
+    let score = 0;
+    if (app.scenario.objectives.alamHalfaRidge.includes(hexId)) score += 60;
+    if (app.scenario.objectives.coastalRoadEast.includes(hexId)) score += 32;
+    if (hexId === "c12r03") score += 38;
+    return score;
+  }
+
+  function alliedDefenseScore(hexId) {
+    let score = 0;
+    const hex = hexById(hexId);
+    if (app.scenario.objectives.alamHalfaRidge.includes(hexId)) score += 45;
+    if (app.scenario.objectives.coastalRoadEast.includes(hexId)) score += 18;
+    if (hex?.britishPosition) score += 18;
+    return score;
+  }
+
+  function adjacentEnemyScore(unit, hexId) {
+    return neighborsOf(hexId)
+      .map(liveUnitAt)
+      .filter((enemy) => enemy && enemy.side !== unit.side && !enemy.disrupted)
+      .reduce((score, enemy) => score + Math.max(1, Number(enemy.combat || 0)) - Math.max(0, Number(enemy.combat || 0) - Number(unit.combat || 0)), 0);
+  }
+
+  function declareAiCombats() {
+    let declared = 0;
+    let guard = 0;
+    while (guard < 30) {
+      guard += 1;
+      const candidate = bestAiCombatCandidate();
+      if (!candidate || candidate.score < 2.5) break;
+      app.state.selectedDefenderId = candidate.defender.id;
+      app.state.selectedAttackers = candidate.attackers.map((unit) => unit.id);
+      declareBattle();
+      declared += 1;
+    }
+    return declared;
+  }
+
+  function bestAiCombatCandidate() {
+    let best = null;
+    for (const defender of liveUnits().filter((unit) => unit.side !== activeSide() && !unit.disrupted && !app.state.usedDefenders.includes(unit.id))) {
+      const attackers = neighborsOf(defender.hexId)
+        .map(liveUnitAt)
+        .filter((unit) => canAttack(unit, defender))
+        .sort((a, b) => Number(b.combat || 0) - Number(a.combat || 0));
+      if (!attackers.length) continue;
+      const candidate = bestAiAttackerGroup(attackers, defender);
+      if (!candidate) continue;
+      if (!best || candidate.score > best.score) best = { ...candidate, defender };
+    }
+    return best;
+  }
+
+  function bestAiAttackerGroup(attackers, defender) {
+    let best = null;
+    for (let count = 1; count <= attackers.length; count += 1) {
+      const group = attackers.slice(0, count);
+      const odds = calculateOdds(group, defender);
+      const score = scoreAiCombat(group, defender, odds);
+      if (!best || score > best.score) best = { attackers: group, odds, score };
+    }
+    return best;
+  }
+
+  function scoreAiCombat(attackers, defender, odds) {
+    const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
+    const defenderValue = Number(defender.combat || 0) + axisObjectiveScore(defender.hexId) * 0.07 + alliedDefenseScore(defender.hexId) * 0.05;
+    let total = 0;
+    for (const row of Object.values(app.rules.crt.rows)) {
+      total += scoreAiCombatResult(row[odds.columnIndex], attackStrength, defenderValue);
+    }
+    return (total / 6) + odds.columnIndex * 1.4 - attackers.length * 0.35;
+  }
+
+  function scoreAiCombatResult(result, attackStrength, defenderValue) {
+    if (result === "DE") return defenderValue * 8 + 8;
+    if (result === "AE") return -attackStrength * 7 - 8;
+    if (result === "AR") return -attackStrength * 1.7;
+    const retreat = result.match(/^DR(\d+)$/);
+    if (retreat) return defenderValue * 1.6 + Number(retreat[1]) * 4;
+    return 0;
+  }
+
+  function chooseAiRetreatDestination(unit) {
+    let best = null;
+    for (const [hexId, path] of app.retreatPaths.entries()) {
+      const route = { remaining: 0, path };
+      const score = scoreAiHex(unit, hexId, route) - path.length * 0.2;
+      if (!best || score > best.score) best = { hexId, score };
+    }
+    return best?.hexId || null;
+  }
+
+  function chooseAiAdvanceUnit() {
+    const task = app.state.advanceTask;
+    if (!task) return null;
+    let best = null;
+    for (const id of task.attackerIds) {
+      const unit = unitById(id);
+      if (!unit || unit.eliminated) continue;
+      const score = scoreAiHex(unit, task.targetHexId, { remaining: 0, path: [unit.hexId, task.targetHexId] }) + Number(unit.movement || 0) * 0.15;
+      if (!best || score > best.score) best = { id, score };
+    }
+    return best?.id || null;
+  }
+
   function endPhase() {
     if (app.state.winner) return;
     if (app.state.retreatTask || app.state.advanceTask) {
@@ -1638,6 +2024,8 @@
       draw();
       return;
     }
+    app.ai.waitingForHuman = false;
+    app.ai.scheduled = false;
     if (isCombatPhase()) recoverSide(activeSide());
     clearPhaseState();
     if (app.state.phaseIndex === app.rules.phases.length - 1) {
@@ -2018,21 +2406,31 @@
     drawOperationsBoard();
     drawLog();
     updateMenu();
+    scheduleAiTurn();
   }
 
   function drawStatus() {
     const turn = app.rules.turns[app.state.turn - 1];
     el.turnLabel.textContent = `${turnLabel(turn)} · ${sideLabel(activeSide())}`;
     el.phaseLabel.textContent = phaseLabel(phase().id);
+    el.aiStatus.dataset.active = String(app.ai.mode !== "hotseat" && (app.ai.running || isAiTurn() || hasAiControlledTask()));
+    el.aiStatus.textContent = app.ai.mode === "hotseat"
+      ? tr("ui.hotseatStatus")
+      : app.ai.waitingForHuman && isAiTurn()
+        ? tr("ui.aiAwaitingInput")
+        : app.ai.running || isAiTurn()
+        ? tr("ui.aiThinking", { side: sideLabel(activeSide()) })
+        : tr("ui.aiWaiting", { side: sideLabel(app.ai.humanSide), enemy: sideLabel(enemySide(app.ai.humanSide)) });
     el.boardBadge.textContent = boardBadgeText();
     el.finishDeclarationsButton.hidden = !(isCombatPhase() && app.state.combatMode === "declare");
     el.resolveBattleButton.hidden = !(isCombatPhase() && app.state.combatMode === "resolve");
     el.endPhaseButton.hidden = isCombatPhase() && app.state.combatMode === "declare";
     const pendingBattle = isCombatPhase() && app.state.combatMode === "resolve" ? currentBattle() : null;
-    el.resolveBattleButton.disabled = Boolean(app.state.winner || app.state.retreatTask || app.state.advanceTask || !pendingBattle);
+    const blockInput = app.ai.running || hasAiControlledTask();
+    el.resolveBattleButton.disabled = Boolean(app.state.winner || blockInput || app.state.retreatTask || app.state.advanceTask || !pendingBattle);
     el.resolveBattleButton.textContent = pendingBattle ? tr("ui.resolveBattle") : tr("ui.done");
-    el.finishDeclarationsButton.disabled = Boolean(app.state.winner);
-    el.endPhaseButton.disabled = Boolean(app.state.winner);
+    el.finishDeclarationsButton.disabled = Boolean(app.state.winner || blockInput);
+    el.endPhaseButton.disabled = Boolean(app.state.winner || blockInput);
     if (app.state.winner) {
       el.winnerBanner.hidden = false;
       el.winnerBanner.textContent = `${sideLabel(app.state.winner.side)} · ${app.state.winner.reason}`;

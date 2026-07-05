@@ -16,6 +16,24 @@
           <button id="langZhButton" type="button" data-lang-choice="zh">中文</button>
           <button id="langEnButton" type="button" data-lang-choice="en">English</button>
         </div>
+        <section class="mode-choice" aria-label="Game mode selection">
+          <p data-i18n="menu.modeLabel">Game mode</p>
+          <div class="mode-choice-buttons">
+            <button id="axisAiModeButton" type="button" data-game-mode="axis-vs-ai">
+              <img class="mode-flag" src="local-assets/ui/axis-human-flag.png" alt="" aria-hidden="true" />
+              <span class="mode-side" data-i18n="side.axis">Axis</span>
+              <span class="mode-versus">vs</span>
+              <span data-i18n="side.allied">Allied</span>
+            </button>
+            <button id="alliedAiModeButton" type="button" data-game-mode="allied-vs-ai">
+              <img class="mode-flag" src="local-assets/ui/allied-human-flag.png" alt="" aria-hidden="true" />
+              <span class="mode-side" data-i18n="side.allied">Allied</span>
+              <span class="mode-versus">vs</span>
+              <span data-i18n="side.axis">Axis</span>
+            </button>
+            <button id="hotseatModeButton" type="button" data-game-mode="hotseat" data-i18n="menu.hotseatMode">Hotseat</button>
+          </div>
+        </section>
         <div class="menu-actions">
           <button id="startCampaignButton" type="button" data-i18n="menu.start">开始战役</button>
           <button id="continueCampaignButton" type="button" data-i18n="menu.continue">继续本回合</button>
@@ -59,6 +77,7 @@
               <strong id="turnLabel">--</strong>
               <span id="phaseLabel">--</span>
             </div>
+            <div id="aiStatus" class="ai-status"></div>
             <div id="winnerBanner" class="winner-banner" hidden></div>
             <div class="phase-actions">
               <button id="finishDeclarationsButton" type="button" hidden data-i18n="ui.finishDeclarations">完成宣告</button>

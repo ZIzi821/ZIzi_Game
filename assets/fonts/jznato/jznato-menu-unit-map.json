@@ -1,0 +1,200 @@
+{
+  "font": {
+    "name": "JZNATO Symbol Font v11",
+    "family": "JZNATO V11  3x2",
+    "font_file": "JZNATO-v11.otf",
+    "source_repository": "https://github.com/jzedwards/jzfonts",
+    "author_mapping_file": "JZNATO.xlsx",
+    "author_mapping_sheet": "JZNATO TLA"
+  },
+  "method": [
+    "Read JZNATO-readme.md: the author states the symbols are broadly based on NATO APP-6C and are intended for wargame NATO counters.",
+    "Read JZNATO.xlsx sheet 'JZNATO TLA': this gives the author's three-letter code, keyboard character, description, decimal codepoint, and hex code.",
+    "Cross-checked the selected symbols against NATO/APP-6 conventions: infantry uses a saltire/X, cavalry/reconnaissance uses a single diagonal line, armour uses tank-track/oval form, mechanized infantry combines infantry with armour/treads, mountain and motorized are unit modifiers in APP-6-style symbology."
+  ],
+  "menu_mapping": [
+    {
+      "zh": "步兵单位",
+      "canonical_en": "infantry",
+      "jznato": {
+        "tla": "INF",
+        "character": "1",
+        "codepoint_dec": 49,
+        "codepoint_hex": "31",
+        "author_desc": "infantry"
+      },
+      "nato_basis": "Infantry basic icon: saltire/X inside a land-unit frame.",
+      "status": "exact",
+      "confidence": "high"
+    },
+    {
+      "zh": "机械化单位",
+      "canonical_en": "mechanized infantry",
+      "jznato": {
+        "tla": "MEC",
+        "character": "9",
+        "codepoint_dec": 57,
+        "codepoint_hex": "39",
+        "author_desc": "mechanised infantry"
+      },
+      "nato_basis": "Mechanized infantry combines the infantry X with the armour/tread icon.",
+      "status": "exact_for_mechanized_infantry",
+      "confidence": "high",
+      "related_jznato": [
+        {
+          "tla": "MEW",
+          "character": "u",
+          "codepoint_dec": 117,
+          "author_desc": "mechanised wheeled"
+        },
+        {
+          "tla": "MAM",
+          "character": "v",
+          "codepoint_dec": 118,
+          "author_desc": "mechanised amphibious"
+        }
+      ]
+    },
+    {
+      "zh": "坦克单位",
+      "canonical_en": "armoured / tank",
+      "jznato": {
+        "tla": "ARM",
+        "character": "-",
+        "codepoint_dec": 45,
+        "codepoint_hex": "2D",
+        "author_desc": "armoured"
+      },
+      "nato_basis": "Armour basic icon uses stylized tank tracks / oval form inside the land-unit frame.",
+      "status": "exact",
+      "confidence": "high"
+    },
+    {
+      "zh": "指挥部",
+      "canonical_en": "headquarters",
+      "jznato": {
+        "tla": "HQQ",
+        "character": "}",
+        "codepoint_dec": 125,
+        "codepoint_hex": "7D",
+        "author_desc": "headquarters"
+      },
+      "nato_basis": "Headquarters is a recognized unit icon/category in APP-6-style military symbology; JZNATO uses a wargame-style HQ checkerboard glyph.",
+      "status": "exact_in_jznato",
+      "confidence": "high"
+    },
+    {
+      "zh": "骑兵",
+      "canonical_en": "cavalry",
+      "jznato": {
+        "tla": "CAV",
+        "character": "!",
+        "codepoint_dec": 33,
+        "codepoint_hex": "21",
+        "author_desc": "cavalry"
+      },
+      "nato_basis": "Cavalry/reconnaissance icon is the single diagonal line, historically associated with the sabre belt.",
+      "status": "exact",
+      "confidence": "high"
+    },
+    {
+      "zh": "滑雪",
+      "canonical_en": "ski",
+      "jznato": {
+        "tla": "SKI",
+        "character": "K",
+        "codepoint_dec": 75,
+        "codepoint_hex": "4B",
+        "author_desc": "ski"
+      },
+      "nato_basis": "Ski is a specialist mobility/capability symbol in military map symbology; JZNATO provides it as its own glyph.",
+      "status": "exact_in_jznato",
+      "confidence": "high"
+    },
+    {
+      "zh": "山地",
+      "canonical_en": "mountain infantry",
+      "jznato": {
+        "tla": "MTN",
+        "character": "2",
+        "codepoint_dec": 50,
+        "codepoint_hex": "32",
+        "author_desc": "infantry mountain"
+      },
+      "nato_basis": "Mountain is an APP-6-style unit modifier; mountain infantry combines the infantry X with the mountain modifier.",
+      "status": "exact_for_mountain_infantry",
+      "confidence": "high",
+      "related_jznato": [
+        {
+          "tla": "OMT",
+          "character": ",",
+          "codepoint_dec": 44,
+          "author_desc": "overlay mountain"
+        }
+      ]
+    },
+    {
+      "zh": "摩托化步兵",
+      "canonical_en": "motorized infantry",
+      "jznato": {
+        "tla": "MOT",
+        "character": "4",
+        "codepoint_dec": 52,
+        "codepoint_hex": "34",
+        "author_desc": "infantry motorised"
+      },
+      "nato_basis": "Motorized is an APP-6-style modifier; motorized infantry combines infantry with a road/wheel mobility mark.",
+      "status": "exact",
+      "confidence": "high",
+      "related_jznato": [
+        {
+          "tla": "INM",
+          "character": "d",
+          "codepoint_dec": 100,
+          "author_desc": "infantry motorised version 2"
+        },
+        {
+          "tla": "OMT",
+          "character": "/",
+          "codepoint_dec": 47,
+          "author_desc": "overlay motorised"
+        }
+      ]
+    },
+    {
+      "zh": "安保部队",
+      "canonical_en": "security / border security",
+      "jznato": {
+        "tla": "BOR",
+        "character": "L",
+        "codepoint_dec": 76,
+        "codepoint_hex": "4C",
+        "author_desc": "border"
+      },
+      "nato_basis": "No exact 'security' entry exists in the JZNATO author table. BOR/border is the closest available JZNATO glyph for border/security-style forces, but it should be treated as a project convention rather than a strict APP-6 security icon.",
+      "status": "best_match_not_exact",
+      "confidence": "medium"
+    }
+  ],
+  "evidence_files": [
+    "JZNATO-readme.md",
+    "JZNATO.xlsx",
+    "JZNATO-v11.JPG",
+    "JZNATO-v11-keyboard-map.JPG",
+    "JZNATO-final-menu-glyphs-proof.png"
+  ],
+  "external_references": [
+    {
+      "label": "JZNATO GitHub repository",
+      "url": "https://github.com/jzedwards/jzfonts"
+    },
+    {
+      "label": "NATO Joint Military Symbology / APP-6 overview",
+      "url": "https://en.wikipedia.org/wiki/NATO_Joint_Military_Symbology"
+    },
+    {
+      "label": "APP-6(C) archived PDF linked from NATO symbology references",
+      "url": "https://web.archive.org/web/20150921231042/http://armawiki.zumorc.de/files/NATO/APP-6(C).pdf"
+    }
+  ]
+}
