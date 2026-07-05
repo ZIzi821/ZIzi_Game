@@ -366,6 +366,7 @@ function scoreHex(state, unit, hexId, route = null) {
     score += axisObjectiveScore(hexId) * 3.8;
     score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 4.4 : 3.2);
     score += axisProgress(unit, hexId);
+    score += axisRearGuard(state, unit, hexId);
     score += attackSetup(state, unit, hexId) * 3.1;
   } else {
     if (scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) score += 230;
@@ -428,6 +429,17 @@ function axisProgress(unit, hexId) {
   if (!hex || !start) return 0;
   const idealRow = Number(unit.movement || 0) >= 9 && Number(start.row || 0) >= 10 ? 10 : 4;
   return Number(hex.col || 0) * 0.85 - Math.abs(Number(hex.row || 0) - idealRow) * 0.55;
+}
+
+function axisRearGuard(state, unit, hexId) {
+  const westExit = scenario.objectives.alliedWestExitEdge;
+  const threat = liveUnits(state.units).some((enemy) => enemy.side === "allied" && !enemy.disrupted && nearestDistance(enemy.hexId, westExit) <= 5);
+  if (!threat) return 0;
+  const combat = Number(unit.combat || 0);
+  const guardBias = Math.max(0, 5 - combat) * 1.35;
+  const mobilityPenalty = Number(unit.movement || 0) >= 9 ? 0.8 : 2.35;
+  const distanceToExit = nearestDistance(hexId, westExit);
+  return Math.max(0, 4 - distanceToExit) * (guardBias + mobilityPenalty) + (westExit.includes(hexId) ? 8 + guardBias * 1.8 : 0);
 }
 
 function alliedScreen(hexId) {
