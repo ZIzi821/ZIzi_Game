@@ -175,7 +175,7 @@
         noBattle: "本阶段没有宣告战斗。",
         allDone: "宣告战斗已经全部结算。",
         pendingCombat: "仍有宣告战斗未结算。",
-        exitWin: "{unit} 从西侧地图边撤出。",
+        exitWin: "{unit} 突破德军战线。",
         fourTurnWin: "4 回合结束，轴心国未达成胜利。",
         ridgeWin: "{unit} 占领阿拉姆哈勒法岭目标阵地。",
         roadWin: "{unit} 占领阿拉曼以东沿海道路。",
@@ -301,7 +301,7 @@
         noBattle: "No combats were declared this phase.",
         allDone: "All declared combats are resolved.",
         pendingCombat: "Declared combats remain unresolved.",
-        exitWin: "{unit} exited from the western map edge.",
+        exitWin: "{unit} broke through the German line.",
         fourTurnWin: "Four turns ended without an Axis victory.",
         ridgeWin: "{unit} occupied an Alam Halfa Ridge objective position.",
         roadWin: "{unit} occupied the coastal road east of El Alamein.",
@@ -353,9 +353,13 @@
     showBattleRecord: "展开战斗记录",
     hideBattleRecord: "收起战斗记录",
     axisImpact: "隆美尔和他的战士们将继续追歼残敌，在中东完成与南方面军的伟大会师！",
-    alliedImpactPrefix: "历史上，",
+    alliedImpactPrefix: "",
     alliedImpactLink: "轴心军攻占苏伊士运河地区的最后希望破灭了",
     alliedImpactSuffix: "，英国第八集团军由此稳住埃及防线，并为随后转入反攻奠定基础。",
+    axisFailedTitle: "德军并未实现其既定目标",
+    axisFailedText: "这是蒙哥马利赢得了其接手第八集团军以来的第一场胜利，英军正从隆美尔的神话和战败的阴影中脱离。",
+    alliedBreakthroughTitle: "德军的战线被突破了！",
+    alliedBreakthroughText: "战争的主动权来到了我们手里，而强大的第八集团军将把非洲军团歼灭于非洲的土地上。",
   });
   Object.assign(I18N.en.text, {
     currentDeclaration: "Current Declaration",
@@ -382,9 +386,13 @@
     showBattleRecord: "Expand Combat Record",
     hideBattleRecord: "Collapse Combat Record",
     axisImpact: "Rommel and his soldiers will continue the pursuit and complete the great junction with the southern army group in the Middle East.",
-    alliedImpactPrefix: "Historically, ",
+    alliedImpactPrefix: "",
     alliedImpactLink: "the Axis army's final hope of seizing the Suez Canal region collapsed",
     alliedImpactSuffix: ", securing the Eighth Army's line in Egypt and opening the way to the counteroffensive.",
+    axisFailedTitle: "The Germans did not achieve their stated objective",
+    axisFailedText: "This was Montgomery's first victory since taking command of the Eighth Army, and the British Army began to emerge from the shadow of Rommel's legend and earlier defeats.",
+    alliedBreakthroughTitle: "The German line has been broken!",
+    alliedBreakthroughText: "The initiative has passed to us, and the powerful Eighth Army will destroy the Afrika Korps on African soil.",
   });
   Object.assign(I18N.zh.aar, {
     losses: "战损统计",
@@ -1508,7 +1516,7 @@
     app.state.lastMove = { unitId: unit.id, fromHexId, toHexId: destinationHexId, path, movedUnitsBefore, turn: app.state.turn, phaseIndex: app.state.phaseIndex };
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (unit.side === "allied" && app.scenario.objectives.alliedWestExitEdge.includes(destinationHexId) && route.remaining > 0) {
-      setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }));
+      setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
     }
     app.state.selectedUnitId = unit.id;
     draw();
@@ -1638,7 +1646,7 @@
         return;
       }
       if (app.state.turn >= app.rules.turns.length) {
-        setWinner("allied", tr("text.fourTurnWin"));
+        setWinner("allied", tr("text.fourTurnWin"), "axis-failed");
       } else {
         app.state.turn += 1;
         app.state.phaseIndex = 0;
@@ -1696,13 +1704,13 @@
     return false;
   }
 
-  function setWinner(side, reason) {
-    app.state.winner = { side, reason, turn: app.state.turn, report: buildAarData(side, reason) };
+  function setWinner(side, reason, type = null) {
+    app.state.winner = { side, reason, type, turn: app.state.turn, report: buildAarData(side, reason, type) };
     log(`${sideLabel(side)}: ${reason}`);
     openAar(true);
   }
 
-  function buildAarData(side = app.state.winner?.side || null, reason = app.state.winner?.reason || tr("aar.pendingTitle")) {
+  function buildAarData(side = app.state.winner?.side || null, reason = app.state.winner?.reason || tr("aar.pendingTitle"), type = app.state.winner?.type || null) {
     const eliminated = app.state.eliminatedUnitIds.map(unitById).filter(Boolean);
     const eliminatedBySide = {
       axis: eliminated.filter((unit) => unit.side === "axis"),
@@ -1733,6 +1741,7 @@
     return {
       side,
       reason,
+      type,
       turn: app.state.turn,
       eliminated,
       eliminatedBySide,
@@ -1822,7 +1831,7 @@
   function objectivesCard(data) {
     const body = document.createElement("div");
     body.className = "objective-status";
-    const achieved = objectiveAchievements(data.objectives);
+    const achieved = objectiveAchievements(data);
     if (achieved.length) {
       achieved.forEach((item) => body.append(objectiveLine(item.title, item.text)));
     } else {
@@ -1833,8 +1842,17 @@
     return card;
   }
 
-  function objectiveAchievements(objectives) {
+  function objectiveAchievements(data) {
+    const objectives = data.objectives;
     const achieved = [];
+    if (data.side === "allied") {
+      if (data.type === "allied-breakthrough") {
+        achieved.push({ title: tr("text.alliedBreakthroughTitle"), text: tr("text.alliedBreakthroughText") });
+      } else {
+        achieved.push({ title: tr("text.axisFailedTitle"), text: tr("text.axisFailedText") });
+      }
+      return achieved;
+    }
     if (objectives.ridgeFullControl) {
       achieved.push({ title: tr("text.ridgeFullTitle"), text: tr("text.ridgeFullText") });
     } else if (objectives.ridgeControl) {

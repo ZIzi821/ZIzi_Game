@@ -763,7 +763,7 @@ body[data-lang="zh"] .aar-shell h2 {
 .aar-card a {
   color: #fff0a6;
   font-weight: 950;
-  text-decoration-thickness: 2px;
+  text-decoration: none;
 }
 
 .aar-eliminated:empty {
