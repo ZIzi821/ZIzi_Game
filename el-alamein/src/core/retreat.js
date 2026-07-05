@@ -3,6 +3,20 @@ import { terrainRule } from "./terrain.js";
 import { isEnemyZoc } from "./zoc.js";
 import { liveUnitAt, resolveUnit } from "./units.js";
 
+/**
+ * Finds legal retreat destinations and the paths used to reach them.
+ *
+ * Retreats must move farther from the combat origin each step, avoid enemy ZOC,
+ * avoid enemy-occupied hexes, and enter only passable terrain. Passing through
+ * friendly units extends the required retreat until the unit can stop in an
+ * unoccupied friendly-legal hex.
+ *
+ * @param {{board: object, rules: object, units: object[]}} context Core rule context.
+ * @param {object|string} unitOrId Retreating unit object or unit ID.
+ * @param {number} requiredSteps Required retreat distance from the combat result.
+ * @param {string} originHexId Hex the retreat must move away from.
+ * @returns {Map<string, string[]>} Destination hex IDs to full retreat paths.
+ */
 export function getLegalRetreatPaths(context, unitOrId, requiredSteps, originHexId) {
   const { board, rules, units } = context;
   const unit = resolveUnit(units, unitOrId);
@@ -48,6 +62,15 @@ export function getLegalRetreatPaths(context, unitOrId, requiredSteps, originHex
   return result;
 }
 
+/**
+ * Returns only the destination IDs from getLegalRetreatPaths.
+ *
+ * @param {{board: object, rules: object, units: object[]}} context Core rule context.
+ * @param {object|string} unitOrId Retreating unit object or unit ID.
+ * @param {number} requiredSteps Required retreat distance from the combat result.
+ * @param {string} originHexId Hex the retreat must move away from.
+ * @returns {Set<string>}
+ */
 export function getLegalRetreatDestinations(context, unitOrId, requiredSteps, originHexId) {
   return new Set(getLegalRetreatPaths(context, unitOrId, requiredSteps, originHexId).keys());
 }

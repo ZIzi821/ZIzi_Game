@@ -9,6 +9,7 @@
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
+  const coreRulesPromise = import("./src/core/index.js");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -488,15 +489,15 @@
     hotseatMode: "Hotseat Mode",
   });
   Object.assign(I18N.zh.ui, {
-    aiThinking: "AI 正在指挥 {side}",
-    aiAwaitingInput: "AI 已完成动作，请点击阶段按钮继续",
-    aiWaiting: "你指挥 {side}，AI 指挥 {enemy}",
+    aiThinking: "极难 AI 正在指挥 {side}",
+    aiAwaitingInput: "极难 AI 已完成动作，请点击阶段按钮继续",
+    aiWaiting: "你指挥 {side}，极难 AI 指挥 {enemy}",
     hotseatStatus: "热座模式：双方由真人操作",
   });
   Object.assign(I18N.en.ui, {
-    aiThinking: "AI is commanding {side}",
-    aiAwaitingInput: "AI has finished. Use the phase buttons to continue",
-    aiWaiting: "You command {side}; AI commands {enemy}",
+    aiThinking: "Expert AI is commanding {side}",
+    aiAwaitingInput: "Expert AI has finished. Use the phase buttons to continue",
+    aiWaiting: "You command {side}; Expert AI commands {enemy}",
     hotseatStatus: "Hotseat mode: both sides are human",
   });
   Object.assign(I18N.zh.text, {
@@ -568,8 +569,10 @@
   };
 
   const app = {
+    core: null,
     scenario: null,
     rules: null,
+    board: null,
     hexes: [],
     hexById: new Map(),
     state: null,
@@ -578,6 +581,7 @@
     legalRetreats: new Set(),
     legalRetreatSteps: new Set(),
     retreatPaths: new Map(),
+    focusedBattleId: null,
     animating: false,
     logExpanded: false,
     ai: {
@@ -590,6 +594,16 @@
   };
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
+
+  function coreContext() {
+    return {
+      board: app.board,
+      scenario: app.scenario,
+      rules: app.rules,
+      units: app.state.units,
+      state: app.state,
+    };
+  }
 
   function getSavedGameMode() {
     const savedMode = localStorage.getItem(AI_GAME_MODE_KEY);
@@ -672,8 +686,8 @@
   function hexLabel(hexId) {
     const hex = hexById(hexId);
     if (!hex) return "--";
-    const row = String(hex.row + 2).padStart(2, "0");
-    const col = String(hex.col + 3).padStart(2, "0");
+    const row = String(hex.row + 1).padStart(2, "0");
+    const col = String(27 - hex.col).padStart(2, "0");
     return `${row}${col}`;
   }
 
@@ -760,14 +774,17 @@
 
   async function init() {
     try {
-      const [scenario, rules] = await Promise.all([
+      const [core, scenario, rules] = await Promise.all([
+        coreRulesPromise,
         fetchJson("local-data/scenario.json"),
         fetchJson("local-data/rules.json"),
       ]);
+      app.core = core;
       app.scenario = scenario;
       app.rules = rules;
-      app.hexes = scenario.board.hexes;
-      app.hexById = new Map(app.hexes.map((hex) => [hex.id, hex]));
+      app.board = app.core.createBoard(scenario);
+      app.hexes = app.board.hexes;
+      app.hexById = app.board.hexById;
       app.state = makeInitialState();
       wireUi();
       loadImages();
@@ -890,6 +907,7 @@
 
   function startNewCampaign() {
     localStorage.removeItem(SESSION_KEY);
+    app.focusedBattleId = null;
     app.ai.running = false;
     app.ai.scheduled = false;
     app.ai.waitingForHuman = false;
@@ -923,6 +941,7 @@
     }
     try {
       app.state = normalizeState(JSON.parse(raw), { preserveTransient: true });
+      app.focusedBattleId = null;
       app.ai.running = false;
       app.ai.scheduled = false;
       app.ai.waitingForHuman = false;
@@ -965,6 +984,7 @@
     }
     try {
       app.state = normalizeState(JSON.parse(raw), { preserveTransient: Boolean(sessionRaw) });
+      app.focusedBattleId = null;
       app.ai.running = false;
       app.ai.scheduled = false;
       app.ai.waitingForHuman = false;
@@ -978,6 +998,7 @@
   }
 
   function restoreInteractiveState() {
+    app.focusedBattleId = null;
     app.reachable.clear();
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
@@ -992,6 +1013,7 @@
   }
 
   function clearTransientState() {
+    app.focusedBattleId = null;
     app.state.selectedUnitId = null;
     app.state.selectedDefenderId = null;
     app.state.selectedAttackers = [];
@@ -1100,7 +1122,9 @@
 
   async function animateUnitPath(unit, path) {
     app.animating = true;
-    const stepDelay = app.ai.running && isMovementPhase() && isAiSide(unit.side) ? 140 : 70;
+    const stepDelay = app.ai.running
+      ? (isCombatPhase() ? 260 : 140)
+      : 70;
     for (const hexId of path.slice(1)) {
       unit.hexId = hexId;
       draw();
@@ -1195,6 +1219,7 @@
     if (!isCombatPhase() || app.state.combatMode !== "declare") return;
     const battle = app.state.declaredCombats.find((item) => item.id === battleId);
     if (!battle) return;
+    if (app.focusedBattleId === battleId) app.focusedBattleId = null;
     app.state.declaredCombats = app.state.declaredCombats.filter((item) => item.id !== battleId);
     app.state.usedDefenders = app.state.usedDefenders.filter((id) => id !== battle.defenderId);
     app.state.usedAttackers = app.state.usedAttackers.filter((id) => !battle.attackerIds.includes(id));
@@ -1223,6 +1248,16 @@
     if (app.state.retreatTask) return battleById(app.state.retreatTask.battleId) || app.state.retreatTask.battle;
     if (app.state.advanceTask) return app.state.declaredCombats.find((battle) => battle.id === app.state.advanceTask.battleId) || null;
     return app.state.declaredCombats.find((item) => !item.resolved) || null;
+  }
+
+  function focusedBattle() {
+    if (!app.focusedBattleId) return null;
+    return battleById(app.focusedBattleId);
+  }
+
+  function toggleFocusedBattle(battleId) {
+    app.focusedBattleId = app.focusedBattleId === battleId ? null : battleId;
+    draw();
   }
 
   function battleById(id) {
@@ -1362,43 +1397,15 @@
   }
 
   function applyCombatResult(battle, result) {
-    if (result === "AE") {
-      for (const id of battle.attackerIds) eliminateUnit(id, battle.id);
-      battle.resolved = true;
-      archiveBattleReport(battle);
+    const plan = app.core.planCombatResult(coreContext(), battle, result);
+    for (const id of plan.eliminatedUnitIds) eliminateUnit(id, battle.id);
+    if (plan.resolveBattle) battle.resolved = true;
+    if (plan.retreatTask) {
+      startRetreatTask({ battle, ...plan.retreatTask });
       return;
     }
-    if (result === "DE") {
-      eliminateUnit(battle.defenderId, battle.id);
-      battle.resolved = true;
-      startAdvanceTask(battle);
-      archiveBattleReport(battle);
-      return;
-    }
-    if (result === "AR") {
-      startRetreatTask({
-        battle,
-        unitIds: battle.attackerIds.filter((id) => !unitById(id)?.eliminated),
-        steps: 1,
-        result,
-        origins: battle.attackerOrigins,
-        disruptAfterRetreat: false,
-        advanceAfter: false,
-      });
-      return;
-    }
-    const match = result.match(/^DR(\d+)$/);
-    if (match) {
-      startRetreatTask({
-        battle,
-        unitIds: [battle.defenderId].filter((id) => !unitById(id)?.eliminated),
-        steps: Number(match[1]),
-        result,
-        origins: { [battle.defenderId]: battle.defenderHexId },
-        disruptAfterRetreat: true,
-        advanceAfter: true,
-      });
-    }
+    if (plan.startAdvance) startAdvanceTask(battle);
+    if (plan.archiveBattle) archiveBattleReport(battle);
   }
 
   function eliminateUnit(id, battleId = null) {
@@ -1529,7 +1536,7 @@
     app.state.advanceTask = { battleId: battle.id, targetHexId, attackerIds: eligible };
   }
 
-  function advanceUnit(unitId) {
+  async function advanceUnit(unitId) {
     const task = app.state.advanceTask;
     if (!task || unitId === "skip") {
       app.state.advanceTask = null;
@@ -1538,6 +1545,7 @@
     }
     const unit = unitById(unitId);
     if (unit && !unit.eliminated && !liveUnitAt(task.targetHexId)) {
+      await animateUnitPath(unit, [unit.hexId, task.targetHexId]);
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
@@ -1615,7 +1623,7 @@
     app.state.movedUnits.push(unit.id);
     app.state.lastMove = { unitId: unit.id, fromHexId, toHexId: destinationHexId, path, movedUnitsBefore, turn: app.state.turn, phaseIndex: app.state.phaseIndex };
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
-    if (unit.side === "allied" && app.scenario.objectives.alliedWestExitEdge.includes(destinationHexId) && route.remaining > 0) {
+    if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
     }
     app.state.selectedUnitId = unit.id;
@@ -1797,14 +1805,14 @@
         if (!destination) return handled;
         await chooseRetreatHex(destination);
         handled = true;
-        await delay(130);
+        await delay(360);
         continue;
       }
       if (app.state.advanceTask) {
         if (!options.force && !isAiSide(activeSide())) return handled;
-        advanceUnit(chooseAiAdvanceUnit() || "skip");
+        await advanceUnit(chooseAiAdvanceUnit() || "skip");
         handled = true;
-        await delay(130);
+        await delay(360);
         continue;
       }
       return handled;
@@ -1848,6 +1856,11 @@
   function chooseAiMove(unit) {
     const reachable = reachableHexes(unit);
     if (!reachable.size) return null;
+    if (unit.side === "axis") {
+      const guardMove = chooseAxisExitGuardMove(unit, reachable);
+      if (guardMove === "hold") return null;
+      if (guardMove) return { hexId: guardMove, reachable };
+    }
     const currentScore = scoreAiHex(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
     let best = null;
     for (const [hexId, route] of reachable.entries()) {
@@ -1856,6 +1869,26 @@
     }
     if (!best || best.score <= currentScore + aiMoveThreshold(unit)) return null;
     return { hexId: best.hexId, reachable };
+  }
+
+  function chooseAxisExitGuardMove(unit, reachable) {
+    const westExit = app.scenario.objectives.alliedWestExitEdge;
+    const combat = Number(unit.combat || 0);
+    const isFastAssaultUnit = Number(unit.movement || 0) >= 9 && combat >= 4;
+    if (isFastAssaultUnit) {
+      return westExit.includes(unit.hexId) && alliedExitThreat(unit.hexId) >= 30 ? "hold" : null;
+    }
+    const holdThreat = 5;
+    if (westExit.includes(unit.hexId) && alliedExitThreat(unit.hexId) >= holdThreat) return "hold";
+    let best = null;
+    for (const [hexId, route] of reachable.entries()) {
+      if (!westExit.includes(hexId)) continue;
+      const threat = alliedExitThreat(hexId);
+      if (!threat) continue;
+      const score = threat + Number(route?.remaining || 0) * 0.3 - nearestDistance(unit.hexId, [hexId]) * 0.4;
+      if (!best || score > best.score) best = { hexId, score };
+    }
+    return best && best.score >= 10 ? best.hexId : null;
   }
 
   function aiMovePriority(unit) {
@@ -1886,12 +1919,15 @@
       score += axisProgressScore(unit, hexId);
       score += axisRearGuardScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * 3.1;
+      score += zocTrapSetupScore(unit, hexId) * 3.4;
+      if (Number(unit.movement || 0) >= 9 && combat >= 4 && app.scenario.objectives.alliedWestExitEdge.includes(hexId)) score -= 44;
     } else {
       if (app.scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) score += 230;
       score += alliedDefenseScore(hexId) * 3.4;
       score += alliedScreenScore(hexId) * 2.8;
       score -= nearestDistance(hexId, alliedAnchorHexes()) * (combat >= 4 ? 2.1 : 1.45);
       score += attackSetupScore(unit, hexId) * 2.2;
+      score += zocTrapSetupScore(unit, hexId) * 1.3;
     }
 
     if (hex.terrain === "highland" || hex.terrain === "settlement") score += 9 + combat * 0.8;
@@ -1905,11 +1941,10 @@
   }
 
   function axisUnitTargetHexes(unit) {
-    const hex = hexById(unit.hexId);
-    const movement = Number(unit.movement || 0);
-    if (movement >= 9 && Number(hex?.row || 0) >= 10) return app.scenario.objectives.alamHalfaRidge;
-    if (Number(hex?.row || 0) <= 6) return app.scenario.objectives.coastalRoadEast;
-    return axisObjectiveHexes();
+    const objectives = axisObjectiveHexes();
+    const bestDistance = nearestDistance(unit.hexId, objectives);
+    const spread = Number(unit.movement || 0) >= 9 ? 2 : 1;
+    return objectives.filter((hexId) => hexDistance(unit.hexId, hexId) <= bestDistance + spread);
   }
 
   function axisObjectiveHexes() {
@@ -1941,9 +1976,11 @@
     const hex = hexById(hexId);
     const start = hexById(unit.hexId);
     if (!hex || !start) return 0;
-    const row = Number(hex.row || 0);
-    const idealRow = Number(unit.movement || 0) >= 9 && Number(start.row || 0) >= 10 ? 10 : 4;
-    return Number(hex.col || 0) * 0.85 - Math.abs(row - idealRow) * 0.55;
+    const targets = axisUnitTargetHexes(unit);
+    const distanceGain = nearestDistance(unit.hexId, targets) - nearestDistance(hexId, targets);
+    const eastwardGain = Number(hex.col || 0) - Number(start.col || 0);
+    const tempo = Number(unit.movement || 0) >= 9 ? 7.5 : 4.2;
+    return distanceGain * tempo + eastwardGain * 0.85;
   }
 
   function axisRearGuardScore(unit, hexId) {
@@ -1971,7 +2008,7 @@
       .filter((unit) => unit.side === "allied" && !unit.disrupted)
       .reduce((score, unit) => {
         const distance = hexDistance(unit.hexId, exitHexId);
-        const allowance = movementAllowance(unit);
+        const allowance = Math.max(movementAllowance(unit), Number(unit.movement || 0));
         if (distance < allowance) return score + 18 + (allowance - distance) * 4 + Number(unit.combat || 0);
         if (distance <= allowance + 1) return score + 5;
         return score;
@@ -2004,9 +2041,53 @@
       const attack = Number(unit.combat || 0) + support;
       const defense = Math.max(1, defenseBreakdown(enemy).total);
       const oddsPressure = Math.min(6, attack / defense);
-      score += oddsPressure * 2.4 + strategicHexValueForSide(unit.side, enemy.hexId) * 0.08 + Number(enemy.combat || 0) * 0.6;
+      score += oddsPressure * 2.4 + strategicUnitValueForSide(unit.side, enemy) * 0.08 + Number(enemy.combat || 0) * 0.6;
     }
     return score;
+  }
+
+  function zocTrapSetupScore(unit, hexId) {
+    let score = 0;
+    const hypothetical = { unit, hexId };
+    for (const enemy of liveUnits().filter((candidate) => candidate.side !== unit.side && !candidate.disrupted)) {
+      const distance = hexDistance(hexId, enemy.hexId);
+      if (distance > 2) continue;
+      const currentExits = retreatExitCount(enemy, null);
+      const trappedExits = retreatExitCount(enemy, hypothetical);
+      const reduced = Math.max(0, currentExits - trappedExits);
+      const scarcity = Math.max(0, 4 - trappedExits);
+      const adjacent = neighborsOf(enemy.hexId).includes(hexId);
+      score += (reduced * 3 + scarcity * 1.8 + strategicUnitValueForSide(unit.side, enemy) * 0.04) * (adjacent ? 1.25 : 0.55);
+    }
+    return score;
+  }
+
+  function retreatExitCount(unit, hypothetical = null) {
+    let count = 0;
+    for (const nextId of neighborsOf(unit.hexId)) {
+      const nextHex = hexById(nextId);
+      if (!terrainRule(nextHex).passable) continue;
+      const occupant = liveUnitAtWithHypothetical(nextId, hypothetical);
+      if (occupant && occupant.side !== unit.side) continue;
+      if (isEnemyZocWithHypothetical(nextId, unit.side, unit.id, hypothetical)) continue;
+      count += 1;
+    }
+    return count;
+  }
+
+  function liveUnitAtWithHypothetical(hexId, hypothetical = null) {
+    if (hypothetical?.hexId === hexId) return hypothetical.unit;
+    const occupant = liveUnitAt(hexId);
+    if (occupant && occupant.id === hypothetical?.unit?.id) return null;
+    return occupant;
+  }
+
+  function isEnemyZocWithHypothetical(hexId, friendlySide, ignoreUnitId = null, hypothetical = null) {
+    return liveUnits().some((unit) => {
+      if (unit.id === ignoreUnitId || unit.side === friendlySide || unit.disrupted) return false;
+      const unitHexId = unit.id === hypothetical?.unit?.id ? hypothetical.hexId : unit.hexId;
+      return neighborsOf(unitHexId).includes(hexId);
+    });
   }
 
   function friendlySupportScore(unit, hexId) {
@@ -2032,6 +2113,21 @@
   function strategicHexValueForSide(side, hexId) {
     if (side === "axis") return axisObjectiveScore(hexId) + alliedDefenseScore(hexId) * 0.55;
     return alliedDefenseScore(hexId) + Math.max(0, 10 - nearestDistance(hexId, axisObjectiveHexes())) * 3.5;
+  }
+
+  function strategicUnitValueForSide(side, unit) {
+    if (!unit) return 0;
+    let value = Number(unit.combat || 0) * 3.2 + strategicHexValueForSide(side, unit.hexId) * 0.18;
+    if (side === "axis" && unit.side === "allied") {
+      const exitDistance = nearestDistance(unit.hexId, app.scenario.objectives.alliedWestExitEdge);
+      const allowance = movementAllowance(unit);
+      if (exitDistance <= allowance + 2) value += Math.max(0, allowance + 3 - exitDistance) * 8 + (Number(unit.movement || 0) >= 7 ? 10 : 0);
+    }
+    if (side === "allied" && unit.side === "axis") {
+      const objectiveDistance = nearestDistance(unit.hexId, axisObjectiveHexes());
+      if (objectiveDistance <= 3) value += Math.max(0, 4 - objectiveDistance) * 7 + (Number(unit.combat || 0) >= 4 ? 8 : 0);
+    }
+    return value;
   }
 
   function declareAiCombats() {
@@ -2094,7 +2190,7 @@
   function scoreAiCombat(attackers, defender, odds) {
     const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
     const attackerSide = attackers[0]?.side || activeSide();
-    const defenderValue = Number(defender.combat || 0) * 3.2 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.18;
+    const defenderValue = strategicUnitValueForSide(attackerSide, defender);
     let total = 0;
     for (const row of Object.values(app.rules.crt.rows)) {
       total += scoreAiCombatResult(row[odds.columnIndex], attackers, defender, defenderValue);
@@ -2112,8 +2208,22 @@
     if (result === "AE") return -attackerValue * 8.2;
     if (result === "AR") return -attackerValue * 1.85;
     const retreat = result.match(/^DR(\d+)$/);
-    if (retreat) return defenderValue * (2.05 + Number(retreat[1]) * 0.42) + strategicHexValueForSide(attackerSide, defender.hexId) * 0.22;
+    if (retreat) {
+      const retreatSteps = Number(retreat[1]);
+      const pressure = defenderRetreatPressure(defender, retreatSteps);
+      return defenderValue * (2.05 + retreatSteps * 0.42 + pressure) + strategicHexValueForSide(attackerSide, defender.hexId) * (0.22 + pressure * 0.08);
+    }
     return 0;
+  }
+
+  function defenderRetreatPressure(defender, steps) {
+    const paths = legalRetreatPaths(defender, steps, defender.hexId);
+    const count = paths.size;
+    if (count === 0) return 5.6;
+    if (count === 1) return 3.1;
+    if (count === 2) return 2.2;
+    if (count <= 4) return 1.25;
+    return Math.max(0, (7 - count) * 0.16);
   }
 
   function chooseAiRetreatDestination(unit) {
@@ -2123,10 +2233,26 @@
     for (const [hexId, path] of app.retreatPaths.entries()) {
       const route = { remaining: 0, path };
       const retreaterScore = scoreAiHex(unit, hexId, route) - path.length * 0.25 + friendlySupportScore(unit, hexId) * 0.35 - enemyDangerScore(unit, hexId);
-      const controllerScore = maximizeForRetreater ? retreaterScore : -retreaterScore + strategicHexValueForSide(controllerSide, unit.hexId) * 0.02;
+      const controllerScore = maximizeForRetreater ? retreaterScore : -retreaterScore + forcedRetreatDenialScore(controllerSide, unit, hexId);
       if (!best || controllerScore > best.score) best = { hexId, score: controllerScore };
     }
     return best?.hexId || null;
+  }
+
+  function forcedRetreatDenialScore(controllerSide, unit, hexId) {
+    if (controllerSide === "axis" && unit.side === "allied") {
+      const exitDistance = nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge);
+      const allowance = Math.max(movementAllowance(unit), Number(unit.movement || 0));
+      let score = Math.min(exitDistance, 12) * 5;
+      if (exitDistance < allowance) score -= 180 + (allowance - exitDistance) * 35;
+      else if (exitDistance <= allowance + 1) score -= 60;
+      return score - strategicHexValueForSide("allied", hexId) * 0.08;
+    }
+    if (controllerSide === "allied" && unit.side === "axis") {
+      const objectiveDistance = nearestDistance(hexId, axisObjectiveHexes());
+      return objectiveDistance * 6 - strategicHexValueForSide("axis", hexId) * 0.12;
+    }
+    return strategicHexValueForSide(controllerSide, hexId) * 0.02;
   }
 
   function chooseAiAdvanceUnit() {
@@ -2184,6 +2310,7 @@
   }
 
   function clearPhaseState() {
+    app.focusedBattleId = null;
     app.state.selectedUnitId = null;
     app.state.selectedDefenderId = null;
     app.state.selectedAttackers = [];
@@ -2211,17 +2338,11 @@
   }
 
   function checkAxisObjectiveVictory() {
-    const axisUnits = liveUnits().filter((unit) => unit.side === "axis");
-    const ridge = new Set(app.scenario.objectives.alamHalfaRidge);
-    const road = new Set(app.scenario.objectives.coastalRoadEast);
-    const ridgeUnit = axisUnits.find((unit) => ridge.has(unit.hexId));
-    const roadUnit = axisUnits.find((unit) => road.has(unit.hexId));
-    if (ridgeUnit) {
-      setWinner("axis", tr("text.ridgeWin", { unit: unitName(ridgeUnit) }));
-      return true;
-    }
-    if (roadUnit) {
-      setWinner("axis", tr("text.roadWin", { unit: unitName(roadUnit) }));
+    const victory = app.core.evaluateAxisObjectiveVictory(coreContext());
+    if (victory) {
+      const unit = unitById(victory.unitId);
+      const reasonKey = victory.reason === "ridge" ? "text.ridgeWin" : "text.roadWin";
+      setWinner(victory.side, tr(reasonKey, { unit: unitName(unit) }), victory.type);
       return true;
     }
     return false;
@@ -2239,28 +2360,7 @@
       axis: eliminated.filter((unit) => unit.side === "axis"),
       allied: eliminated.filter((unit) => unit.side === "allied"),
     };
-    const axisUnits = liveUnits().filter((unit) => unit.side === "axis");
-    const ridge = new Set(app.scenario.objectives.alamHalfaRidge);
-    const road = new Set(app.scenario.objectives.coastalRoadEast);
-    const ridgeOccupiedHexes = new Set(axisUnits.filter((unit) => ridge.has(unit.hexId)).map((unit) => unit.hexId));
-    const ridgeStates = app.scenario.objectives.alamHalfaRidge.map((hexId) => {
-      const occupant = liveUnitAt(hexId);
-      return {
-        hexId,
-        occupantSide: occupant?.side || null,
-        axisZoc: isSideZoc(hexId, "axis"),
-      };
-    });
-    const ridgeControl = ridgeStates.some((item) => item.occupantSide === "axis");
-    const ridgeFullControl = ridgeControl && ridgeStates.every((item) => {
-      if (item.occupantSide === "axis") return true;
-      if (item.occupantSide === "allied") return false;
-      return item.axisZoc;
-    });
-    const roadOccupiedHexes = new Set(axisUnits.filter((unit) => road.has(unit.hexId)).map((unit) => unit.hexId));
-    const elAlameinHexId = "c12r03";
-    const elAlameinOccupied = roadOccupiedHexes.has(elAlameinHexId);
-    const roadCut = [...roadOccupiedHexes].some((hexId) => hexId !== elAlameinHexId);
+    const objectiveStatus = app.core.getObjectiveStatus(coreContext());
     return {
       side,
       reason,
@@ -2272,13 +2372,13 @@
       currentStrength: totalStrengthBySide(app.state.units),
       losses: clone(app.state.losses),
       objectives: {
-        ridgeOccupied: ridgeOccupiedHexes.size,
-        ridgeTotal: ridge.size,
-        ridgeControl,
-        ridgeFullControl,
-        roadOccupied: roadOccupiedHexes.size,
-        elAlameinOccupied,
-        roadCut,
+        ridgeOccupied: objectiveStatus.ridgeOccupied,
+        ridgeTotal: objectiveStatus.ridgeTotal,
+        ridgeControl: objectiveStatus.ridgeControl,
+        ridgeFullControl: objectiveStatus.ridgeFullControl,
+        roadOccupied: objectiveStatus.roadOccupied,
+        elAlameinOccupied: objectiveStatus.elAlameinOccupied,
+        roadCut: objectiveStatus.roadCut,
       },
       battles: clone(app.state.battleReports),
     };
@@ -2592,13 +2692,15 @@
   function drawBattleHighlights(ctx) {
     if (!isCombatPhase()) return;
     if (app.state.combatMode === "declare") {
-      for (const battle of app.state.declaredCombats) {
+      const focused = focusedBattle();
+      const battles = focused ? [focused] : app.state.declaredCombats;
+      for (const battle of battles) {
         for (const attackerId of battle.attackerIds) drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.declaredAttack, 3);
         drawHex(ctx, hexById(unitById(battle.defenderId)?.hexId), HIGHLIGHT.declaredDefender, 3);
       }
       return;
     }
-    const battle = currentBattle();
+    const battle = focusedBattle() || currentBattle();
     if (!battle) return;
     for (const attackerId of battle.attackerIds) drawHex(ctx, hexById(unitById(attackerId)?.hexId), HIGHLIGHT.currentAttack, 5);
     drawHex(ctx, hexById(unitById(battle.defenderId)?.hexId || battle.defenderHexId), HIGHLIGHT.currentDefender, 5);
@@ -2641,12 +2743,14 @@
 
   function unitBattleRole(unitId) {
     if (app.state.combatMode === "declare") {
-      for (const battle of app.state.declaredCombats) {
+      const focused = focusedBattle();
+      const battles = focused ? [focused] : app.state.declaredCombats;
+      for (const battle of battles) {
         if (battle.defenderId === unitId) return "declared-defender";
         if (battle.attackerIds.includes(unitId)) return "declared-attacker";
       }
     } else {
-      const activeBattle = currentBattle();
+      const activeBattle = focusedBattle() || currentBattle();
       if (activeBattle?.defenderId === unitId) return "current-defender";
       if (activeBattle?.attackerIds.includes(unitId)) return "current-attacker";
     }
@@ -2975,6 +3079,15 @@
     const row = document.createElement("div");
     row.className = "battle-row";
     row.dataset.declaration = "true";
+    row.dataset.focused = String(app.focusedBattleId === battle.id);
+    row.tabIndex = 0;
+    row.addEventListener("click", () => toggleFocusedBattle(battle.id));
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleFocusedBattle(battle.id);
+      }
+    });
     const title = document.createElement("strong");
     title.textContent = `#${index + 1} · ${hexLabel(battle.defenderHexId)}`;
     const meta = document.createElement("div");
@@ -2989,7 +3102,10 @@
     cancel.className = "battle-cancel-button";
     cancel.textContent = "X";
     cancel.title = tr("text.cancel");
-    cancel.addEventListener("click", () => cancelDeclaredBattle(battle.id));
+    cancel.addEventListener("click", (event) => {
+      event.stopPropagation();
+      cancelDeclaredBattle(battle.id);
+    });
     row.append(title, meta, cancel);
     return row;
   }
@@ -2999,6 +3115,15 @@
     row.className = "battle-row";
     row.dataset.resolved = String(battle.resolved);
     row.dataset.current = String(currentBattle()?.id === battle.id);
+    row.dataset.focused = String(app.focusedBattleId === battle.id);
+    row.tabIndex = 0;
+    row.addEventListener("click", () => toggleFocusedBattle(battle.id));
+    row.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleFocusedBattle(battle.id);
+      }
+    });
     const title = document.createElement("strong");
     title.textContent = `${hexLabel(battle.defenderHexId)} · ${battle.resultCode ? combatResultLabel(battle.resultCode) : compactOddsText(battle.oddsShort || battle.oddsAtDeclaration)}`;
     const detail = document.createElement("small");

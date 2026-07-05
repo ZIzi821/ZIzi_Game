@@ -1,5 +1,18 @@
 import { neighborsOf } from "./board.js";
+import { unitById } from "./units.js";
 
+/**
+ * Checks whether one attacker can be assigned to attack one defender.
+ *
+ * This covers adjacency, side ownership, disruption, active side, and previous
+ * use in the current combat declaration batch. Odds calculation is separate.
+ *
+ * @param {{board: object, activeSide?: string, usedAttackers?: string[], usedDefenders?: string[]}} context Core rule context.
+ * @param {object|null} attacker Candidate attacking unit.
+ * @param {object|null} defender Candidate defending unit.
+ * @param {object} options Optional active side and already-used unit overrides.
+ * @returns {boolean}
+ */
 export function canAttack(context, attacker, defender, options = {}) {
   const activeSide = options.activeSide ?? context.activeSide ?? null;
   const usedAttackers = options.usedAttackers ?? context.usedAttackers ?? [];
@@ -13,6 +26,17 @@ export function canAttack(context, attacker, defender, options = {}) {
   return neighborsOf(context.board, attacker.hexId).includes(defender.hexId);
 }
 
+/**
+ * Calculates effective defense strength and the modifiers that produced it.
+ *
+ * British position defense applies only to the configured side. When the rules
+ * say it does not stack with highland, this function keeps the stronger single
+ * multiplier instead of multiplying both.
+ *
+ * @param {{board: object, rules: object}} context Core rule context.
+ * @param {object} unit Defending unit.
+ * @returns {{base: number, multiplier: number, total: number, effects: object[]}}
+ */
 export function defenseBreakdown(context, unit) {
   const hex = context.board.hexById.get(unit.hexId);
   const terrain = context.rules.terrain[hex?.terrain] || context.rules.terrain.desert;
@@ -45,6 +69,17 @@ export function defenseBreakdown(context, unit) {
   };
 }
 
+/**
+ * Maps attack and effective defense strength to a CRT odds column.
+ *
+ * The returned `columnIndex` is what the CRT row lookup should use after an
+ * injected die roll. This function does not roll dice and does not apply CRT results.
+ *
+ * @param {{rules: object}} context Core rule context.
+ * @param {object[]} attackers Attacking units committed to one battle.
+ * @param {object} defender Defending unit.
+ * @returns {{attack: number, defense: number, defenseInfo: object, ratio: number, columnIndex: number, column: string}}
+ */
 export function calculateOdds(context, attackers, defender) {
   const attack = attackers.reduce((sum, unit) => sum + unit.combat, 0);
   const defenseInfo = defenseBreakdown(context, defender);
@@ -65,4 +100,89 @@ export function calculateOdds(context, attackers, defender) {
     columnIndex,
     column: context.rules.crt.columns[columnIndex],
   };
+}
+
+function liveUnitIds(units, unitIds) {
+  return unitIds.filter((id) => {
+    const unit = unitById(units, id);
+    return unit && !unit.eliminated;
+  });
+}
+
+function emptyCombatResultPlan(result) {
+  return {
+    result,
+    eliminatedUnitIds: [],
+    retreatTask: null,
+    resolveBattle: false,
+    archiveBattle: false,
+    startAdvance: false,
+  };
+}
+
+/**
+ * Converts a CRT result code into an event-ready combat result plan.
+ *
+ * The plan is intentionally side-effect free: it does not eliminate units,
+ * create UI tasks, write logs, roll dice, or mutate the battle. App code should
+ * execute this plan and emit user-facing text or replay events.
+ *
+ * @param {{units: object[]}} context Core rule context.
+ * @param {object} battle Declared battle record.
+ * @param {string} result CRT result code, such as "AE", "DE", "AR", or "DR2".
+ * @returns {{result: string, eliminatedUnitIds: string[], retreatTask: object|null, resolveBattle: boolean, archiveBattle: boolean, startAdvance: boolean}}
+ */
+export function planCombatResult(context, battle, result) {
+  const plan = emptyCombatResultPlan(result);
+  if (!battle) return plan;
+
+  if (result === "AE") {
+    return {
+      ...plan,
+      eliminatedUnitIds: battle.attackerIds.slice(),
+      resolveBattle: true,
+      archiveBattle: true,
+    };
+  }
+
+  if (result === "DE") {
+    return {
+      ...plan,
+      eliminatedUnitIds: [battle.defenderId],
+      resolveBattle: true,
+      archiveBattle: true,
+      startAdvance: true,
+    };
+  }
+
+  if (result === "AR") {
+    return {
+      ...plan,
+      retreatTask: {
+        unitIds: liveUnitIds(context.units, battle.attackerIds),
+        steps: 1,
+        result,
+        origins: battle.attackerOrigins || {},
+        disruptAfterRetreat: false,
+        advanceAfter: false,
+      },
+    };
+  }
+
+  const defenderRetreat = result.match(/^DR(\d+)$/);
+  if (defenderRetreat) {
+    return {
+      ...plan,
+      retreatTask: {
+        unitIds: liveUnitIds(context.units, [battle.defenderId]),
+        steps: Number(defenderRetreat[1]),
+        result,
+        origins: { [battle.defenderId]: battle.defenderHexId },
+        disruptAfterRetreat: true,
+        advanceAfter: true,
+      },
+    };
+  }
+
+  return plan;
 }

@@ -1,25 +1,27 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
 
 import {
   calculateOdds,
   canAttack,
   createBoard,
   defenseBreakdown,
+  evaluateAxisObjectiveVictory,
   getLegalRetreatDestinations,
+  getObjectiveStatus,
   getReachableHexes,
   hexDistance,
   isEnemyZoc,
+  isAlliedBreakthroughMove,
   neighborsOf,
+  planCombatResult,
   terrainRule,
 } from "../../src/core/index.js";
 import { loadLocalData } from "../fixtures/load-local-data.mjs";
 
 const { scenario, rules } = loadLocalData();
-const gameSource = fs.readFileSync(new URL("../../game.js", import.meta.url), "utf8");
 const board = createBoard(scenario);
 const hexes = board.hexes;
-const context = (units = [], state = { turn: 1 }) => ({ board, rules, units, state });
+const context = (units = [], state = { turn: 1 }) => ({ board, rules, scenario, units, state });
 
 for (const id of ["c15r10", "c16r10"]) {
   const hex = board.hexById.get(id);
@@ -84,8 +86,6 @@ const retreats = getLegalRetreatDestinations(retreatContext, retreatUnit, 1, ret
 for (const destination of retreats) {
   assert.equal(isEnemyZoc(retreatContext, destination, "axis", "retreater"), false, `retreat destination ${destination} must not be in EZOC`);
 }
-assert.match(gameSource, /result === "AR"[\s\S]*?disruptAfterRetreat:\s*false/, "AR retreats should not leave an attacker disrupted in the UI");
-assert.match(gameSource, /result\.match\(\s*\/\^DR[\s\S]*?disruptAfterRetreat:\s*true/, "DR retreats should disrupt the defender");
 
 const defender = { id: "defender", side: "allied", hexId: "c16r10", disrupted: false, eliminated: false };
 const attackers = neighborsOf(board, defender.hexId).slice(0, 4).map((hexId, index) => ({
@@ -107,3 +107,89 @@ assert.deepEqual(selectedAttackers, attackers.map((attacker) => attacker.id), "f
 
 assert.equal(hexDistance(board, start, start), 0, "distance to self should be zero");
 assert.equal(hexDistance(board, start, startNeighbors[0]), 1, "adjacent hex distance should be one");
+const combatBattle = {
+  id: "battle-1",
+  attackerIds: ["attacker-0", "attacker-1"],
+  attackerOrigins: { "attacker-0": attackers[0].hexId, "attacker-1": attackers[1].hexId },
+  defenderId: defender.id,
+  defenderHexId: defender.hexId,
+};
+const combatContext = context([...attackers.slice(0, 2), defender]);
+assert.deepEqual(
+  planCombatResult(combatContext, combatBattle, "AE"),
+  {
+    result: "AE",
+    eliminatedUnitIds: ["attacker-0", "attacker-1"],
+    retreatTask: null,
+    resolveBattle: true,
+    archiveBattle: true,
+    startAdvance: false,
+  },
+  "AE should eliminate all committed attackers and resolve the battle",
+);
+assert.deepEqual(
+  planCombatResult(combatContext, combatBattle, "DE"),
+  {
+    result: "DE",
+    eliminatedUnitIds: [defender.id],
+    retreatTask: null,
+    resolveBattle: true,
+    archiveBattle: true,
+    startAdvance: true,
+  },
+  "DE should eliminate the defender, resolve the battle, and allow advance",
+);
+assert.deepEqual(
+  planCombatResult(context([{ ...attackers[0], eliminated: true }, attackers[1], defender]), combatBattle, "AR").retreatTask,
+  {
+    unitIds: ["attacker-1"],
+    steps: 1,
+    result: "AR",
+    origins: combatBattle.attackerOrigins,
+    disruptAfterRetreat: false,
+    advanceAfter: false,
+  },
+  "AR should retreat only live attackers without post-retreat disruption",
+);
+assert.deepEqual(
+  planCombatResult(combatContext, combatBattle, "DR3").retreatTask,
+  {
+    unitIds: [defender.id],
+    steps: 3,
+    result: "DR3",
+    origins: { [defender.id]: defender.hexId },
+    disruptAfterRetreat: true,
+    advanceAfter: true,
+  },
+  "DR results should retreat and disrupt the live defender, then allow advance",
+);
+
+const ridgeAxis = { id: "ridge-axis", side: "axis", hexId: scenario.objectives.alamHalfaRidge[0], disrupted: false, eliminated: false };
+const roadAxis = { id: "road-axis", side: "axis", hexId: "c13r04", disrupted: false, eliminated: false };
+const alliedBlocker = { id: "ridge-allied", side: "allied", hexId: scenario.objectives.alamHalfaRidge[1], disrupted: false, eliminated: false };
+assert.deepEqual(
+  evaluateAxisObjectiveVictory(context([ridgeAxis])),
+  { side: "axis", reason: "ridge", unitId: "ridge-axis", hexId: ridgeAxis.hexId, type: null },
+  "Axis ridge occupation should be the first automatic objective victory",
+);
+assert.deepEqual(
+  evaluateAxisObjectiveVictory(context([roadAxis])),
+  { side: "axis", reason: "road", unitId: "road-axis", hexId: roadAxis.hexId, type: null },
+  "Axis coastal road occupation should be an automatic objective victory",
+);
+assert.equal(evaluateAxisObjectiveVictory(context([{ ...roadAxis, side: "allied" }])), null, "Allied units on Axis objectives should not trigger Axis victory");
+
+const ridgeStatus = getObjectiveStatus(context([ridgeAxis]));
+assert.equal(ridgeStatus.ridgeControl, true, "Axis occupation should control the ridge objective");
+assert.equal(ridgeStatus.ridgeFullControl, true, "Axis ZOC should count toward full ridge control when no Allied unit occupies the other ridge hex");
+assert.deepEqual(ridgeStatus.ridgeOccupiedHexes, [ridgeAxis.hexId], "objective status should list Axis-occupied ridge hexes");
+const blockedRidgeStatus = getObjectiveStatus(context([ridgeAxis, alliedBlocker]));
+assert.equal(blockedRidgeStatus.ridgeFullControl, false, "Allied occupation should prevent full Axis ridge control");
+
+const roadStatus = getObjectiveStatus(context([roadAxis, { ...roadAxis, id: "el-alamein-axis", hexId: "c12r03" }]));
+assert.equal(roadStatus.roadCut, true, "Axis occupation east of El Alamein should count as a road cut");
+assert.equal(roadStatus.elAlameinOccupied, true, "Axis occupation of c12r03 should be tracked separately");
+
+assert.equal(isAlliedBreakthroughMove(context(), { side: "allied" }, scenario.objectives.alliedWestExitEdge[0], 1), true, "Allied units exiting west with movement remaining should win");
+assert.equal(isAlliedBreakthroughMove(context(), { side: "allied" }, scenario.objectives.alliedWestExitEdge[0], 0), false, "Allied west-edge movement with no remaining movement should not win");
+assert.equal(isAlliedBreakthroughMove(context(), { side: "axis" }, scenario.objectives.alliedWestExitEdge[0], 1), false, "Axis units cannot trigger Allied breakthrough victory");

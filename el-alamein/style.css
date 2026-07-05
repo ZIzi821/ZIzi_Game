@@ -147,7 +147,7 @@ button:disabled {
 .mode-choice-buttons button[data-active="true"] {
   border-color: #1d625e;
   background: linear-gradient(#e8f6ed, #b9d5c6);
-  color: #123b37;
+  color: #211d17;
 }
 
 .mode-side {
@@ -625,6 +625,23 @@ body[data-view="aar"] .game-view {
 .battle-row[data-declaration="true"] {
   position: relative;
   padding-right: 42px;
+}
+
+.battle-row {
+  cursor: pointer;
+}
+
+.battle-row:focus-visible {
+  outline: 2px solid rgba(29, 98, 94, 0.88);
+  outline-offset: 2px;
+}
+
+.battle-row[data-focused="true"] {
+  border-color: #1d625e;
+  background:
+    linear-gradient(90deg, rgba(29, 98, 94, 0.16), rgba(255, 250, 232, 0.86)),
+    rgba(255, 250, 232, 0.92);
+  box-shadow: inset 4px 0 0 rgba(29, 98, 94, 0.72);
 }
 
 .battle-cancel-button {

@@ -20,6 +20,12 @@ function coordKey(col, row) {
   return `${col},${row}`;
 }
 
+/**
+ * Builds immutable lookup helpers from scenario board data.
+ *
+ * @param {object} scenario Loaded scenario JSON.
+ * @returns {{meta: object|null, hexes: object[], hexById: Map<string, object>, hexByCoord: Map<string, object>}}
+ */
 export function createBoard(scenario) {
   const hexes = scenario?.board?.hexes || [];
   const hexById = new Map(hexes.map((hex) => [hex.id, hex]));
@@ -33,10 +39,24 @@ export function createBoard(scenario) {
   };
 }
 
+/**
+ * Returns a board hex by ID, or null when the ID is not on this scenario map.
+ *
+ * @param {object} board Board object returned by createBoard.
+ * @param {string} hexId Scenario hex ID, such as "c12r03".
+ * @returns {object|null}
+ */
 export function getHex(board, hexId) {
   return board?.hexById?.get(hexId) || null;
 }
 
+/**
+ * Returns adjacent hex IDs using the scenario's odd-row offset coordinates.
+ *
+ * @param {object} board Board object returned by createBoard.
+ * @param {string} hexId Center hex ID.
+ * @returns {string[]} Adjacent in-map hex IDs.
+ */
 export function neighborsOf(board, hexId) {
   const hex = getHex(board, hexId);
   if (!hex) return [];
@@ -47,6 +67,14 @@ export function neighborsOf(board, hexId) {
     .filter(Boolean);
 }
 
+/**
+ * Computes shortest legal board distance in hex steps, ignoring terrain and units.
+ *
+ * @param {object} board Board object returned by createBoard.
+ * @param {string} fromId Start hex ID.
+ * @param {string} toId Target hex ID.
+ * @returns {number} Hex distance, or Infinity if the target cannot be reached on the map graph.
+ */
 export function hexDistance(board, fromId, toId) {
   if (fromId === toId) return 0;
 

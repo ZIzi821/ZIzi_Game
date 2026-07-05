@@ -3,6 +3,17 @@ import { terrainRule } from "./terrain.js";
 import { isEnemyZoc } from "./zoc.js";
 import { liveUnitAt, resolveUnit } from "./units.js";
 
+/**
+ * Calculates the unit movement allowance after scenario-wide modifiers.
+ *
+ * The first-turn Allied reduction is a rule-level modifier, so callers should
+ * use this helper instead of reading `unit.movement` directly.
+ *
+ * @param {object} state Current game state.
+ * @param {object} unit Moving unit.
+ * @param {object} rules Loaded rules JSON.
+ * @returns {number}
+ */
 export function movementAllowance(state, unit, rules) {
   let movement = Number(unit?.movement || 0);
   if (unit?.side === "allied" && state?.turn === 1) {
@@ -11,6 +22,18 @@ export function movementAllowance(state, unit, rules) {
   return movement;
 }
 
+/**
+ * Finds legal movement destinations for one unit.
+ *
+ * Enforces passable terrain, enemy occupation blocking, and El Alamein ZOC
+ * restrictions. A unit may leave enemy ZOC, but may not move directly from one
+ * enemy ZOC hex into another enemy ZOC hex during the same move.
+ *
+ * @param {{board: object, rules: object, units: object[], state: object}} context Core rule context.
+ * @param {object|string} unitOrId Moving unit object or unit ID.
+ * @param {number|null} allowance Optional movement allowance override for tests and previews.
+ * @returns {Map<string, {spent: number, remaining: number, path: string[]}>} Destination hex IDs to route data.
+ */
 export function getReachableHexes(context, unitOrId, allowance = null) {
   const { board, rules, units, state } = context;
   const unit = resolveUnit(units, unitOrId);
