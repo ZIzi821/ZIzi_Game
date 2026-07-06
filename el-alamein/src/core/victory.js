@@ -96,8 +96,10 @@ export function evaluateAxisObjectiveVictory(context) {
 
 /**
  * Checks the Allied west-edge breakthrough victory condition after movement.
+ * Axis ZOC on the edge hex stops the breakthrough: the unit has reached the
+ * German line, but has not passed through it.
  *
- * @param {{scenario?: object, objectives?: object}} context Core rule context.
+ * @param {{board: object, scenario?: object, objectives?: object, units: object[]}} context Core rule context.
  * @param {object} unit Moving unit.
  * @param {string} destinationHexId Move destination.
  * @param {number} remainingMovement Movement points left after entering the destination.
@@ -106,5 +108,6 @@ export function evaluateAxisObjectiveVictory(context) {
 export function isAlliedBreakthroughMove(context, unit, destinationHexId, remainingMovement) {
   if (unit?.side !== "allied") return false;
   if (Number(remainingMovement || 0) <= 0) return false;
-  return objectiveHexes(context, "alliedWestExitEdge").includes(destinationHexId);
+  if (!objectiveHexes(context, "alliedWestExitEdge").includes(destinationHexId)) return false;
+  return !isSideZoc(context, destinationHexId, "axis");
 }

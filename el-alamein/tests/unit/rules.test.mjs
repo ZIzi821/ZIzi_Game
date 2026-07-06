@@ -193,3 +193,10 @@ assert.equal(roadStatus.elAlameinOccupied, true, "Axis occupation of c12r03 shou
 assert.equal(isAlliedBreakthroughMove(context(), { side: "allied" }, scenario.objectives.alliedWestExitEdge[0], 1), true, "Allied units exiting west with movement remaining should win");
 assert.equal(isAlliedBreakthroughMove(context(), { side: "allied" }, scenario.objectives.alliedWestExitEdge[0], 0), false, "Allied west-edge movement with no remaining movement should not win");
 assert.equal(isAlliedBreakthroughMove(context(), { side: "axis" }, scenario.objectives.alliedWestExitEdge[0], 1), false, "Axis units cannot trigger Allied breakthrough victory");
+const westExitHex = scenario.objectives.alliedWestExitEdge[0];
+const axisZocBlocker = { id: "axis-zoc-blocker", side: "axis", hexId: neighborsOf(board, westExitHex)[0], disrupted: false, eliminated: false };
+assert.equal(
+  isAlliedBreakthroughMove(context([axisZocBlocker]), { side: "allied" }, westExitHex, 1),
+  false,
+  "Axis ZOC on a west-edge hex should stop Allied breakthrough",
+);

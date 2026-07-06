@@ -130,7 +130,12 @@ function runMovement(state, trace = false) {
     if (!order) continue;
     unit.hexId = order.hexId;
     state.movedUnits.push(unit.id);
-    if (unit.side === "allied" && scenario.objectives.alliedWestExitEdge.includes(order.hexId) && order.route.remaining > 0) {
+    if (
+      unit.side === "allied"
+      && scenario.objectives.alliedWestExitEdge.includes(order.hexId)
+      && order.route.remaining > 0
+      && !isEnemyZoc(context(state), order.hexId, unit.side, unit.id)
+    ) {
       state.winner = { side: "allied", reason: "breakthrough", turn: state.turn };
       if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
       return;
@@ -158,22 +163,21 @@ function chooseMove(state, unit) {
 
 function chooseAxisExitGuardMove(state, unit, reachable) {
   const westExit = scenario.objectives.alliedWestExitEdge;
-  const combat = Number(unit.combat || 0);
-  const isFastAssaultUnit = Number(unit.movement || 0) >= 9 && combat >= 4;
-  if (isFastAssaultUnit) {
-    return westExit.includes(unit.hexId) && alliedExitThreat(state, unit.hexId) >= 30 ? "hold" : null;
-  }
+  if (isAxisAssaultUnit(unit)) return null;
   const holdThreat = 5;
   if (westExit.includes(unit.hexId) && alliedExitThreat(state, unit.hexId) >= holdThreat) return "hold";
   let best = null;
   for (const [hexId, route] of reachable.entries()) {
-    if (!westExit.includes(hexId)) continue;
-    const threat = alliedExitThreat(state, hexId);
-    if (!threat) continue;
-    const score = threat + Number(route?.remaining || 0) * 0.3 - distance(unit.hexId, hexId) * 0.4;
+    const coverage = axisExitCoverageScore(state, hexId, unit.id);
+    if (!coverage) continue;
+    const score = coverage + Number(route?.remaining || 0) * 0.3 - distance(unit.hexId, hexId) * 0.4;
     if (!best || score > best.score) best = { hexId, score };
   }
   return best && best.score >= 10 ? best.hexId : null;
+}
+
+function isAxisAssaultUnit(unit) {
+  return unit?.side === "axis" && Number(unit.movement || 0) >= 9 && Number(unit.combat || 0) >= 4;
 }
 
 function movePriority(state, unit) {
@@ -407,7 +411,20 @@ function scoreCombat(state, attackers, defender, odds) {
     total += scoreCombatResult(state, row[odds.columnIndex], attackers, defender, defenderValue);
   }
   const overcommit = Math.max(0, attackStrength - Math.max(1, odds.defense) * 4) * 0.28 + Math.max(0, attackers.length - 2) * 0.45;
-  return (total / 6) + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - overcommit;
+  return (total / 6) + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - overcommit - axisScreenAttackPenalty(state, attackers, odds);
+}
+
+function axisScreenAttackPenalty(state, attackers, odds) {
+  if (attackers[0]?.side !== "axis") return 0;
+  let penalty = 0;
+  for (const attacker of attackers) {
+    if (isAxisAssaultUnit(attacker)) continue;
+    const coverage = axisExitCoverageScore(state, attacker.hexId, attacker.id);
+    if (coverage <= 20) continue;
+    const oddsRisk = Math.max(0, 4 - odds.columnIndex);
+    penalty += Math.min(180, coverage * 0.82) * (1 + oddsRisk * 0.35);
+  }
+  return penalty;
 }
 
 function scoreCombatResult(state, result, attackers, defender, defenderValue) {
@@ -443,15 +460,20 @@ function scoreHex(state, unit, hexId, route = null) {
   let score = 0;
 
   if (unit.side === "axis") {
+    const assault = isAxisAssaultUnit(unit);
     score += axisObjectiveScore(hexId) * 4.4;
     score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 5.2 : 3.5);
-    score += axisProgress(unit, hexId);
-    score += axisRearGuard(state, unit, hexId);
-    score += attackSetup(state, unit, hexId) * 3.1;
-    score += zocTrapSetup(state, unit, hexId) * 3.4;
-    if (Number(unit.movement || 0) >= 9 && combat >= 4 && scenario.objectives.alliedWestExitEdge.includes(hexId)) score -= 44;
+    score += axisProgress(state, unit, hexId) * (assault ? 1.35 : 1);
+    score += assault ? 0 : axisRearGuard(state, unit, hexId);
+    score += attackSetup(state, unit, hexId) * (assault ? 3.9 : 3.1);
+    score += zocTrapSetup(state, unit, hexId) * (assault ? 4.2 : 3.4);
+    if (assault) score += axisSpearheadPressure(state, unit, hexId);
+    else score += axisZocScreen(state, unit, hexId);
+    if (assault && scenario.objectives.alliedWestExitEdge.includes(hexId)) score -= 110;
   } else {
-    if (scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) score += 230;
+    if (scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) {
+      score += isEnemyZoc(context(state), hexId, unit.side, unit.id) ? 24 : 230;
+    }
     score += alliedDefenseScore(hexId) * 3.4;
     score += alliedScreen(hexId) * 2.8;
     score -= nearestDistance(hexId, alliedAnchors()) * (combat >= 4 ? 2.1 : 1.45);
@@ -506,7 +528,7 @@ function alliedDefenseScore(hexId) {
   return score;
 }
 
-function axisProgress(unit, hexId) {
+function axisProgress(state, unit, hexId) {
   const hex = board.hexById.get(hexId);
   const start = board.hexById.get(unit.hexId);
   if (!hex || !start) return 0;
@@ -515,6 +537,59 @@ function axisProgress(unit, hexId) {
   const eastwardGain = Number(hex.col || 0) - Number(start.col || 0);
   const tempo = Number(unit.movement || 0) >= 9 ? 7.5 : 4.2;
   return distanceGain * tempo + eastwardGain * 0.85;
+}
+
+function axisSpearheadPressure(state, unit, hexId) {
+  const targets = axisTargetsForUnit(unit);
+  const targetDistance = nearestDistance(hexId, targets);
+  let score = Math.max(0, 8 - targetDistance) * 4.8;
+  for (const enemy of liveUnits(state.units).filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
+    const enemyDistance = distance(hexId, enemy.hexId);
+    if (enemyDistance > 2) continue;
+    score += strategicUnitValue(state, "axis", enemy) * (enemyDistance === 1 ? 0.18 : 0.08);
+  }
+  return score;
+}
+
+function axisZocScreen(state, unit, hexId) {
+  const westExit = scenario.objectives.alliedWestExitEdge;
+  let score = Math.max(0, 3 - nearestDistance(hexId, westExit)) * 4.5 + axisExitCoverageScore(state, hexId, unit.id) * 0.75;
+  for (const ally of liveUnits(state.units).filter((candidate) => candidate.side === "axis" && candidate.id !== unit.id && !candidate.eliminated)) {
+    const allyDistance = distance(hexId, ally.hexId);
+    if (allyDistance === 2) score += isAxisAssaultUnit(ally) ? 1.5 : 7.5;
+    else if (allyDistance === 3) score += isAxisAssaultUnit(ally) ? 0.5 : 3.2;
+    else if (allyDistance === 1 && !isAxisAssaultUnit(ally)) score += 1.2;
+  }
+  for (const enemy of liveUnits(state.units).filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
+    if (nearestDistance(enemy.hexId, westExit) > 8) continue;
+    const enemyDistance = distance(hexId, enemy.hexId);
+    if (enemyDistance === 2) score += 8;
+    else if (enemyDistance === 3) score += 4;
+    else if (enemyDistance === 1) score += 2.5;
+  }
+  return score;
+}
+
+function axisExitCoverageScore(state, hexId, movingUnitId = null) {
+  let score = 0;
+  for (const exitHexId of scenario.objectives.alliedWestExitEdge) {
+    const threat = alliedExitThreat(state, exitHexId);
+    if (!threat) continue;
+    const alreadyCovered = isAxisExitCoveredByOther(state, exitHexId, movingUnitId);
+    const exitDistance = distance(hexId, exitHexId);
+    const coverageMultiplier = alreadyCovered ? 0.22 : 1;
+    if (exitDistance === 0) score += threat * 6 * coverageMultiplier;
+    else if (exitDistance === 1) score += threat * 4.4 * coverageMultiplier;
+    else if (exitDistance === 2) score += threat * 1.1 * coverageMultiplier;
+  }
+  return score;
+}
+
+function isAxisExitCoveredByOther(state, exitHexId, movingUnitId = null) {
+  return liveUnits(state.units).some((unit) => {
+    if (unit.id === movingUnitId || unit.side !== "axis" || unit.disrupted) return false;
+    return unit.hexId === exitHexId || neighborsOf(board, unit.hexId).includes(exitHexId);
+  });
 }
 
 function axisRearGuard(state, unit, hexId) {
