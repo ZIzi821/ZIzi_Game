@@ -1763,7 +1763,7 @@
     if (app.ai.waitingForHuman && !hasAiControlledTask()) return;
     if (!isAiTurn() && !hasAiControlledTask()) return;
     app.ai.scheduled = true;
-    window.setTimeout(runAiTurn, 180);
+    window.setTimeout(runAiTurn, isMovementPhase() ? 90 : 180);
   }
 
   async function runAiTurn() {
@@ -1773,7 +1773,7 @@
     app.ai.running = true;
     draw();
     try {
-      await delay(180);
+      await delay(isMovementPhase() ? 90 : 180);
       const handledTask = await resolveAiPendingTasks({ force: isAiTurn() });
       if (handledTask && isAiTurn() && !app.state.winner) {
         app.ai.waitingForHuman = true;
@@ -1836,7 +1836,7 @@
       app.reachable = order.reachable;
       await attemptMove(order.hexId);
       moved += 1;
-      await delay(22);
+      await delay(11);
     }
 
     app.state.selectedUnitId = null;
