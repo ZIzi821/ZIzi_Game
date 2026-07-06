@@ -62,6 +62,37 @@ If changing UI layout, also run the local server and inspect `http://127.0.0.1:8
 - Preserve existing behavior unless the task explicitly asks for a rules change.
 - Do not reformat unrelated files or churn generated/asset files.
 
+## Future Codex Anti-Spaghetti Protocol
+
+Every new Codex conversation that touches El Alamein must treat this section as a working checklist, not background reading.
+
+Before editing:
+
+1. Run or inspect `git status --short`.
+2. Read the files you plan to touch, especially `el-alamein/game.js`, `el-alamein/src/core/README.md`, and the relevant `el-alamein/src/core/*.js` module.
+3. Identify whether existing uncommitted changes are yours, the user's, or another agent's. Do not overwrite or revert changes you did not make.
+4. State the behavior group you are changing: movement, ZOC, combat, retreat, victory, phase flow, save/load, replay, AI, or UI.
+
+While editing:
+
+- Do not add new rule logic directly into a large `game.js` block if it can be a pure function in `src/core/`.
+- Do not mix unrelated behavior groups in one change. For example, do not combine combat rules, AI tuning, and CSS cleanup.
+- Do not make tests assert against localized log strings or fragile source-code regexes. Tests should import the same implementation used by the app.
+- Do not parse UI text to drive rules, AI, replay, or save/load. Use structured state, reason codes, and event-ready objects.
+- Keep `game.js` as a compatibility layer: load data, wire UI, call core/app functions, render, and translate display text.
+- If a function needs DOM, storage, timers, animation, or language text, it does not belong in `src/core/`.
+- If a rule needs dice, IDs, timestamps, or persistence, inject them from app/controller code.
+- If a change creates a temporary bridge, name it as such and keep it small.
+
+Before finishing:
+
+1. Run `npm.cmd run check` unless the task is documentation-only.
+2. For rule changes, also ensure `node scripts\test-el-alamein-rules.mjs` passes.
+3. Report exactly which behavior changed. If behavior should be unchanged, say so.
+4. Report any dirty files that were present but unrelated.
+
+If multiple Codex conversations are active, only one should edit `el-alamein/game.js` at a time. Other conversations should do read-only review, write tests, or work in clearly separate files. When grouping changes for commit, stage core-rule refactors separately from AI tuning, CSS/UI changes, or generated assets.
+
 ## El Alamein Architecture Rules
 
 Use this target shape:
