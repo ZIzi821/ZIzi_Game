@@ -130,7 +130,6 @@ function runMovement(state, trace = false) {
     if (!order) continue;
     unit.hexId = order.hexId;
     state.movedUnits.push(unit.id);
-    if (unit.side === "axis" && checkAxisVictory(state)) return;
     if (
       unit.side === "allied"
       && scenario.objectives.alliedWestExitEdge.includes(order.hexId)
@@ -340,10 +339,7 @@ function advanceAfterCombat(state, battle) {
       - scoreHex(state, unit, unit.hexId, { remaining: 0, path: [unit.hexId] });
     if (!best || gain > best.gain) best = { unit, gain };
   }
-  if (best) {
-    best.unit.hexId = battle.defenderHexId;
-    if (best.unit.side === "axis") checkAxisVictory(state);
-  }
+  if (best) best.unit.hexId = battle.defenderHexId;
 }
 
 function endPhase(state, trace = false) {

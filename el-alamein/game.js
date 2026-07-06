@@ -1549,7 +1549,6 @@
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
-      if (unit.side === "axis") checkAxisObjectiveVictory();
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
@@ -1626,8 +1625,6 @@
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
-    } else if (unit.side === "axis") {
-      checkAxisObjectiveVictory();
     }
     app.state.selectedUnitId = unit.id;
     draw();

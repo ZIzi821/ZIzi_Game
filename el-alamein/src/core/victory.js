@@ -71,7 +71,7 @@ export function getObjectiveStatus(context) {
 }
 
 /**
- * Evaluates Axis automatic objective victory after state-changing actions.
+ * Evaluates Axis automatic objective victory at the end of a full turn.
  *
  * The first live Axis unit found on Alam Halfa Ridge wins before coastal road
  * objectives, matching the original `game.js` priority.
