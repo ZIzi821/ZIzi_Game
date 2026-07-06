@@ -1123,7 +1123,7 @@
   async function animateUnitPath(unit, path) {
     app.animating = true;
     const stepDelay = app.ai.running
-      ? (isCombatPhase() ? 260 : 140)
+      ? (isCombatPhase() ? 260 : 100)
       : 70;
     for (const hexId of path.slice(1)) {
       unit.hexId = hexId;
@@ -1763,7 +1763,7 @@
     if (app.ai.waitingForHuman && !hasAiControlledTask()) return;
     if (!isAiTurn() && !hasAiControlledTask()) return;
     app.ai.scheduled = true;
-    window.setTimeout(runAiTurn, isMovementPhase() ? 90 : 180);
+    window.setTimeout(runAiTurn, isMovementPhase() ? 45 : 180);
   }
 
   async function runAiTurn() {
@@ -1773,7 +1773,7 @@
     app.ai.running = true;
     draw();
     try {
-      await delay(isMovementPhase() ? 90 : 180);
+      await delay(isMovementPhase() ? 45 : 180);
       const handledTask = await resolveAiPendingTasks({ force: isAiTurn() });
       if (handledTask && isAiTurn() && !app.state.winner) {
         app.ai.waitingForHuman = true;
