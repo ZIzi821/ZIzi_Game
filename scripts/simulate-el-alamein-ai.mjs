@@ -130,6 +130,7 @@ function runMovement(state, trace = false) {
     if (!order) continue;
     unit.hexId = order.hexId;
     state.movedUnits.push(unit.id);
+    if (unit.side === "axis" && checkAxisVictory(state)) return;
     if (
       unit.side === "allied"
       && scenario.objectives.alliedWestExitEdge.includes(order.hexId)
@@ -339,7 +340,10 @@ function advanceAfterCombat(state, battle) {
       - scoreHex(state, unit, unit.hexId, { remaining: 0, path: [unit.hexId] });
     if (!best || gain > best.gain) best = { unit, gain };
   }
-  if (best) best.unit.hexId = battle.defenderHexId;
+  if (best) {
+    best.unit.hexId = battle.defenderHexId;
+    if (best.unit.side === "axis") checkAxisVictory(state);
+  }
 }
 
 function endPhase(state, trace = false) {
@@ -406,12 +410,23 @@ function scoreCombat(state, attackers, defender, odds) {
   const side = attackers[0]?.side || activeSide(state);
   const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
   const defenderValue = strategicUnitValue(state, side, defender);
+  const objectiveUrgency = axisObjectiveCombatUrgency(state, side, defender.hexId);
   let total = 0;
   for (const row of Object.values(rules.crt.rows)) {
     total += scoreCombatResult(state, row[odds.columnIndex], attackers, defender, defenderValue);
   }
   const overcommit = Math.max(0, attackStrength - Math.max(1, odds.defense) * 4) * 0.28 + Math.max(0, attackers.length - 2) * 0.45;
-  return (total / 6) + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - overcommit - axisScreenAttackPenalty(state, attackers, odds);
+  return (total / 6) + objectiveUrgency + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - overcommit - axisScreenAttackPenalty(state, attackers, odds);
+}
+
+function axisObjectiveCombatUrgency(state, attackerSide, defenderHexId) {
+  if (attackerSide !== "axis") return 0;
+  const onRidge = scenario.objectives.alamHalfaRidge.includes(defenderHexId);
+  const onRoad = scenario.objectives.coastalRoadEast.includes(defenderHexId);
+  if (!onRidge && !onRoad) return 0;
+  const base = onRidge ? 130 : 105;
+  const deadline = state.turn >= 4 ? 240 : state.turn === 3 ? 150 : 60;
+  return base + deadline;
 }
 
 function axisScreenAttackPenalty(state, attackers, odds) {
@@ -462,7 +477,7 @@ function scoreHex(state, unit, hexId, route = null) {
   if (unit.side === "axis") {
     const assault = isAxisAssaultUnit(unit);
     score += axisObjectiveScore(hexId) * 4.4;
-    score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 5.2 : 3.5);
+    score -= nearestDistance(hexId, axisTargetsForUnit(unit)) * (combat >= 4 ? 6.1 : 3.5);
     score += axisProgress(state, unit, hexId) * (assault ? 1.35 : 1);
     score += assault ? 0 : axisRearGuard(state, unit, hexId);
     score += attackSetup(state, unit, hexId) * (assault ? 3.9 : 3.1);
@@ -535,7 +550,7 @@ function axisProgress(state, unit, hexId) {
   const targets = axisTargetsForUnit(unit);
   const distanceGain = nearestDistance(unit.hexId, targets) - nearestDistance(hexId, targets);
   const eastwardGain = Number(hex.col || 0) - Number(start.col || 0);
-  const tempo = Number(unit.movement || 0) >= 9 ? 7.5 : 4.2;
+  const tempo = Number(unit.movement || 0) >= 9 ? 8.6 : 4.2;
   return distanceGain * tempo + eastwardGain * 0.85;
 }
 
@@ -788,5 +803,6 @@ console.log(JSON.stringify({
     totals[result.reason] = (totals[result.reason] || 0) + 1;
     return totals;
   }, {}),
+  failures: results.filter((result) => result.winner !== "axis"),
   samples: results.slice(0, sampleCount),
 }, null, 2));

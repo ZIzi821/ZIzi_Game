@@ -1549,6 +1549,7 @@
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
+      if (unit.side === "axis") checkAxisObjectiveVictory();
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
@@ -1625,6 +1626,8 @@
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
+    } else if (unit.side === "axis") {
+      checkAxisObjectiveVictory();
     }
     app.state.selectedUnitId = unit.id;
     draw();
@@ -1916,7 +1919,7 @@
       const targets = axisUnitTargetHexes(unit);
       const assault = isAxisAssaultUnit(unit);
       score += axisObjectiveScore(hexId) * 4.4;
-      score -= nearestDistance(hexId, targets) * (combat >= 4 ? 5.2 : 3.5);
+      score -= nearestDistance(hexId, targets) * (combat >= 4 ? 6.1 : 3.5);
       score += axisProgressScore(unit, hexId) * (assault ? 1.35 : 1);
       score += assault ? 0 : axisRearGuardScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * (assault ? 3.9 : 3.1);
@@ -1984,7 +1987,7 @@
     const targets = axisUnitTargetHexes(unit);
     const distanceGain = nearestDistance(unit.hexId, targets) - nearestDistance(hexId, targets);
     const eastwardGain = Number(hex.col || 0) - Number(start.col || 0);
-    const tempo = Number(unit.movement || 0) >= 9 ? 7.5 : 4.2;
+    const tempo = Number(unit.movement || 0) >= 9 ? 8.6 : 4.2;
     return distanceGain * tempo + eastwardGain * 0.85;
   }
 
@@ -2249,13 +2252,25 @@
     const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
     const attackerSide = attackers[0]?.side || activeSide();
     const defenderValue = strategicUnitValueForSide(attackerSide, defender);
+    const objectiveUrgency = axisObjectiveCombatUrgency(attackerSide, defender.hexId);
     let total = 0;
     for (const row of Object.values(app.rules.crt.rows)) {
       total += scoreAiCombatResult(row[odds.columnIndex], attackers, defender, defenderValue);
     }
     const overcommit = Math.max(0, attackStrength - Math.max(1, odds.defense) * 4) * 0.28 + Math.max(0, attackers.length - 2) * 0.45;
     const supportPenalty = attackers.some((unit) => enemyDangerScore(unit, unit.hexId) > 4) ? 0.8 : 0;
-    return (total / 6) + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - overcommit - supportPenalty - axisScreenAttackPenalty(attackers, odds);
+    return (total / 6) + objectiveUrgency + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - overcommit - supportPenalty - axisScreenAttackPenalty(attackers, odds);
+  }
+
+  function axisObjectiveCombatUrgency(attackerSide, defenderHexId) {
+    if (attackerSide !== "axis") return 0;
+    const objectives = app.scenario.objectives;
+    const onRidge = objectives.alamHalfaRidge.includes(defenderHexId);
+    const onRoad = objectives.coastalRoadEast.includes(defenderHexId);
+    if (!onRidge && !onRoad) return 0;
+    const base = onRidge ? 130 : 105;
+    const deadline = app.state.turn >= 4 ? 240 : app.state.turn === 3 ? 150 : 60;
+    return base + deadline;
   }
 
   function axisScreenAttackPenalty(attackers, odds) {
