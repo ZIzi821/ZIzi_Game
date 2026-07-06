@@ -1836,7 +1836,7 @@
       app.reachable = order.reachable;
       await attemptMove(order.hexId);
       moved += 1;
-      await delay(45);
+      await delay(22);
     }
 
     app.state.selectedUnitId = null;
