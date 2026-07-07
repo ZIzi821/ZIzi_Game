@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-1");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-2");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1879,8 +1879,8 @@
     const westExit = app.scenario.objectives.alliedWestExitEdge;
     if (isAxisAssaultUnit(unit)) return null;
     const maxExitThreat = Math.max(0, ...westExit.map((hexId) => alliedExitThreat(hexId)));
-    if (maxExitThreat < 8 && nearestDistance(unit.hexId, westExit) > 2) return null;
-    const holdThreat = 7;
+    if (maxExitThreat < 12 && nearestDistance(unit.hexId, westExit) > 1) return null;
+    const holdThreat = 11;
     if (westExit.includes(unit.hexId) && alliedExitThreat(unit.hexId) >= holdThreat) return "hold";
     let best = null;
     for (const [hexId, route] of reachable.entries()) {
@@ -1889,7 +1889,7 @@
       const score = coverage + Number(route?.remaining || 0) * 0.3 - nearestDistance(unit.hexId, [hexId]) * 0.4;
       if (!best || score > best.score) best = { hexId, score };
     }
-    return best && best.score >= 16 ? best.hexId : null;
+    return best && best.score >= 24 ? best.hexId : null;
   }
 
   function isAxisAssaultUnit(unit) {
@@ -1926,10 +1926,10 @@
       score += axisBridgeheadSecurityScore(unit, hexId) * (assault ? 1.18 : combat >= 3 ? 0.9 : 0.45);
       score -= nearestDistance(hexId, targets) * (combat >= 4 ? 6.1 : 3.5);
       score += axisProgressScore(unit, hexId) * (assault ? 1.35 : 1);
-      score += axisForwardZocLineScore(unit, hexId) * (assault ? 1.25 : combat >= 3 ? 1.7 : 0.75);
+      score += axisForwardZocLineScore(unit, hexId) * (assault ? 1.45 : combat >= 3 ? 2.25 : 1);
       score += assault ? 0 : axisRearGuardScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * (assault ? 3.9 : 3.1);
-      score += zocTrapSetupScore(unit, hexId) * (assault ? 4.75 : 3.4);
+      score += zocTrapSetupScore(unit, hexId) * (assault ? 6.2 : 4.45);
       if (assault) {
         score += axisPenetrationScore(unit, hexId, route);
         score += axisEncirclementScore(unit, hexId, route);
@@ -1947,16 +1947,16 @@
       if (app.scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) {
         score += isEnemyZoc(hexId, side, unit.id) ? 24 : 230;
       }
-      score += alliedDefenseScore(hexId) * 3.4;
-      score += alliedScreenScore(hexId) * 2.8;
-      score += alliedForwardDefenseScore(unit, hexId) * (combat >= 4 ? 0.85 : 0.65);
-      score += alliedZocBarrierScore(unit, hexId) * (combat >= 4 ? 1.15 : 0.95);
-      score += alliedInterlockingZocScore(unit, hexId) * (combat >= 4 ? 1.2 : 0.95);
+      score += alliedDefenseScore(hexId) * 2.65;
+      score += alliedScreenScore(hexId) * 3.25;
+      score += alliedForwardDefenseScore(unit, hexId) * (combat >= 4 ? 1.05 : 0.82);
+      score += alliedZocBarrierScore(unit, hexId) * (combat >= 4 ? 1.45 : 1.15);
+      score += alliedInterlockingZocScore(unit, hexId) * (combat >= 4 ? 1.5 : 1.18);
       score += alliedRoadblockScore(unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
-      score += alliedSupportedLineScore(unit, hexId);
-      score += alliedApproachInterdictionScore(unit, hexId);
-      score += alliedForwardScreenLineScore(unit, hexId) * (combat >= 4 ? 1.08 : 0.92);
-      score += alliedForwardZocWallScore(unit, hexId) * (combat >= 3 ? 1.45 : 1.05);
+      score += alliedSupportedLineScore(unit, hexId) * 0.78;
+      score += alliedApproachInterdictionScore(unit, hexId) * 1.28;
+      score += alliedForwardScreenLineScore(unit, hexId) * (combat >= 4 ? 1.32 : 1.06);
+      score += alliedForwardZocWallScore(unit, hexId) * (combat >= 3 ? 2.15 : 1.55);
       score += alliedSpearheadCounterattackPositionScore(unit, hexId);
       score -= alliedIsolatedObjectivePenaltyScore(unit, hexId);
       score += alliedRidgeReserveScore(unit, hexId) * (combat >= 4 ? 1.05 : 0.9);
@@ -1964,7 +1964,7 @@
       score += alliedObjectiveCounterattackScore(unit, hexId) * (combat >= 3 ? 1.1 : 0.75);
       score += alliedObjectiveReliefScore(unit, hexId);
       score += alliedLineCohesionScore(unit, hexId) * 0.8;
-      score -= nearestDistance(hexId, alliedAnchorHexes()) * (combat >= 4 ? 1.7 : 1.2);
+      score -= nearestDistance(hexId, alliedAnchorHexes()) * (combat >= 4 ? 1.1 : 0.85);
       score += attackSetupScore(unit, hexId) * 2.2;
       score += zocTrapSetupScore(unit, hexId) * 1.3;
     }
@@ -2346,6 +2346,8 @@
     });
     if (progress > 0) score += progress * (assault ? 8 : combat >= 3 ? 5.2 : 1.6);
     if (progress < -1) score += progress * (assault ? 10 : 15);
+    if (!exactLineMates && candidateObjectiveDistance <= 9) score -= assault ? 18 : combat >= 3 ? 44 : 22;
+    if (exactLineMates && adjacentCrowd === 0) score += assault ? 10 : 18;
 
     const westExit = app.scenario.objectives.alliedWestExitEdge;
     const uncoveredExitThreat = westExit.reduce((sum, exitHexId) => (
@@ -2441,7 +2443,10 @@
   function alliedScreenScore(hexId) {
     const distanceToAxisObjective = nearestDistance(hexId, axisObjectiveHexes());
     const distanceToWestExit = nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge);
-    return Math.max(0, 9 - distanceToAxisObjective) + Math.max(0, 4 - distanceToWestExit) * 0.5;
+    const forwardWall = distanceToAxisObjective >= 3 && distanceToAxisObjective <= 7
+      ? 16 + Math.max(0, 4 - Math.abs(distanceToAxisObjective - 5)) * 2
+      : Math.max(0, 4 - distanceToAxisObjective) * 1.8;
+    return forwardWall + Math.max(0, 4 - distanceToWestExit) * 0.5;
   }
 
   function alliedForwardDefenseScore(unit, hexId) {
@@ -2735,12 +2740,18 @@
       closeLimit: 4,
       closePenalty: weights.closePenalty,
     });
-    if (candidateObjectiveDistance >= 3 && candidateObjectiveDistance <= 6) {
-      score += 58 + (6 - candidateObjectiveDistance) * 7;
+    if (candidateObjectiveDistance >= 3 && candidateObjectiveDistance <= 8) {
+      const depthBonus = candidateObjectiveDistance === 5 ? 34
+        : candidateObjectiveDistance === 6 ? 30
+          : candidateObjectiveDistance === 4 ? 24
+            : candidateObjectiveDistance === 7 ? 20
+              : candidateObjectiveDistance === 3 ? 12
+                : 6;
+      score += 66 + depthBonus;
     } else if (candidateObjectiveDistance === 2) {
       score += 18;
     } else if (candidateObjectiveDistance <= 1 && app.state.turn <= 3) {
-      score -= 78;
+      score -= 118;
     }
 
     const zocHexes = [hexId, ...neighborsOf(hexId)];
@@ -2766,11 +2777,14 @@
               : 0.72;
       const suitability = combat >= 4 ? 1.2 : combat >= 2 ? 1 : 0.58;
       const contactRisk = candidateToAxis === 1 ? -36 : candidateToAxis === 2 ? 18 : 0;
-      score += ((blocksLane ? 74 : 32) + Math.max(0, 8 - candidateToAxis) * 7 + exactLinks * 14 + contactRisk) * depth * suitability;
-      if (movement >= 7 && candidateToObjective >= 3) score += 18;
+      score += ((blocksLane ? 96 : 40) + Math.max(0, 8 - candidateToAxis) * 8 + exactLinks * 18 + contactRisk) * depth * suitability;
+      if (movement >= 7 && candidateToObjective >= 3) score += 24;
     }
 
-    return app.aiHeuristics.clampScore(score, -120, 440);
+    if (!exactLinks && candidateObjectiveDistance >= 3 && candidateObjectiveDistance <= 8) score -= 34;
+    if (exactLinks && adjacentCrowd === 0) score += 22;
+
+    return app.aiHeuristics.clampScore(score, -140, 560);
   }
 
   function alliedSpearheadCounterattackPositionScore(unit, hexId) {

@@ -19,7 +19,7 @@ assert.equal(
     closeLimit: 3,
     closePenalty: axisLine.closeSupportPenalty,
   }),
-  64,
+  81,
   "line spacing should reward two-hex ZOC links more than adjacent crowding",
 );
 
