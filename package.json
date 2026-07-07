@@ -5,7 +5,7 @@
   "scripts": {
     "check": "node --check assets/leaderboard.js && node --check assets/sync-code.js && node --check scripts/export-cache.mjs && node --check scripts/zizi-sync-issues.mjs && node --check blue-crowd-rush/game.js && node --check aetherfall-protocol/script.js && node --check el-alamein/game.js && node --check el-alamein/src/app/ai-heuristics.js && node --check el-alamein/tests/unit/ai-heuristics.test.mjs && node --check scripts/simulate-el-alamein-ai.mjs && node --check scripts/test-el-alamein-rules.mjs && node scripts/test-el-alamein-rules.mjs && node el-alamein/tests/unit/ai-heuristics.test.mjs",
     "check:el-alamein-ai": "node scripts/simulate-el-alamein-ai.mjs --seeds=12003,30014,40000,50000,70002,110000,130000,140000,170001,170002,200002 --expect-axis",
-    "analyze:el-alamein-ai-delayed": "node scripts/simulate-el-alamein-ai.mjs --games=8 --seed=340000 --delay-axis-victory"
+    "analyze:el-alamein-ai-delayed": "node scripts/simulate-el-alamein-ai.mjs --games=8 --seed=390000 --delay-axis-victory --expect-axis"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

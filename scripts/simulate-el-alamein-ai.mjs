@@ -2070,6 +2070,11 @@ const wins = results.reduce((totals, result) => {
 }, {});
 const average = (key) => results.reduce((sum, result) => sum + Number(result[key] || 0), 0) / Math.max(1, results.length);
 const failures = results.filter((result) => result.winner !== "axis");
+const objectiveEntries = results.filter((result) => result.firstAxisObjective);
+const objectiveLostAfterEntry = objectiveEntries.filter((result) => result.winner !== "axis");
+const averageFirstObjectiveTurn = objectiveEntries.length
+  ? objectiveEntries.reduce((sum, result) => sum + Number(result.firstAxisObjective.turn || 0), 0) / objectiveEntries.length
+  : 0;
 
 const summary = {
   games: results.length,
@@ -2085,6 +2090,9 @@ const summary = {
   averageAxisEliminated: Number(average("axisEliminated").toFixed(2)),
   averageAlliedEliminated: Number(average("alliedEliminated").toFixed(2)),
   averageAxisObjectiveDistance: Number(average("axisObjectiveDistance").toFixed(2)),
+  axisObjectiveEntries: objectiveEntries.length,
+  objectiveLostAfterEntry: objectiveLostAfterEntry.length,
+  averageFirstObjectiveTurn: objectiveEntries.length ? Number(averageFirstObjectiveTurn.toFixed(2)) : undefined,
   reasons: results.reduce((totals, result) => {
     totals[result.reason] = (totals[result.reason] || 0) + 1;
     return totals;
