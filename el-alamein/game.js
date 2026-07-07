@@ -1880,27 +1880,19 @@
       if (guardMove === "hold") return null;
       if (guardMove) return { hexId: guardMove, reachable };
     }
-    const scoreContext = createAiMoveScoreContext(unit);
-    const currentScore = scoreAiHex(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] }, scoreContext);
+    const currentScore = roughAiMoveScore(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
     let best = null;
     let scored = 0;
-    for (const { hexId, route } of prioritizedAiMoveCandidates(unit, reachable)) {
-      const score = scoreAiHex(unit, hexId, route, scoreContext);
-      if (!best || score > best.score) best = { hexId, route, score };
+    for (const candidate of prioritizedAiMoveCandidates(unit, reachable)) {
+      if (!best || candidate.rough > best.score) best = { hexId: candidate.hexId, route: candidate.route, score: candidate.rough };
       scored += 1;
       if (scored % AI_SCORE_BATCH_SIZE === 0) {
         await yieldToBrowser();
         if (!app.state || app.state.winner || !isAiTurn() || unit.eliminated) return null;
       }
     }
-    if (!best || best.score <= currentScore + aiMoveThreshold(unit)) return null;
+    if (!best || best.score <= currentScore + aiRoughMoveThreshold(unit)) return null;
     return { hexId: best.hexId, reachable };
-  }
-
-  function createAiMoveScoreContext(unit) {
-    return {
-      axisCurrentOvermass: unit.side === "axis" ? axisLocalAttackOvermassScore(unit, unit.hexId) : 0,
-    };
   }
 
   function prioritizedAiMoveCandidates(unit, reachable) {
@@ -1915,6 +1907,11 @@
     if (unit.side === "axis" && movement >= 9) return 3;
     if (movement >= 7) return 3;
     return 2;
+  }
+
+  function aiRoughMoveThreshold(unit) {
+    if (unit.side === "axis") return Number(unit.movement || 0) >= 9 ? 20 : 16;
+    return Number(unit.movement || 0) >= 7 ? 18 : 14;
   }
 
   function roughAiMoveScore(unit, hexId, route = null) {
@@ -1975,11 +1972,6 @@
       : Math.max(0, 12 - nearestDistance(unit.hexId, alliedAnchorHexes())) * 0.5;
     const reliefPriority = unit.side === "allied" && alliedShouldRelieveObjectiveDefender(unit) ? 55 : 0;
     return movement * 1.7 + combat * 1.2 + objectivePressure + reliefPriority;
-  }
-
-  function aiMoveThreshold(unit) {
-    if (unit.side === "axis") return Number(unit.movement || 0) >= 9 ? 0.35 : 0.6;
-    return Number(unit.movement || 0) >= 7 ? 0.45 : 0.75;
   }
 
   function scoreAiHex(unit, hexId, route = null, scoreContext = null) {
