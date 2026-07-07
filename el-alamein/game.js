@@ -1847,10 +1847,11 @@
     for (const unit of units) {
       if (app.state.winner || !isAiTurn()) break;
       if (app.state.movedUnits.includes(unit.id) || unit.eliminated) continue;
+      app.state.selectedUnitId = unit.id;
+      draw();
       await yieldToBrowser();
       const order = await chooseAiMove(unit);
       if (!order) continue;
-      app.state.selectedUnitId = unit.id;
       app.reachable = order.reachable;
       await attemptMove(order.hexId);
       moved += 1;
@@ -1911,9 +1912,9 @@
 
   function aiMoveCandidateLimit(unit) {
     const movement = Number(unit.movement || 0);
-    if (unit.side === "axis" && movement >= 9) return 18;
-    if (movement >= 7) return 16;
-    return 14;
+    if (unit.side === "axis" && movement >= 9) return 7;
+    if (movement >= 7) return 7;
+    return 5;
   }
 
   function roughAiMoveScore(unit, hexId, route = null) {
