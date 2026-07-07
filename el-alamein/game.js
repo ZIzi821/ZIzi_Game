@@ -1912,9 +1912,9 @@
 
   function aiMoveCandidateLimit(unit) {
     const movement = Number(unit.movement || 0);
-    if (unit.side === "axis" && movement >= 9) return 7;
-    if (movement >= 7) return 7;
-    return 5;
+    if (unit.side === "axis" && movement >= 9) return 3;
+    if (movement >= 7) return 3;
+    return 2;
   }
 
   function roughAiMoveScore(unit, hexId, route = null) {
