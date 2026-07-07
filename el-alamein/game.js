@@ -584,6 +584,8 @@
     legalRetreats: new Set(),
     legalRetreatSteps: new Set(),
     retreatPaths: new Map(),
+    neighborCache: new Map(),
+    distanceCache: new Map(),
     focusedBattleId: null,
     animating: false,
     logExpanded: false,
@@ -790,6 +792,8 @@
       app.board = app.core.createBoard(scenario);
       app.hexes = app.board.hexes;
       app.hexById = app.board.hexById;
+      app.neighborCache.clear();
+      app.distanceCache.clear();
       app.state = makeInitialState();
       wireUi();
       loadImages();
@@ -1133,7 +1137,7 @@
       : 70;
     for (const hexId of path.slice(1)) {
       unit.hexId = hexId;
-      draw();
+      drawAnimationFrame();
       await delay(stepDelay);
     }
     app.animating = false;
@@ -1719,31 +1723,26 @@
   }
 
   function neighborsOf(hexId) {
-    const hex = hexById(hexId);
-    if (!hex) return [];
-    const oddRow = Math.abs(hex.row % 2) === 1;
-    const offsets = oddRow
-      ? [[1, 0], [1, -1], [0, -1], [-1, 0], [0, 1], [1, 1]]
-      : [[1, 0], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]];
-    return offsets
-      .map(([dc, dr]) => app.hexes.find((candidate) => candidate.col === hex.col + dc && candidate.row === hex.row + dr)?.id)
-      .filter(Boolean);
+    if (!hexId) return [];
+    const cached = app.neighborCache.get(hexId);
+    if (cached) return cached;
+    const neighbors = app.core?.neighborsOf
+      ? app.core.neighborsOf(app.board, hexId)
+      : [];
+    app.neighborCache.set(hexId, neighbors);
+    return neighbors;
   }
 
   function hexDistance(fromId, toId) {
     if (fromId === toId) return 0;
-    const queue = [{ id: fromId, distance: 0 }];
-    const seen = new Set([fromId]);
-    while (queue.length) {
-      const current = queue.shift();
-      for (const next of neighborsOf(current.id)) {
-        if (seen.has(next)) continue;
-        if (next === toId) return current.distance + 1;
-        seen.add(next);
-        queue.push({ id: next, distance: current.distance + 1 });
-      }
-    }
-    return Infinity;
+    if (!fromId || !toId) return Infinity;
+    const key = fromId < toId ? `${fromId}|${toId}` : `${toId}|${fromId}`;
+    if (app.distanceCache.has(key)) return app.distanceCache.get(key);
+    const distance = app.core?.hexDistance
+      ? app.core.hexDistance(app.board, fromId, toId)
+      : Infinity;
+    app.distanceCache.set(key, distance);
+    return distance;
   }
 
   function isAiSide(side) {
@@ -1848,11 +1847,12 @@
       if (app.state.winner || !isAiTurn()) break;
       if (app.state.movedUnits.includes(unit.id) || unit.eliminated) continue;
       app.state.selectedUnitId = unit.id;
-      draw();
+      app.reachable.clear();
+      drawAnimationFrame();
       await yieldToBrowser();
       const order = await chooseAiMove(unit);
       if (!order) continue;
-      app.reachable = order.reachable;
+      app.reachable = new Map([[order.hexId, order.route]]);
       await attemptMove(order.hexId);
       moved += 1;
       await delay(6);
@@ -1878,7 +1878,7 @@
     if (unit.side === "axis") {
       const guardMove = chooseAxisExitGuardMove(unit, reachable);
       if (guardMove === "hold") return null;
-      if (guardMove) return { hexId: guardMove, reachable };
+      if (guardMove) return { hexId: guardMove, route: reachable.get(guardMove), reachable };
     }
     const currentScore = roughAiMoveScore(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
     let best = null;
@@ -1892,7 +1892,7 @@
       }
     }
     if (!best || best.score <= currentScore + aiRoughMoveThreshold(unit)) return null;
-    return { hexId: best.hexId, reachable };
+    return { hexId: best.hexId, route: best.route, reachable };
   }
 
   function prioritizedAiMoveCandidates(unit, reachable) {
@@ -4368,6 +4368,13 @@
     drawLog();
     updateMenu();
     scheduleAiTurn();
+  }
+
+  function drawAnimationFrame() {
+    if (!app.state) return;
+    drawStatus();
+    drawHexLayer();
+    drawUnits();
   }
 
   function drawStatus() {
