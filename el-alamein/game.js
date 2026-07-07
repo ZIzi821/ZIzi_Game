@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-6");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-7");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1935,6 +1935,7 @@
       score += axisObjectiveScore(hexId) * 4.4;
       score += axisFinalObjectiveEntryScore(unit, hexId);
       score += axisBridgeheadSecurityScore(unit, hexId) * (assault ? 1.18 : combat >= 3 ? 0.9 : 0.45);
+      score += axisFocusedObjectiveSupportScore(unit, hexId) * (assault ? 1.25 : combat >= 2 ? 1 : 0.5);
       score -= nearestDistance(hexId, targets) * (combat >= 4 ? 6.1 : 3.5);
       score += axisProgressScore(unit, hexId) * (assault ? 1.35 : 1);
       score += axisForwardZocLineScore(unit, hexId) * (assault ? 1.45 : combat >= 3 ? 2.25 : 1);
@@ -2064,6 +2065,16 @@
       const interlocks = bridgeheadMates.filter((ally) => hexDistance(hexId, ally.hexId) === 2 || hexDistance(hexId, ally.hexId) === 1).length;
       const held = occupant?.side === "axis";
       const pressure = adjacentThreat * 2.4 + closeThreat + nearbyAllied.length * 4;
+      score += app.aiHeuristics.bridgeheadSupportScore({
+        turn: app.state.turn,
+        hexToObjective: candidateDistance,
+        objectiveHeld: held,
+        currentSupportCount: bridgeheadMates.length,
+        alliedThreat: adjacentThreat + closeThreat * 0.35,
+        combat,
+        movement: Number(unit.movement || 0),
+        lineLinks: interlocks,
+      });
 
       if (held && occupant.id === unit.id && candidateDistance > 0) score -= 10000;
       if (candidateDistance === 0) score += (held ? 110 : 155) + pressure * 5.4 + combat * 7;
@@ -2076,6 +2087,48 @@
     }
 
     return Math.min(560, Math.max(-10000, score));
+  }
+
+  function axisFocusedObjectiveSupportScore(unit, hexId) {
+    if (unit.side !== "axis" || app.state.turn < 2) return 0;
+    const focus = axisFocusObjectiveHex();
+    if (!focus) return 0;
+
+    const currentDistance = hexDistance(unit.hexId, focus);
+    const candidateDistance = hexDistance(hexId, focus);
+    if (currentDistance > 8 && candidateDistance > 5) return 0;
+
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    const support = sideUnitsWithin("axis", focus, 2, unit.id);
+    const supportNeed = Math.max(0, 2 - support.length);
+    const progress = currentDistance - candidateDistance;
+    const nearestOtherObjective = nearestDistance(hexId, axisObjectiveHexes().filter((objectiveHexId) => objectiveHexId !== focus));
+    let score = progress * (isAxisAssaultUnit(unit) ? 18 : combat >= 2 ? 10 : 4);
+    if (candidateDistance === 1) score += 58 + supportNeed * 34 + combat * 3.8;
+    else if (candidateDistance === 2) score += 38 + supportNeed * 28 + combat * 2.6;
+    else if (candidateDistance === 3) score += 18 + supportNeed * 12;
+    if (supportNeed > 0 && candidateDistance <= 4 && movement >= 6) score += 22;
+    if (app.state.turn >= 3 && supportNeed > 0 && nearestOtherObjective + 2 < candidateDistance) score -= 46;
+    if (progress < 0 && supportNeed > 0) score += progress * 18;
+    return app.aiHeuristics.clampScore(score, -180, 260);
+  }
+
+  function axisFocusObjectiveHex() {
+    const heldObjective = axisObjectiveHexes().find((objectiveHexId) => liveUnitAt(objectiveHexId)?.side === "axis");
+    if (heldObjective) return heldObjective;
+    const assaultUnits = liveUnits().filter((unit) => isAxisAssaultUnit(unit) && !unit.disrupted);
+    let best = null;
+    for (const objectiveHexId of axisObjectiveHexes()) {
+      const nearestAssault = assaultUnits.length
+        ? Math.min(...assaultUnits.map((unit) => hexDistance(unit.hexId, objectiveHexId)))
+        : Infinity;
+      const alliedOccupant = liveUnitAt(objectiveHexId)?.side === "allied";
+      const roadBias = app.scenario.objectives.coastalRoadEast.includes(objectiveHexId) ? -0.4 : 0;
+      const score = nearestAssault + (alliedOccupant ? 0.8 : 0) + roadBias;
+      if (!best || score < best.score) best = { hexId: objectiveHexId, score };
+    }
+    return best?.hexId || null;
   }
 
   function axisProgressScore(unit, hexId) {

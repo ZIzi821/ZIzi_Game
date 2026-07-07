@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import {
   AI_HEURISTIC_WEIGHTS,
+  bridgeheadSupportScore,
   combatDeclarationThreshold,
   combatOvercommitPenalty,
   finalApproachTempoScore,
@@ -135,6 +136,31 @@ const exposedObjectiveRetreat = objectiveRetreatHoldScore({
 assert.ok(
   supportedObjectiveRetreat > exposedObjectiveRetreat + 400,
   "Axis AI should avoid retreating onto an exposed objective bridgehead",
+);
+
+const urgentBridgeheadSupport = bridgeheadSupportScore({
+  turn: 3,
+  hexToObjective: 1,
+  objectiveHeld: true,
+  currentSupportCount: 0,
+  alliedThreat: 8,
+  combat: 4,
+  movement: 6,
+  lineLinks: 1,
+});
+const distantBridgeheadSupport = bridgeheadSupportScore({
+  turn: 3,
+  hexToObjective: 3,
+  objectiveHeld: true,
+  currentSupportCount: 0,
+  alliedThreat: 8,
+  combat: 4,
+  movement: 6,
+  lineLinks: 1,
+});
+assert.ok(
+  urgentBridgeheadSupport > 250 && distantBridgeheadSupport === 0,
+  "Axis AI should pull useful units next to an exposed objective bridgehead",
 );
 
 console.log("El Alamein AI heuristic tests passed.");

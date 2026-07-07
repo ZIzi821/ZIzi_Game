@@ -66,6 +66,14 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     counterThreat: 24,
     unsupportedPenalty: 190,
   }),
+  bridgeheadSupport: Object.freeze({
+    base: 42,
+    missingSupport: 46,
+    alliedThreat: 7.5,
+    combat: 4.8,
+    mobile: 18,
+    lineLink: 18,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -240,4 +248,31 @@ export function objectiveRetreatHoldScore({
     ? weights.unsupportedPenalty
     : 0;
   return weights.objectiveBonus + Number(combat || 0) * weights.selfCombat + support - threat - unsupported;
+}
+
+export function bridgeheadSupportScore({
+  turn = 1,
+  hexToObjective = Infinity,
+  objectiveHeld = false,
+  currentSupportCount = 0,
+  alliedThreat = 0,
+  combat = 0,
+  movement = 0,
+  lineLinks = 0,
+  weights = AI_HEURISTIC_WEIGHTS.bridgeheadSupport,
+}) {
+  if (turn < 3 || hexToObjective <= 0 || hexToObjective > 2) return 0;
+  const need = Math.max(0, (objectiveHeld ? 3 : 2) - Number(currentSupportCount || 0));
+  if (!objectiveHeld && need <= 0 && Number(alliedThreat || 0) <= 0) return 0;
+  const distanceFit = hexToObjective === 1 ? 1 : 0.46;
+  const urgency = turn >= 4 ? 1.28 : 1;
+  const unitFit = Number(combat || 0) >= 4 ? 1.16 : Number(combat || 0) >= 2 ? 1 : 0.58;
+  const mobileFit = Number(movement || 0) >= 6 ? weights.mobile : 0;
+  const score = weights.base
+    + need * weights.missingSupport
+    + Math.min(16, Number(alliedThreat || 0)) * weights.alliedThreat
+    + Number(combat || 0) * weights.combat
+    + Math.min(3, Number(lineLinks || 0)) * weights.lineLink
+    + mobileFit;
+  return score * distanceFit * urgency * unitFit;
 }
