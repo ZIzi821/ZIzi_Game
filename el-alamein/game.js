@@ -8,6 +8,7 @@
   const LANG_KEY = "zizi-el-alamein-lang";
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
+  const AI_SCORE_BATCH_SIZE = 4;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
   const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-10");
@@ -1123,6 +1124,7 @@
   }
 
   const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+  const yieldToBrowser = () => delay(0);
 
   async function animateUnitPath(unit, path) {
     app.animating = true;
@@ -1845,7 +1847,8 @@
     for (const unit of units) {
       if (app.state.winner || !isAiTurn()) break;
       if (app.state.movedUnits.includes(unit.id) || unit.eliminated) continue;
-      const order = chooseAiMove(unit);
+      await yieldToBrowser();
+      const order = await chooseAiMove(unit);
       if (!order) continue;
       app.state.selectedUnitId = unit.id;
       app.reachable = order.reachable;
@@ -1868,7 +1871,7 @@
     draw();
   }
 
-  function chooseAiMove(unit) {
+  async function chooseAiMove(unit) {
     const reachable = reachableHexes(unit);
     if (!reachable.size) return null;
     if (unit.side === "axis") {
@@ -1878,9 +1881,15 @@
     }
     const currentScore = scoreAiHex(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
     let best = null;
+    let scored = 0;
     for (const [hexId, route] of reachable.entries()) {
       const score = scoreAiHex(unit, hexId, route);
       if (!best || score > best.score) best = { hexId, route, score };
+      scored += 1;
+      if (scored % AI_SCORE_BATCH_SIZE === 0) {
+        await yieldToBrowser();
+        if (!app.state || app.state.winner || !isAiTurn() || unit.eliminated) return null;
+      }
     }
     if (!best || best.score <= currentScore + aiMoveThreshold(unit)) return null;
     return { hexId: best.hexId, reachable };
