@@ -1922,6 +1922,7 @@
       const targets = axisUnitTargetHexes(unit);
       const assault = isAxisAssaultUnit(unit);
       score += axisObjectiveScore(hexId) * 4.4;
+      score += axisFinalObjectiveEntryScore(unit, hexId);
       score += axisBridgeheadSecurityScore(unit, hexId) * (assault ? 1.18 : combat >= 3 ? 0.9 : 0.45);
       score -= nearestDistance(hexId, targets) * (combat >= 4 ? 6.1 : 3.5);
       score += axisProgressScore(unit, hexId) * (assault ? 1.35 : 1);
@@ -2008,6 +2009,20 @@
     if (app.scenario.objectives.coastalRoadEast.includes(hexId)) score += 32;
     if (hexId === "c12r03") score += 38;
     return score;
+  }
+
+  function axisFinalObjectiveEntryScore(unit, hexId) {
+    if (unit.side !== "axis" || app.state.turn < 4) return 0;
+    const axisAlreadyHoldsObjective = axisObjectiveHexes().some((objectiveHexId) => liveUnitAt(objectiveHexId)?.side === "axis");
+    if (axisAlreadyHoldsObjective) return 0;
+    if (axisObjectiveHexes().includes(hexId) && liveUnitAt(hexId)?.side !== "allied") {
+      return 1800 + Number(unit.combat || 0) * 24 + Number(unit.movement || 0) * 8;
+    }
+    const openObjectiveDistance = Math.min(...axisObjectiveHexes()
+      .filter((objectiveHexId) => liveUnitAt(objectiveHexId)?.side !== "allied")
+      .map((objectiveHexId) => hexDistance(hexId, objectiveHexId)));
+    if (openObjectiveDistance === 1) return isAxisAssaultUnit(unit) ? 220 : 70;
+    return 0;
   }
 
   function axisBridgeheadSecurityScore(unit, hexId) {
