@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-8");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-9");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",

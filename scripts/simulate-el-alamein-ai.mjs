@@ -2271,8 +2271,10 @@ function summarizeGame(state, gameSeed) {
     road: scenario.objectives.coastalRoadEast.some((hexId) => axisHexes.has(hexId)),
     firstAxisObjective: state.firstAxisObjective,
     axisObjectiveLostAfterEntry: state.axisObjectiveLostAfterEntry,
+    axisObjectiveGarrisonStrength: bridgehead.garrisonStrength,
     axisObjectiveSupportCount: bridgehead.supportCount,
     axisObjectiveSupportStrength: bridgehead.supportStrength,
+    axisObjectiveHoldStrength: bridgehead.holdStrength,
     axisObjectiveCounterThreat: bridgehead.counterThreat,
     axisObjectiveDistance,
     closestAxis,
@@ -2280,10 +2282,11 @@ function summarizeGame(state, gameSeed) {
 }
 
 function axisObjectiveBridgehead(state) {
-  let best = { supportCount: 0, supportStrength: 0, counterThreat: 0 };
+  let best = { garrisonStrength: 0, supportCount: 0, supportStrength: 0, holdStrength: 0, counterThreat: 0 };
   for (const objectiveHexId of axisObjectives()) {
     const occupant = liveUnitAt(state.units, objectiveHexId);
     if (occupant?.side !== "axis") continue;
+    const garrisonStrength = Number(occupant.combat || 0);
     const support = liveUnits(state.units).filter((unit) => (
       unit.side === "axis"
       && unit.id !== occupant.id
@@ -2294,9 +2297,10 @@ function axisObjectiveBridgehead(state) {
     const counterThreat = liveUnits(state.units)
       .filter((unit) => unit.side === "allied" && !unit.disrupted && distance(unit.hexId, objectiveHexId) <= 2)
       .reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
-    const score = supportStrength * 10 + support.length * 6 - counterThreat;
-    const bestScore = best.supportStrength * 10 + best.supportCount * 6 - best.counterThreat;
-    if (score > bestScore) best = { supportCount: support.length, supportStrength, counterThreat };
+    const holdStrength = garrisonStrength + supportStrength;
+    const score = holdStrength * 10 + support.length * 6 - counterThreat;
+    const bestScore = best.holdStrength * 10 + best.supportCount * 6 - best.counterThreat;
+    if (score > bestScore) best = { garrisonStrength, supportCount: support.length, supportStrength, holdStrength, counterThreat };
   }
   return best;
 }
@@ -2314,7 +2318,7 @@ const objectiveLostAfterEntry = objectiveEntries.filter((result) => result.winne
 const objectiveEverLostAfterEntry = objectiveEntries.filter((result) => result.axisObjectiveLostAfterEntry);
 const supportedObjectiveEntries = objectiveEntries.filter((result) => Number(result.axisObjectiveSupportCount || 0) > 0);
 const secureObjectiveEntries = objectiveEntries.filter((result) => (
-  Number(result.axisObjectiveSupportStrength || 0) >= Number(result.axisObjectiveCounterThreat || 0)
+  Number(result.axisObjectiveHoldStrength || 0) >= Number(result.axisObjectiveCounterThreat || 0)
 ));
 const averageFirstObjectiveTurn = objectiveEntries.length
   ? objectiveEntries.reduce((sum, result) => sum + Number(result.firstAxisObjective.turn || 0), 0) / objectiveEntries.length
@@ -2339,8 +2343,10 @@ const summary = {
   objectiveEverLostAfterEntry: objectiveEverLostAfterEntry.length,
   supportedObjectiveEntries: supportedObjectiveEntries.length,
   secureObjectiveEntries: secureObjectiveEntries.length,
+  averageAxisObjectiveGarrisonStrength: Number(average("axisObjectiveGarrisonStrength").toFixed(2)),
   averageAxisObjectiveSupportCount: Number(average("axisObjectiveSupportCount").toFixed(2)),
   averageAxisObjectiveSupportStrength: Number(average("axisObjectiveSupportStrength").toFixed(2)),
+  averageAxisObjectiveHoldStrength: Number(average("axisObjectiveHoldStrength").toFixed(2)),
   averageAxisObjectiveCounterThreat: Number(average("axisObjectiveCounterThreat").toFixed(2)),
   averageFirstObjectiveTurn: objectiveEntries.length ? Number(averageFirstObjectiveTurn.toFixed(2)) : undefined,
   reasons: results.reduce((totals, result) => {
@@ -2364,6 +2370,6 @@ if (expectRetainedObjective && objectiveEverLostAfterEntry.length) {
 }
 
 if (expectSecureObjective && secureObjectiveEntries.length < objectiveEntries.length) {
-  console.error(`Expected secure Axis objectives, but ${objectiveEntries.length - secureObjectiveEntries.length}/${objectiveEntries.length} entries had more counter-threat than support strength.`);
+  console.error(`Expected secure Axis objectives, but ${objectiveEntries.length - secureObjectiveEntries.length}/${objectiveEntries.length} entries had more counter-threat than hold strength.`);
   process.exitCode = 1;
 }
