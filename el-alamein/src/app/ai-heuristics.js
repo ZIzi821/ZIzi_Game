@@ -48,6 +48,16 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     mobile: 18,
     zoc: 18,
   }),
+  forcedRetreat: Object.freeze({
+    sealed: 260,
+    oneExit: 150,
+    twoExit: 72,
+    adjacentStrength: 16,
+    zocCount: 24,
+    objectiveDistance: 7,
+    exitDistance: 7,
+    highValueMultiplier: 1.24,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -174,4 +184,28 @@ export function objectiveGateLatchScore({
     return occupiedByAllied ? weights.occupyBase + urgent * 0.45 + combatFit : 0;
   }
   return weights.adjacentBase + urgent + missingGate + lanePressure + combatFit + mobileFit + zocFit;
+}
+
+export function forcedRetreatTrapScore({
+  retreatExitCount = 6,
+  adjacentControllerStrength = 0,
+  controllerZocCount = 0,
+  enemyObjectiveDistance = 0,
+  enemyExitDistance = 0,
+  highValueEnemy = false,
+  weights = AI_HEURISTIC_WEIGHTS.forcedRetreat,
+}) {
+  const exitScore = retreatExitCount <= 0
+    ? weights.sealed
+    : retreatExitCount === 1
+      ? weights.oneExit
+      : retreatExitCount === 2
+        ? weights.twoExit
+        : Math.max(0, 4 - retreatExitCount) * 18;
+  const localTrap = Math.min(12, Number(adjacentControllerStrength || 0)) * weights.adjacentStrength
+    + Math.min(4, Number(controllerZocCount || 0)) * weights.zocCount;
+  const positionalDenial = Math.min(10, Math.max(0, Number(enemyObjectiveDistance || 0))) * weights.objectiveDistance
+    + Math.min(12, Math.max(0, Number(enemyExitDistance || 0))) * weights.exitDistance;
+  const score = exitScore + localTrap + positionalDenial;
+  return highValueEnemy ? score * weights.highValueMultiplier : score;
 }

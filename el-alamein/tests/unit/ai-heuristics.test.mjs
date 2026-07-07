@@ -5,6 +5,7 @@ import {
   combatDeclarationThreshold,
   combatOvercommitPenalty,
   finalApproachTempoScore,
+  forcedRetreatTrapScore,
   lineSpacingScore,
   objectiveGateLatchScore,
 } from "../../src/app/ai-heuristics.js";
@@ -85,5 +86,21 @@ assert.equal(
   0,
   "gate latch scoring should only affect objective and adjacent gate hexes",
 );
+
+const sealedRetreat = forcedRetreatTrapScore({
+  retreatExitCount: 0,
+  adjacentControllerStrength: 6,
+  controllerZocCount: 3,
+  enemyObjectiveDistance: 5,
+  highValueEnemy: true,
+});
+const openRetreat = forcedRetreatTrapScore({
+  retreatExitCount: 4,
+  adjacentControllerStrength: 1,
+  controllerZocCount: 0,
+  enemyObjectiveDistance: 5,
+  highValueEnemy: true,
+});
+assert.ok(sealedRetreat > openRetreat * 2, "forced retreat control should prefer sealed ZOC traps over merely distant retreats");
 
 console.log("El Alamein AI heuristic tests passed.");

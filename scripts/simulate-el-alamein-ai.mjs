@@ -21,6 +21,7 @@ import {
   combatDeclarationThreshold,
   combatOvercommitPenalty,
   finalApproachTempoScore,
+  forcedRetreatTrapScore,
   lineSpacingScore,
   objectiveGateLatchScore,
 } from "../el-alamein/src/app/ai-heuristics.js";
@@ -333,19 +334,45 @@ function chooseRetreat(state, unit, paths, controllerSide) {
 }
 
 function forcedRetreatDenialScore(state, controllerSide, unit, hexId) {
+  const trapScore = forcedRetreatTrap(state, controllerSide, unit, hexId);
   if (controllerSide === "axis" && unit.side === "allied") {
     const exitDistance = nearestDistance(hexId, scenario.objectives.alliedWestExitEdge);
     const allowance = Math.max(movementAllowance(state, unit), Number(unit.movement || 0));
     let score = Math.min(exitDistance, 12) * 5;
     if (exitDistance < allowance) score -= 180 + (allowance - exitDistance) * 35;
     else if (exitDistance <= allowance + 1) score -= 60;
-    return score - strategicHexValue(state, "allied", hexId) * 0.08;
+    return score + trapScore - strategicHexValue(state, "allied", hexId) * 0.08;
   }
   if (controllerSide === "allied" && unit.side === "axis") {
     const objectiveDistance = nearestDistance(hexId, axisObjectives());
-    return objectiveDistance * 6 - strategicHexValue(state, "axis", hexId) * 0.12;
+    return objectiveDistance * 6 + trapScore - strategicHexValue(state, "axis", hexId) * 0.12;
   }
-  return strategicHexValue(state, controllerSide, hexId) * 0.02;
+  return trapScore + strategicHexValue(state, controllerSide, hexId) * 0.02;
+}
+
+function forcedRetreatTrap(state, controllerSide, unit, hexId) {
+  const hypothetical = { unit, hexId };
+  return forcedRetreatTrapScore({
+    retreatExitCount: retreatExitCount(state, unit, hypothetical),
+    adjacentControllerStrength: adjacentSideStrength(state, controllerSide, hexId),
+    controllerZocCount: sideZocCount(state, controllerSide, hexId),
+    enemyObjectiveDistance: nearestDistance(hexId, axisObjectives()),
+    enemyExitDistance: unit.side === "allied" ? nearestDistance(hexId, scenario.objectives.alliedWestExitEdge) : 0,
+    highValueEnemy: unit.side === "axis" ? isAxisAssaultUnit(unit) : isHighValueAlliedUnit(unit),
+  });
+}
+
+function adjacentSideStrength(state, side, hexId) {
+  return neighborsOf(board, hexId)
+    .map((neighborId) => liveUnitAt(state.units, neighborId))
+    .filter((unit) => unit && unit.side === side && !unit.disrupted)
+    .reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
+}
+
+function sideZocCount(state, side, hexId) {
+  return neighborsOf(board, hexId).filter((neighborId) => (
+    liveUnits(state.units).some((unit) => unit.side === side && !unit.disrupted && neighborsOf(board, unit.hexId).includes(neighborId))
+  )).length;
 }
 
 function advanceAfterCombat(state, battle) {

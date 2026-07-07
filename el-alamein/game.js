@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-4");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-5");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -3517,19 +3517,45 @@
   }
 
   function forcedRetreatDenialScore(controllerSide, unit, hexId) {
+    const trapScore = forcedRetreatTrapScore(controllerSide, unit, hexId);
     if (controllerSide === "axis" && unit.side === "allied") {
       const exitDistance = nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge);
       const allowance = Math.max(movementAllowance(unit), Number(unit.movement || 0));
       let score = Math.min(exitDistance, 12) * 5;
       if (exitDistance < allowance) score -= 180 + (allowance - exitDistance) * 35;
       else if (exitDistance <= allowance + 1) score -= 60;
-      return score - strategicHexValueForSide("allied", hexId) * 0.08;
+      return score + trapScore - strategicHexValueForSide("allied", hexId) * 0.08;
     }
     if (controllerSide === "allied" && unit.side === "axis") {
       const objectiveDistance = nearestDistance(hexId, axisObjectiveHexes());
-      return objectiveDistance * 6 - strategicHexValueForSide("axis", hexId) * 0.12;
+      return objectiveDistance * 6 + trapScore - strategicHexValueForSide("axis", hexId) * 0.12;
     }
-    return strategicHexValueForSide(controllerSide, hexId) * 0.02;
+    return trapScore + strategicHexValueForSide(controllerSide, hexId) * 0.02;
+  }
+
+  function forcedRetreatTrapScore(controllerSide, unit, hexId) {
+    const hypothetical = { unit, hexId };
+    return app.aiHeuristics.forcedRetreatTrapScore({
+      retreatExitCount: retreatExitCount(unit, hypothetical),
+      adjacentControllerStrength: adjacentSideStrength(controllerSide, hexId),
+      controllerZocCount: sideZocCount(controllerSide, hexId),
+      enemyObjectiveDistance: nearestDistance(hexId, axisObjectiveHexes()),
+      enemyExitDistance: unit.side === "allied" ? nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge) : 0,
+      highValueEnemy: unit.side === "axis" ? isAxisAssaultUnit(unit) : isHighValueAlliedUnit(unit),
+    });
+  }
+
+  function adjacentSideStrength(side, hexId) {
+    return neighborsOf(hexId)
+      .map(liveUnitAt)
+      .filter((unit) => unit && unit.side === side && !unit.disrupted)
+      .reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
+  }
+
+  function sideZocCount(side, hexId) {
+    return neighborsOf(hexId).filter((neighborId) => (
+      liveUnits().some((unit) => unit.side === side && !unit.disrupted && neighborsOf(unit.hexId).includes(neighborId))
+    )).length;
   }
 
   function chooseAiAdvanceUnit() {
