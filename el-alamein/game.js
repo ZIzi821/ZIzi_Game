@@ -1931,7 +1931,10 @@
         score += axisMobileGroupSupportScore(unit, hexId);
         score += axisSpearheadPressureScore(unit, hexId);
       }
-      else score += axisZocScreenScore(unit, hexId);
+      else {
+        score += axisZocScreenScore(unit, hexId);
+        score += axisDynamicScreenScore(unit, hexId);
+      }
       if (assault && app.scenario.objectives.alliedWestExitEdge.includes(hexId)) score -= 110;
     } else {
       if (app.scenario.objectives.alliedWestExitEdge.includes(hexId) && route?.remaining > 0) {
@@ -1945,6 +1948,7 @@
       score += alliedRoadblockScore(unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
       score += alliedSupportedLineScore(unit, hexId);
       score += alliedApproachInterdictionScore(unit, hexId);
+      score += alliedForwardScreenLineScore(unit, hexId) * (combat >= 4 ? 1.08 : 0.92);
       score += alliedSpearheadCounterattackPositionScore(unit, hexId);
       score -= alliedIsolatedObjectivePenaltyScore(unit, hexId);
       score += alliedRidgeReserveScore(unit, hexId) * (combat >= 4 ? 1.05 : 0.9);
@@ -2192,6 +2196,56 @@
     return score;
   }
 
+  function axisDynamicScreenScore(unit, hexId) {
+    if (unit.side !== "axis" || isAxisAssaultUnit(unit)) return 0;
+    const westExit = app.scenario.objectives.alliedWestExitEdge;
+    const units = liveUnits();
+    const alliedUnits = units.filter((candidate) => candidate.side === "allied" && !candidate.disrupted);
+    if (!alliedUnits.length) return 0;
+
+    const combat = Number(unit.combat || 0);
+    const maxExitThreat = Math.max(0, ...westExit.map((exitHexId) => alliedExitThreat(exitHexId)));
+    const exitDistance = nearestDistance(hexId, westExit);
+    let score = 0;
+
+    if (maxExitThreat < 12 && exitDistance <= 1) score -= 28 + combat * 2.4;
+    else if (exitDistance === 1) score += 16;
+    else if (exitDistance === 2) score += 18;
+    else if (exitDistance === 3) score += 10;
+    else if (exitDistance === 4) score += 4;
+
+    for (const ally of units.filter((candidate) => candidate.side === "axis" && candidate.id !== unit.id && !candidate.disrupted)) {
+      const distance = hexDistance(hexId, ally.hexId);
+      if (distance === 2) score += isAxisAssaultUnit(ally) ? 7 : 19 + Math.min(5, Number(ally.combat || 0));
+      else if (distance === 3) score += isAxisAssaultUnit(ally) ? 5 : 8;
+      else if (distance === 1 && !isAxisAssaultUnit(ally)) score -= 5;
+    }
+
+    const assaultUnits = units.filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+    if (assaultUnits.length) {
+      const nearestAssault = Math.min(...assaultUnits.map((assault) => hexDistance(hexId, assault.hexId)));
+      if (nearestAssault === 2) score += 16;
+      else if (nearestAssault === 3) score += 12;
+      else if (nearestAssault === 4) score += 6;
+      else if (nearestAssault <= 1) score -= 6;
+    }
+
+    for (const enemy of alliedUnits) {
+      const enemyExitDistance = nearestDistance(enemy.hexId, westExit);
+      const enemyObjectiveDistance = nearestDistance(enemy.hexId, axisObjectiveHexes());
+      if (enemyExitDistance > 9 && enemyObjectiveDistance > 7) continue;
+      const enemyDistance = hexDistance(hexId, enemy.hexId);
+      if (enemyDistance === 2) score += 16 + Math.min(6, Number(enemy.combat || 0));
+      else if (enemyDistance === 3) score += 7;
+      else if (enemyDistance === 1) score += combat >= 4 ? 4 : -5;
+      if (enemyDistance + exitDistance <= enemyExitDistance + 2) score += Math.max(0, 7 - enemyDistance) * 4.5;
+    }
+
+    const objectiveGain = nearestDistance(unit.hexId, axisObjectiveHexes()) - nearestDistance(hexId, axisObjectiveHexes());
+    if (objectiveGain > 0 && exitDistance > 1) score += Math.min(18, objectiveGain * 4.5);
+    return Math.min(250, Math.max(-80, score));
+  }
+
   function axisExitCoverageScore(hexId, movingUnitId = null) {
     let score = 0;
     for (const exitHexId of app.scenario.objectives.alliedWestExitEdge) {
@@ -2200,9 +2254,9 @@
       const alreadyCovered = isAxisExitCoveredByOther(exitHexId, movingUnitId);
       const distance = hexDistance(hexId, exitHexId);
       const coverageMultiplier = alreadyCovered ? 0.08 : 1;
-      if (distance === 0) score += threat * 6 * coverageMultiplier;
-      else if (distance === 1) score += threat * 4.4 * coverageMultiplier;
-      else if (distance === 2) score += threat * 1.1 * coverageMultiplier;
+      if (distance === 0) score += threat * 4.8 * coverageMultiplier;
+      else if (distance === 1) score += threat * 6.4 * coverageMultiplier;
+      else if (distance === 2) score += threat * 0.45 * coverageMultiplier;
     }
     return score;
   }
@@ -2466,6 +2520,59 @@
       if (candidateToAxis === 2 && combat >= 3) score += 12;
     }
     return Math.min(210, score);
+  }
+
+  function alliedForwardScreenLineScore(unit, hexId) {
+    if (unit.side !== "allied") return 0;
+    const units = liveUnits();
+    const axisAssaultUnits = units.filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+    if (!axisAssaultUnits.length) return 0;
+
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    const zocHexes = [hexId, ...neighborsOf(hexId)];
+    let score = 0;
+    const lineMates = units.filter((ally) => (
+      ally.side === "allied"
+      && ally.id !== unit.id
+      && !ally.disrupted
+      && nearestDistance(ally.hexId, axisObjectiveHexes()) <= 9
+    ));
+    const interlocks = lineMates.filter((ally) => hexDistance(hexId, ally.hexId) === 2).length;
+    const looseLinks = lineMates.filter((ally) => hexDistance(hexId, ally.hexId) === 3).length;
+    const crowding = lineMates.filter((ally) => hexDistance(hexId, ally.hexId) === 1).length;
+    const lineShape = interlocks * 30 + looseLinks * 10 - crowding * 8;
+
+    if (app.state.turn <= 2 && nearestDistance(hexId, axisObjectiveHexes()) <= 1) score -= 24;
+
+    for (const axisUnit of axisAssaultUnits) {
+      const targets = axisUnitTargetHexes(axisUnit);
+      const axisToObjective = nearestDistance(axisUnit.hexId, targets);
+      const candidateToObjective = nearestDistance(hexId, targets);
+      const candidateToAxis = hexDistance(hexId, axisUnit.hexId);
+      if (candidateToObjective < 2 || candidateToObjective > 7) continue;
+      if (candidateToAxis < 2 || candidateToAxis > 8) continue;
+      if (candidateToAxis + candidateToObjective > axisToObjective + 4) continue;
+
+      const cutsLane = zocHexes.some((zocHexId) => {
+        const zocToAxis = hexDistance(zocHexId, axisUnit.hexId);
+        const zocToObjective = nearestDistance(zocHexId, targets);
+        return zocToObjective < axisToObjective && zocToAxis + zocToObjective <= axisToObjective + 2;
+      });
+
+      const depth = candidateToObjective === 4 ? 1.25
+        : candidateToObjective === 5 ? 1.1
+          : candidateToObjective === 3 ? 1
+            : candidateToObjective === 6 ? 0.84
+              : 0.64;
+      const suitability = combat >= 4 ? 1.16 : combat >= 2 ? 1 : 0.62;
+      const pressure = Math.max(0, 8 - candidateToAxis) * 6 + Math.max(0, 7 - candidateToObjective) * 4;
+      score += ((cutsLane ? 52 : 26) + pressure + Math.min(56, lineShape)) * depth * suitability;
+      if (movement >= 7 && candidateToObjective >= 3) score += 12;
+      if (interlocks >= 2) score += 16;
+    }
+
+    return Math.min(360, Math.max(-60, score));
   }
 
   function alliedSpearheadCounterattackPositionScore(unit, hexId) {
@@ -2895,7 +3002,7 @@
     const counterattackOvercommit = counterattackUrgency || spearheadUrgency ? overcommit * 0.25 : overcommit;
     const objectiveOddsBonus = axisObjectiveOddsBonus(attackerSide, objectiveUrgency, attackers, odds);
     const perimeterOddsBonus = axisObjectivePerimeterOddsBonus(attackerSide, perimeterUrgency, attackers, odds);
-    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
+    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - combatOverkillPenalty(attackerSide, attackers, defender, odds) - axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
   }
 
   function axisObjectiveCombatUrgency(attackerSide, defenderHexId) {
@@ -2954,6 +3061,36 @@
     const soloRisk = nonGarrisonAttackers === 0 ? (targetObjective ? 190 : 120) : 0;
     const supportRelief = Math.min(90, nonGarrisonAttackers * 36);
     return Math.max(0, (base + oddsRisk + soloRisk - supportRelief) * timing);
+  }
+
+  function combatOverkillPenalty(attackerSide, attackers, defender, odds) {
+    if (odds.columnIndex < 4) return 0;
+    if (attackerSide === "axis" && axisObjectiveHexes().includes(defender.hexId)) return 0;
+    const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
+    const fourToOneAttack = Math.max(1, odds.defense) * 4;
+    const retreatPressure = defenderRetreatPressure(defender, 1);
+    const surrounded = retreatPressure >= 5;
+    const decisiveAttack = surrounded ? Math.max(1, odds.defense) * 2 : fourToOneAttack;
+    const excessStrength = Math.max(0, attackStrength - decisiveAttack);
+    const excessColumn = Math.max(0, odds.columnIndex - 4);
+    const strengths = attackers.map((unit) => Number(unit.combat || 0)).sort((a, b) => b - a);
+    let efficientStrength = 0;
+    let minimumAttackers = 0;
+    for (const strength of strengths) {
+      efficientStrength += strength;
+      minimumAttackers += 1;
+      if (efficientStrength >= decisiveAttack) break;
+    }
+    const extraAttackers = efficientStrength >= decisiveAttack ? Math.max(0, attackers.length - minimumAttackers) : 0;
+    if (attackers.length <= 2 && excessColumn <= 2) return 0;
+    if (excessStrength <= 1 && excessColumn === 0 && extraAttackers === 0) return 0;
+    const mobileUnits = attackerSide === "axis"
+      ? attackers.filter((unit) => isAxisAssaultUnit(unit)).length
+      : attackers.filter((unit) => Number(unit.movement || 0) >= 7).length;
+    const mobileWaste = Math.max(0, mobileUnits - 1);
+    const earlyTempoRelief = attackerSide === "axis" && app.state.turn <= 2 && extraAttackers === 0 ? 0.5 : 1;
+    const surroundedPressure = surrounded ? 1.35 : 1;
+    return (Math.max(0, excessStrength - 1) * 14 + excessColumn * 85 + extraAttackers * 86 + mobileWaste * 18) * earlyTempoRelief * surroundedPressure;
   }
 
   function alliedObjectiveCombatUrgency(attackerSide, defenderHexId) {
