@@ -18,7 +18,9 @@ import {
 import {
   AI_HEURISTIC_WEIGHTS,
   clampScore,
+  combatDeclarationThreshold,
   combatOvercommitPenalty,
+  finalApproachTempoScore,
   lineSpacingScore,
 } from "../el-alamein/src/app/ai-heuristics.js";
 
@@ -214,7 +216,7 @@ function runCombat(state, rng, trace = false) {
   while (guard < 30) {
     guard += 1;
     const candidate = bestCombat(state);
-    if (!candidate || candidate.score < combatThreshold(activeSide(state))) break;
+    if (!candidate || candidate.score < combatThreshold(state, activeSide(state))) break;
     const battle = declareBattle(state, candidate.defender, candidate.attackers);
     state.declaredCombats.push(battle);
     if (trace) {
@@ -443,8 +445,8 @@ function attackerGroups(attackers) {
   return groups;
 }
 
-function combatThreshold(side) {
-  return side === "axis" ? 3.6 : 5.1;
+function combatThreshold(state, side) {
+  return combatDeclarationThreshold({ side, turn: state.turn });
 }
 
 function scoreCombat(state, attackers, defender, odds) {
@@ -726,6 +728,7 @@ function scoreHex(state, unit, hexId, route = null) {
       score += axisEncirclement(state, unit, hexId, route);
       score += axisObjectiveAttackPosition(state, unit, hexId);
       score += axisFinalAssaultMass(state, unit, hexId);
+      score += axisFinalApproachTempo(state, unit, hexId);
       score += axisMobileGroupSupport(state, unit, hexId);
       score += axisSpearheadPressure(state, unit, hexId);
     }
@@ -1019,6 +1022,17 @@ function axisFinalAssaultMass(state, unit, hexId) {
     }
   }
   return score;
+}
+
+function axisFinalApproachTempo(state, unit, hexId) {
+  if (!isAxisAssaultUnit(unit)) return 0;
+  const objectiveHeld = axisObjectives().some((objectiveHexId) => liveUnitAt(state.units, objectiveHexId)?.side === "axis");
+  return finalApproachTempoScore({
+    turn: state.turn,
+    currentDistance: nearestDistance(unit.hexId, axisObjectives()),
+    candidateDistance: nearestDistance(hexId, axisObjectives()),
+    objectiveHeld,
+  });
 }
 
 function axisSpearheadPressure(state, unit, hexId) {

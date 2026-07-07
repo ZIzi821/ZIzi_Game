@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 
 import {
   AI_HEURISTIC_WEIGHTS,
+  combatDeclarationThreshold,
   combatOvercommitPenalty,
+  finalApproachTempoScore,
   lineSpacingScore,
 } from "../../src/app/ai-heuristics.js";
 
@@ -45,5 +47,24 @@ const overstackedSixToOne = combatOvercommitPenalty({
   surrounded: true,
 });
 assert.ok(overstackedSixToOne > 400, "surrounded target should still punish wasting extra mobile attackers past 4:1");
+
+const finalApproachPush = finalApproachTempoScore({
+  turn: 3,
+  currentDistance: 5,
+  candidateDistance: 2,
+});
+assert.ok(finalApproachPush > 350, "late Axis spearheads should be rewarded for closing to assault distance");
+
+const finalApproachHold = finalApproachTempoScore({
+  turn: 4,
+  currentDistance: 3,
+  candidateDistance: 3,
+});
+assert.ok(finalApproachHold < 0, "final-turn spearheads should not hold outside the objective perimeter");
+
+assert.ok(
+  combatDeclarationThreshold({ side: "axis", turn: 1 }) > combatDeclarationThreshold({ side: "axis", turn: 4 }),
+  "Axis combat threshold should preserve spearheads early and relax on the final turn",
+);
 
 console.log("El Alamein AI heuristic tests passed.");

@@ -24,6 +24,20 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     axisMobileWaste: 105,
     alliedMobileWaste: 40,
   }),
+  finalApproach: Object.freeze({
+    turnThreeGain: 90,
+    finalTurnGain: 185,
+    turnThreeNear: 185,
+    finalTurnNear: 460,
+    turnThreeHoldPenalty: 54,
+    finalTurnHoldPenalty: 170,
+  }),
+  combatThreshold: Object.freeze({
+    axisEarly: 90,
+    axisAssault: 64,
+    axisFinal: 8,
+    allied: 5.1,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -94,4 +108,35 @@ export function combatOvercommitPenalty({
     + extraAttackers * weights.extraAttacker
     + mobileWaste * mobilePenalty
   ) * earlyTempoRelief * surround * tempo;
+}
+
+export function finalApproachTempoScore({
+  turn,
+  currentDistance,
+  candidateDistance,
+  objectiveHeld = false,
+  weights = AI_HEURISTIC_WEIGHTS.finalApproach,
+}) {
+  if (objectiveHeld || turn < 3 || currentDistance > 7 || candidateDistance > currentDistance + 1) return 0;
+  const finalTurn = turn >= 4;
+  const gain = Math.max(0, currentDistance - candidateDistance);
+  let score = gain * (finalTurn ? weights.finalTurnGain : weights.turnThreeGain);
+  if (candidateDistance <= 1) score += finalTurn ? weights.finalTurnNear : weights.turnThreeNear;
+  else if (candidateDistance === 2) score += finalTurn ? weights.finalTurnNear * 0.68 : weights.turnThreeNear * 0.62;
+  else if (candidateDistance === 3) score += finalTurn ? weights.finalTurnNear * 0.32 : weights.turnThreeNear * 0.34;
+  if (gain === 0 && currentDistance <= 5 && candidateDistance > 1) {
+    score -= finalTurn ? weights.finalTurnHoldPenalty : weights.turnThreeHoldPenalty;
+  }
+  return score;
+}
+
+export function combatDeclarationThreshold({
+  side,
+  turn,
+  weights = AI_HEURISTIC_WEIGHTS.combatThreshold,
+}) {
+  if (side !== "axis") return weights.allied;
+  if (turn <= 2) return weights.axisEarly;
+  if (turn === 3) return weights.axisAssault;
+  return weights.axisFinal;
 }

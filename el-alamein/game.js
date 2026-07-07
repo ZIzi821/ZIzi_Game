@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-2");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-3");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1935,6 +1935,7 @@
         score += axisEncirclementScore(unit, hexId, route);
         score += axisObjectiveAttackPositionScore(unit, hexId);
         score += axisFinalAssaultMassScore(unit, hexId);
+        score += axisFinalApproachTempoScore(unit, hexId);
         score += axisMobileGroupSupportScore(unit, hexId);
         score += axisSpearheadPressureScore(unit, hexId);
       }
@@ -2224,6 +2225,17 @@
       }
     }
     return score;
+  }
+
+  function axisFinalApproachTempoScore(unit, hexId) {
+    if (!isAxisAssaultUnit(unit)) return 0;
+    const objectiveHeld = axisObjectiveHexes().some((objectiveHexId) => liveUnitAt(objectiveHexId)?.side === "axis");
+    return app.aiHeuristics.finalApproachTempoScore({
+      turn: app.state.turn,
+      currentDistance: nearestDistance(unit.hexId, axisObjectiveHexes()),
+      candidateDistance: nearestDistance(hexId, axisObjectiveHexes()),
+      objectiveHeld,
+    });
   }
 
   function axisSpearheadPressureScore(unit, hexId) {
@@ -3192,7 +3204,10 @@
   }
 
   function aiCombatThreshold() {
-    return activeSide() === "axis" ? 3.6 : 5.1;
+    return app.aiHeuristics.combatDeclarationThreshold({
+      side: activeSide(),
+      turn: app.state.turn,
+    });
   }
 
   function scoreAiCombat(attackers, defender, odds) {
