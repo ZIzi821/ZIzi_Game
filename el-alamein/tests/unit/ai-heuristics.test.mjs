@@ -6,6 +6,7 @@ import {
   combatOvercommitPenalty,
   finalApproachTempoScore,
   lineSpacingScore,
+  objectiveGateLatchScore,
 } from "../../src/app/ai-heuristics.js";
 
 const axisLine = AI_HEURISTIC_WEIGHTS.axisLine;
@@ -65,6 +66,24 @@ assert.ok(finalApproachHold < 0, "final-turn spearheads should not hold outside 
 assert.ok(
   combatDeclarationThreshold({ side: "axis", turn: 1 }) > combatDeclarationThreshold({ side: "axis", turn: 4 }),
   "Axis combat threshold should preserve spearheads early and relax on the final turn",
+);
+
+const urgentGateLatch = objectiveGateLatchScore({
+  turn: 2,
+  hexToObjective: 1,
+  axisToObjective: 3,
+  axisToHex: 2,
+  currentGateCount: 1,
+  combat: 4,
+  movement: 8,
+  inEnemyZoc: true,
+});
+assert.ok(urgentGateLatch > 300, "Allied AI should strongly prefer adjacent gate latches against a near spearhead");
+
+assert.equal(
+  objectiveGateLatchScore({ turn: 2, hexToObjective: 3, axisToObjective: 3, axisToHex: 2, combat: 4 }),
+  0,
+  "gate latch scoring should only affect objective and adjacent gate hexes",
 );
 
 console.log("El Alamein AI heuristic tests passed.");

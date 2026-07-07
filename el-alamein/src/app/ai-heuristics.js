@@ -38,6 +38,16 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     axisFinal: 8,
     allied: 5.1,
   }),
+  objectiveGateLatch: Object.freeze({
+    adjacentBase: 92,
+    occupyBase: 42,
+    urgency: 34,
+    missingGate: 28,
+    lanePressure: 16,
+    combat: 8,
+    mobile: 18,
+    zoc: 18,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -139,4 +149,29 @@ export function combatDeclarationThreshold({
   if (turn <= 2) return weights.axisEarly;
   if (turn === 3) return weights.axisAssault;
   return weights.axisFinal;
+}
+
+export function objectiveGateLatchScore({
+  turn,
+  hexToObjective,
+  axisToObjective,
+  axisToHex,
+  currentGateCount = 0,
+  combat = 0,
+  movement = 0,
+  inEnemyZoc = false,
+  occupiedByAllied = false,
+  weights = AI_HEURISTIC_WEIGHTS.objectiveGateLatch,
+}) {
+  if (hexToObjective > 1 || axisToObjective > 6 || axisToHex > axisToObjective + 1) return 0;
+  const urgent = Math.max(0, 6 - axisToObjective) * weights.urgency;
+  const missingGate = Math.max(0, 3 - currentGateCount) * weights.missingGate;
+  const lanePressure = Math.max(0, 7 - axisToHex) * weights.lanePressure;
+  const combatFit = Number(combat || 0) * weights.combat;
+  const mobileFit = Number(movement || 0) >= 7 ? weights.mobile : 0;
+  const zocFit = inEnemyZoc ? weights.zoc : 0;
+  if (hexToObjective === 0) {
+    return occupiedByAllied ? weights.occupyBase + urgent * 0.45 + combatFit : 0;
+  }
+  return weights.adjacentBase + urgent + missingGate + lanePressure + combatFit + mobileFit + zocFit;
 }

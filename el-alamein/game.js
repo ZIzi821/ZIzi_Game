@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-3");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-4");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1553,6 +1553,7 @@
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
+      if (unit.side === "axis") checkAxisObjectiveVictory();
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
@@ -1629,6 +1630,8 @@
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
+    } else if (unit.side === "axis") {
+      checkAxisObjectiveVictory();
     }
     app.state.selectedUnitId = unit.id;
     draw();
@@ -1954,6 +1957,7 @@
       score += alliedZocBarrierScore(unit, hexId) * (combat >= 4 ? 1.45 : 1.15);
       score += alliedInterlockingZocScore(unit, hexId) * (combat >= 4 ? 1.5 : 1.18);
       score += alliedRoadblockScore(unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
+      score += alliedObjectiveGateLatchScore(unit, hexId) * (combat >= 3 ? 1.18 : 0.92);
       score += alliedSupportedLineScore(unit, hexId) * 0.78;
       score += alliedApproachInterdictionScore(unit, hexId) * 1.28;
       score += alliedForwardScreenLineScore(unit, hexId) * (combat >= 4 ? 1.32 : 1.06);
@@ -2579,6 +2583,36 @@
       }
     }
     return Math.min(340, score);
+  }
+
+  function alliedObjectiveGateLatchScore(unit, hexId) {
+    if (unit.side !== "allied") return 0;
+    const axisAssaultUnits = liveUnits().filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+    if (!axisAssaultUnits.length) return 0;
+    let score = 0;
+    for (const objectiveHexId of axisObjectiveHexes()) {
+      const hexToObjective = hexDistance(hexId, objectiveHexId);
+      if (hexToObjective > 1) continue;
+      const nearestAxis = axisAssaultUnits
+        .map((axisUnit) => ({
+          axisToObjective: hexDistance(axisUnit.hexId, objectiveHexId),
+          axisToHex: hexDistance(axisUnit.hexId, hexId),
+        }))
+        .sort((a, b) => a.axisToObjective - b.axisToObjective || a.axisToHex - b.axisToHex)[0];
+      if (!nearestAxis) continue;
+      score += app.aiHeuristics.objectiveGateLatchScore({
+        turn: app.state.turn,
+        hexToObjective,
+        axisToObjective: nearestAxis.axisToObjective,
+        axisToHex: nearestAxis.axisToHex,
+        currentGateCount: roadGateCount(objectiveHexId, unit.id),
+        combat: Number(unit.combat || 0),
+        movement: Number(unit.movement || 0),
+        inEnemyZoc: isEnemyZoc(hexId, unit.side, unit.id),
+        occupiedByAllied: liveUnitAt(objectiveHexId)?.side === "allied",
+      });
+    }
+    return Math.min(520, score);
   }
 
   function alliedSupportedLineScore(unit, hexId) {

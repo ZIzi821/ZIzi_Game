@@ -22,6 +22,7 @@ import {
   combatOvercommitPenalty,
   finalApproachTempoScore,
   lineSpacingScore,
+  objectiveGateLatchScore,
 } from "../el-alamein/src/app/ai-heuristics.js";
 
 const scenario = JSON.parse(fs.readFileSync(new URL("../el-alamein/local-data/scenario.json", import.meta.url), "utf8"));
@@ -154,6 +155,7 @@ function runMovement(state, trace = false) {
       if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
       return;
     }
+    if (unit.side === "axis" && checkAxisVictory(state)) return;
   }
 }
 
@@ -358,7 +360,10 @@ function advanceAfterCombat(state, battle) {
       + axisAdvancePerimeterScore(state, unit, unit.hexId, battle.defenderHexId);
     if (!best || gain > best.gain) best = { unit, gain };
   }
-  if (best && best.gain > 0) best.unit.hexId = battle.defenderHexId;
+  if (best && best.gain > 0) {
+    best.unit.hexId = battle.defenderHexId;
+    if (best.unit.side === "axis") checkAxisVictory(state);
+  }
 }
 
 function axisAdvanceObjectiveScore(state, unit, fromHexId, toHexId) {
@@ -747,6 +752,7 @@ function scoreHex(state, unit, hexId, route = null) {
     score += alliedZocBarrier(state, unit, hexId) * (combat >= 4 ? 1.45 : 1.15);
     score += alliedInterlockingZoc(state, unit, hexId) * (combat >= 4 ? 1.5 : 1.18);
     score += alliedRoadblock(state, unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
+    score += alliedObjectiveGateLatch(state, unit, hexId) * (combat >= 3 ? 1.18 : 0.92);
     score += alliedSupportedLine(state, unit, hexId) * 0.78;
     score += alliedApproachInterdiction(state, unit, hexId) * 1.28;
     score += alliedForwardScreenLine(state, unit, hexId) * (combat >= 4 ? 1.32 : 1.06);
@@ -1373,6 +1379,36 @@ function alliedRoadblock(state, unit, hexId) {
     }
   }
   return Math.min(340, score);
+}
+
+function alliedObjectiveGateLatch(state, unit, hexId) {
+  if (unit.side !== "allied") return 0;
+  const axisAssaultUnits = liveUnits(state.units).filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+  if (!axisAssaultUnits.length) return 0;
+  let score = 0;
+  for (const objectiveHexId of axisObjectives()) {
+    const hexToObjective = distance(hexId, objectiveHexId);
+    if (hexToObjective > 1) continue;
+    const nearestAxis = axisAssaultUnits
+      .map((axisUnit) => ({
+        axisToObjective: distance(axisUnit.hexId, objectiveHexId),
+        axisToHex: distance(axisUnit.hexId, hexId),
+      }))
+      .sort((a, b) => a.axisToObjective - b.axisToObjective || a.axisToHex - b.axisToHex)[0];
+    if (!nearestAxis) continue;
+    score += objectiveGateLatchScore({
+      turn: state.turn,
+      hexToObjective,
+      axisToObjective: nearestAxis.axisToObjective,
+      axisToHex: nearestAxis.axisToHex,
+      currentGateCount: roadGateCount(state, objectiveHexId, unit.id),
+      combat: Number(unit.combat || 0),
+      movement: Number(unit.movement || 0),
+      inEnemyZoc: isEnemyZoc(context(state), hexId, unit.side, unit.id),
+      occupiedByAllied: liveUnitAt(state.units, objectiveHexId)?.side === "allied",
+    });
+  }
+  return Math.min(520, score);
 }
 
 function alliedSupportedLine(state, unit, hexId) {
