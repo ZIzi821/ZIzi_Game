@@ -10,6 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260707-ai-heuristics-1");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -570,6 +571,7 @@
 
   const app = {
     core: null,
+    aiHeuristics: null,
     scenario: null,
     rules: null,
     board: null,
@@ -774,12 +776,14 @@
 
   async function init() {
     try {
-      const [core, scenario, rules] = await Promise.all([
+      const [core, aiHeuristics, scenario, rules] = await Promise.all([
         coreRulesPromise,
+        aiHeuristicsPromise,
         fetchJson("local-data/scenario.json"),
         fetchJson("local-data/rules.json"),
       ]);
       app.core = core;
+      app.aiHeuristics = aiHeuristics;
       app.scenario = scenario;
       app.rules = rules;
       app.board = app.core.createBoard(scenario);
@@ -2310,13 +2314,21 @@
     const closeCrowd = axisMates.filter((ally) => hexDistance(hexId, ally.hexId) <= 2).length;
     const denseCrowd = axisMates.filter((ally) => hexDistance(hexId, ally.hexId) <= 3).length;
     const progress = currentObjectiveDistance - candidateObjectiveDistance;
-    let score = 0;
-
-    score += exactLineMates * (assault ? 22 : 34);
-    score += Math.min(2, looseLineMates) * (assault ? 8 : 14);
-    score -= adjacentCrowd * (assault ? 10 : 18);
-    if (closeCrowd >= 3) score -= (closeCrowd - 2) * (assault ? 32 : 46);
-    if (denseCrowd >= 5) score -= (denseCrowd - 4) * 22;
+    const weights = app.aiHeuristics.AI_HEURISTIC_WEIGHTS.axisLine;
+    let score = app.aiHeuristics.lineSpacingScore({
+      exactLinks: exactLineMates,
+      looseLinks: looseLineMates,
+      adjacentCrowd,
+      closeCrowd,
+      denseCrowd,
+      exactWeight: assault ? weights.exactAssault : weights.exactSupport,
+      looseWeight: assault ? weights.looseAssault : weights.looseSupport,
+      adjacentPenalty: assault ? weights.adjacentAssaultPenalty : weights.adjacentSupportPenalty,
+      closeLimit: 3,
+      closePenalty: assault ? weights.closeAssaultPenalty : weights.closeSupportPenalty,
+      denseLimit: 5,
+      densePenalty: weights.densePenalty,
+    });
     if (progress > 0) score += progress * (assault ? 8 : combat >= 3 ? 5.2 : 1.6);
     if (progress < -1) score += progress * (assault ? 10 : 15);
 
@@ -2341,7 +2353,7 @@
       }
     }
 
-    return Math.min(360, Math.max(-180, score));
+    return app.aiHeuristics.clampScore(score, -180, 360);
   }
 
   function axisExitCoverageScore(hexId, movingUnitId = null) {
@@ -2696,9 +2708,18 @@
     const looseLinks = alliedMates.filter((ally) => hexDistance(hexId, ally.hexId) === 3).length;
     const adjacentCrowd = alliedMates.filter((ally) => hexDistance(hexId, ally.hexId) === 1).length;
     const closeCrowd = alliedMates.filter((ally) => hexDistance(hexId, ally.hexId) <= 2).length;
-    let score = exactLinks * 38 + Math.min(2, looseLinks) * 14 - adjacentCrowd * 10;
-
-    if (closeCrowd >= 4) score -= (closeCrowd - 3) * 34;
+    const weights = app.aiHeuristics.AI_HEURISTIC_WEIGHTS.alliedWall;
+    let score = app.aiHeuristics.lineSpacingScore({
+      exactLinks,
+      looseLinks,
+      adjacentCrowd,
+      closeCrowd,
+      exactWeight: weights.exactLink,
+      looseWeight: weights.looseLink,
+      adjacentPenalty: weights.adjacentPenalty,
+      closeLimit: 4,
+      closePenalty: weights.closePenalty,
+    });
     if (candidateObjectiveDistance >= 3 && candidateObjectiveDistance <= 6) {
       score += 58 + (6 - candidateObjectiveDistance) * 7;
     } else if (candidateObjectiveDistance === 2) {
@@ -2734,7 +2755,7 @@
       if (movement >= 7 && candidateToObjective >= 3) score += 18;
     }
 
-    return Math.min(440, Math.max(-120, score));
+    return app.aiHeuristics.clampScore(score, -120, 440);
   }
 
   function alliedSpearheadCounterattackPositionScore(unit, hexId) {
@@ -3268,32 +3289,22 @@
     if (odds.columnIndex < 4) return 0;
     if (attackerSide === "axis" && axisObjectiveHexes().includes(defender.hexId)) return 0;
     const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
-    const fourToOneAttack = Math.max(1, odds.defense) * 4;
     const retreatPressure = defenderRetreatPressure(defender, 1);
     const surrounded = retreatPressure >= 5;
-    const decisiveAttack = fourToOneAttack;
-    const excessStrength = Math.max(0, attackStrength - decisiveAttack);
-    const excessColumn = Math.max(0, odds.columnIndex - 4);
-    const strengths = attackers.map((unit) => Number(unit.combat || 0)).sort((a, b) => b - a);
-    let efficientStrength = 0;
-    let minimumAttackers = 0;
-    for (const strength of strengths) {
-      efficientStrength += strength;
-      minimumAttackers += 1;
-      if (efficientStrength >= decisiveAttack) break;
-    }
-    const extraAttackers = efficientStrength >= decisiveAttack ? Math.max(0, attackers.length - minimumAttackers) : 0;
-    if (excessStrength <= 1 && excessColumn === 0 && extraAttackers === 0) return 0;
     const mobileUnits = attackerSide === "axis"
       ? attackers.filter((unit) => isAxisAssaultUnit(unit)).length
       : attackers.filter((unit) => Number(unit.movement || 0) >= 7).length;
-    const mobileWaste = Math.max(0, mobileUnits - 1);
-    const earlyTempoRelief = attackerSide === "axis" && app.state.turn <= 2 && extraAttackers === 0 ? 0.5 : 1;
-    const surroundedPressure = surrounded ? 1.75 : 1;
-    const axisTempoPressure = attackerSide === "axis" ? 1.28 : 1;
-    const mobileWastePressure = attackerSide === "axis" ? 58 : 24;
-    const extraStrengthPressure = surrounded ? 22 : 14;
-    return (Math.max(0, excessStrength - 1) * extraStrengthPressure + excessColumn * 115 + extraAttackers * 128 + mobileWaste * mobileWastePressure) * earlyTempoRelief * surroundedPressure * axisTempoPressure;
+    return app.aiHeuristics.combatOvercommitPenalty({
+      attackerSide,
+      attackStrength,
+      defense: odds.defense,
+      oddsColumnIndex: odds.columnIndex,
+      attackerCount: attackers.length,
+      attackerStrengths: attackers.map((unit) => Number(unit.combat || 0)),
+      mobileUnits,
+      surrounded,
+      earlyNoExtraRelief: attackerSide === "axis" && app.state.turn <= 2 ? 0.5 : 1,
+    });
   }
 
   function alliedObjectiveCombatUrgency(attackerSide, defenderHexId) {
