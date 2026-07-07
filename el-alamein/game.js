@@ -2210,7 +2210,7 @@
   function isAxisExitCoveredByOther(exitHexId, movingUnitId = null) {
     return liveUnits().some((unit) => {
       if (unit.id === movingUnitId || unit.side !== "axis" || unit.disrupted) return false;
-      return hexDistance(unit.hexId, exitHexId) <= 2;
+      return hexDistance(unit.hexId, exitHexId) <= 1;
     });
   }
 
@@ -2895,7 +2895,7 @@
     const counterattackOvercommit = counterattackUrgency || spearheadUrgency ? overcommit * 0.25 : overcommit;
     const objectiveOddsBonus = axisObjectiveOddsBonus(attackerSide, objectiveUrgency, attackers, odds);
     const perimeterOddsBonus = axisObjectivePerimeterOddsBonus(attackerSide, perimeterUrgency, attackers, odds);
-    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
+    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
   }
 
   function axisObjectiveCombatUrgency(attackerSide, defenderHexId) {
@@ -2932,6 +2932,28 @@
     const attackStrength = attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0);
     const timing = app.state.turn >= 4 ? 1.35 : 1;
     return (odds.columnIndex * 22 + nonObjectiveAttackers * 46 + attackStrength * 1.8) * timing;
+  }
+
+  function axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) {
+    if (attackerSide !== "axis" || app.state.turn < 3) return 0;
+    const garrisonAttackers = attackers.filter((unit) => axisObjectiveHexes().includes(unit.hexId));
+    if (!garrisonAttackers.length) return 0;
+    const targetObjective = axisObjectiveHexes().includes(defender.hexId);
+    const objectiveThreat = garrisonAttackers.some((unit) => {
+      const adjacentAlliedThreat = neighborsOf(unit.hexId)
+        .map(liveUnitAt)
+        .filter((enemy) => enemy && enemy.side === "allied" && !enemy.disrupted)
+        .reduce((sum, enemy) => sum + Number(enemy.combat || 0), 0);
+      return adjacentAlliedThreat >= 6;
+    });
+    const nonGarrisonAttackers = attackers.length - garrisonAttackers.length;
+    const timing = app.state.turn >= 4 ? 1.35 : 1;
+    if (nonGarrisonAttackers === 0 && odds.columnIndex < 4) return 900 * timing;
+    const base = targetObjective ? 135 : objectiveThreat ? 92 : 240;
+    const oddsRisk = odds.columnIndex < 4 ? (4 - odds.columnIndex) * 62 : 0;
+    const soloRisk = nonGarrisonAttackers === 0 ? (targetObjective ? 190 : 120) : 0;
+    const supportRelief = Math.min(90, nonGarrisonAttackers * 36);
+    return Math.max(0, (base + oddsRisk + soloRisk - supportRelief) * timing);
   }
 
   function alliedObjectiveCombatUrgency(attackerSide, defenderHexId) {
