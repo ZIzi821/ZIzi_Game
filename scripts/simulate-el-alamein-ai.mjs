@@ -36,8 +36,12 @@ const args = new Map(process.argv.slice(2).map((arg) => {
 
 const games = Number(args.get("games") || 80);
 const seed = Number(args.get("seed") || 1942);
+const seedList = args.has("seeds")
+  ? args.get("seeds").split(",").map((value) => Number(value.trim())).filter(Number.isFinite)
+  : null;
 const sampleCount = Number(args.get("sample") || 0);
 const traceSeed = args.has("trace") ? Number(args.get("trace") || seed) : null;
+const expectAxis = args.has("expect-axis");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -1927,19 +1931,22 @@ function summarizeGame(state, gameSeed) {
   };
 }
 
-const results = Array.from({ length: games }, (_, index) => playGame(seed + index));
+const gameSeeds = seedList?.length ? seedList : Array.from({ length: games }, (_, index) => seed + index);
+const results = gameSeeds.map((gameSeed) => playGame(gameSeed));
 const wins = results.reduce((totals, result) => {
   totals[result.winner] = (totals[result.winner] || 0) + 1;
   return totals;
 }, {});
 const average = (key) => results.reduce((sum, result) => sum + Number(result[key] || 0), 0) / Math.max(1, results.length);
+const failures = results.filter((result) => result.winner !== "axis");
 
-console.log(JSON.stringify({
-  games,
+const summary = {
+  games: results.length,
   seed,
+  seeds: seedList?.length ? gameSeeds : undefined,
   wins,
-  axisWinRate: Number(((wins.axis || 0) / games).toFixed(3)),
-  alliedWinRate: Number(((wins.allied || 0) / games).toFixed(3)),
+  axisWinRate: Number(((wins.axis || 0) / results.length).toFixed(3)),
+  alliedWinRate: Number(((wins.allied || 0) / results.length).toFixed(3)),
   averageTurn: Number(average("turn").toFixed(2)),
   averageAxisCombat: Number(average("axisCombat").toFixed(2)),
   averageAlliedCombat: Number(average("alliedCombat").toFixed(2)),
@@ -1950,6 +1957,13 @@ console.log(JSON.stringify({
     totals[result.reason] = (totals[result.reason] || 0) + 1;
     return totals;
   }, {}),
-  failures: results.filter((result) => result.winner !== "axis"),
+  failures,
   samples: results.slice(0, sampleCount),
-}, null, 2));
+};
+
+console.log(JSON.stringify(summary, null, 2));
+
+if (expectAxis && failures.length) {
+  console.error(`Expected Axis wins, but ${failures.length}/${results.length} games failed.`);
+  process.exitCode = 1;
+}
