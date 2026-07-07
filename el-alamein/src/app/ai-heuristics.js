@@ -1,28 +1,32 @@
 export const AI_HEURISTIC_WEIGHTS = Object.freeze({
   axisLine: Object.freeze({
-    exactAssault: 44,
-    exactSupport: 70,
-    looseAssault: 7,
-    looseSupport: 12,
-    adjacentAssaultPenalty: 24,
-    adjacentSupportPenalty: 42,
-    closeAssaultPenalty: 64,
-    closeSupportPenalty: 92,
-    densePenalty: 64,
+    exactAssault: 64,
+    exactSupport: 102,
+    looseAssault: 3,
+    looseSupport: 5,
+    adjacentAssaultPenalty: 42,
+    adjacentSupportPenalty: 70,
+    closeAssaultPenalty: 94,
+    closeSupportPenalty: 138,
+    densePenalty: 104,
   }),
   alliedWall: Object.freeze({
-    exactLink: 84,
-    looseLink: 12,
-    adjacentPenalty: 34,
-    closePenalty: 86,
+    exactLink: 128,
+    looseLink: 5,
+    adjacentPenalty: 58,
+    closePenalty: 128,
   }),
   overcommit: Object.freeze({
-    excessColumn: 260,
-    extraAttacker: 260,
+    excessColumn: 430,
+    extraAttacker: 430,
     axisTempo: 1.5,
-    surrounded: 2.7,
-    axisMobileWaste: 180,
-    alliedMobileWaste: 70,
+    surrounded: 3.8,
+    axisMobileWaste: 330,
+    alliedMobileWaste: 95,
+    localEnough: 320,
+    localSealed: 220,
+    localOtherAttacker: 58,
+    localSurplusStrength: 28,
   }),
   finalApproach: Object.freeze({
     turnThreeGain: 90,
@@ -57,6 +61,8 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     objectiveDistance: 7,
     exitDistance: 7,
     highValueMultiplier: 1.24,
+    forcedAxisObjectivePenalty: 2400,
+    forcedAxisNearObjectivePenalty: 80,
   }),
   objectiveRetreat: Object.freeze({
     objectiveBonus: 88,
@@ -65,6 +71,15 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     adjacentSupport: 38,
     counterThreat: 24,
     unsupportedPenalty: 190,
+  }),
+  objectiveEntry: Object.freeze({
+    secureBonus: 170,
+    combat: 8,
+    supportStrength: 12,
+    adjacentSupport: 28,
+    counterThreatDeficit: 72,
+    unsupportedPenalty: 360,
+    finalTurnRiskRelief: 0.45,
   }),
   bridgeheadSupport: Object.freeze({
     base: 42,
@@ -75,14 +90,27 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     lineLink: 18,
   }),
   roadScreen: Object.freeze({
-    base: 54,
-    laneCut: 78,
+    base: 70,
+    laneCut: 104,
     pressure: 8,
     roadPressure: 7,
-    lineLink: 28,
-    noLinkPenalty: 32,
+    lineLink: 56,
+    noLinkPenalty: 92,
     combat: 5.2,
     mobile: 20,
+  }),
+  finalGate: Object.freeze({
+    objectiveBase: 360,
+    heldObjectiveBase: 190,
+    adjacentBase: 220,
+    mobileReserveBase: 74,
+    missingGate: 64,
+    lineLink: 58,
+    laneCut: 160,
+    noLinkPenalty: 70,
+    combat: 12,
+    mobile: 34,
+    immediateThreat: 170,
   }),
 });
 
@@ -160,6 +188,40 @@ export function combatOvercommitPenalty({
     + extraAttackers * weights.extraAttacker
     + mobileWaste * mobilePenalty
   ) * earlyTempoRelief * surround * tempo;
+}
+
+export function localAttackOvermassPenalty({
+  attackerSide = null,
+  candidateCombat = 0,
+  candidateMovement = 0,
+  defense = 1,
+  otherAttackStrength = 0,
+  otherAdjacentAttackers = 0,
+  trappedExitCount = 6,
+  targetObjective = false,
+  weights = AI_HEURISTIC_WEIGHTS.overcommit,
+}) {
+  if (attackerSide !== "axis") return 0;
+  const combat = Number(candidateCombat || 0);
+  const movement = Number(candidateMovement || 0);
+  const baseDefense = Math.max(1, Number(defense || 1));
+  const otherStrength = Math.max(0, Number(otherAttackStrength || 0));
+  const withCandidate = otherStrength + combat;
+  const fourToOneStrength = baseDefense * 4;
+  const otherAlreadyEnough = otherStrength >= fourToOneStrength;
+  const sealed = Number(trappedExitCount || 0) <= 0;
+  const sealedAlreadyDangerous = sealed && otherStrength >= baseDefense * 2;
+  if (!otherAlreadyEnough && !sealedAlreadyDangerous) return 0;
+
+  const surplusStrength = Math.max(0, withCandidate - fourToOneStrength);
+  const mobileWaste = movement >= 7 ? 1 : 0;
+  const assaultWaste = combat >= 4 ? 0.65 : 0;
+  const objectiveRelief = targetObjective ? 0.72 : 1;
+  const sealedPressure = sealed ? weights.localSealed : 0;
+  const enoughPressure = otherAlreadyEnough ? weights.localEnough : 0;
+  const localCrowd = Math.max(0, Number(otherAdjacentAttackers || 0)) * weights.localOtherAttacker;
+  const surplus = surplusStrength * weights.localSurplusStrength;
+  return (enoughPressure + sealedPressure + localCrowd + surplus) * (1 + mobileWaste * 0.55 + assaultWaste) * objectiveRelief;
 }
 
 export function finalApproachTempoScore({
@@ -242,6 +304,19 @@ export function forcedRetreatTrapScore({
   return highValueEnemy ? score * weights.highValueMultiplier : score;
 }
 
+export function forcedRetreatObjectiveDenialScore({
+  controllerSide = null,
+  retreatingSide = null,
+  isAxisObjective = false,
+  axisObjectiveDistance = Infinity,
+  weights = AI_HEURISTIC_WEIGHTS.forcedRetreat,
+}) {
+  if (controllerSide !== "allied" || retreatingSide !== "axis") return 0;
+  if (isAxisObjective) return -weights.forcedAxisObjectivePenalty;
+  if (axisObjectiveDistance === 1) return -weights.forcedAxisNearObjectivePenalty;
+  return 0;
+}
+
 export function objectiveRetreatHoldScore({
   isObjective = false,
   combat = 0,
@@ -258,6 +333,28 @@ export function objectiveRetreatHoldScore({
     ? weights.unsupportedPenalty
     : 0;
   return weights.objectiveBonus + Number(combat || 0) * weights.selfCombat + support - threat - unsupported;
+}
+
+export function objectiveEntrySecurityScore({
+  isObjective = false,
+  turn = 1,
+  combat = 0,
+  supportStrength = 0,
+  adjacentSupportCount = 0,
+  counterattackThreat = 0,
+  weights = AI_HEURISTIC_WEIGHTS.objectiveEntry,
+}) {
+  if (!isObjective) return 0;
+  const holdStrength = Number(combat || 0) + Number(supportStrength || 0);
+  const deficit = Math.max(0, Number(counterattackThreat || 0) - holdStrength);
+  const support = Number(supportStrength || 0) * weights.supportStrength
+    + Number(adjacentSupportCount || 0) * weights.adjacentSupport;
+  if (deficit <= 0) {
+    return weights.secureBonus + Number(combat || 0) * weights.combat + support;
+  }
+  const unsupported = adjacentSupportCount <= 0 ? weights.unsupportedPenalty : weights.unsupportedPenalty * 0.35;
+  const timing = turn >= 4 ? weights.finalTurnRiskRelief : 1;
+  return -(deficit * weights.counterThreatDeficit + unsupported) * timing + support * 0.35;
 }
 
 export function bridgeheadSupportScore({
@@ -320,4 +417,50 @@ export function roadApproachScreenScore({
     + Number(combat || 0) * weights.combat
     + (Number(movement || 0) >= 7 ? weights.mobile : 0);
   return Math.max(0, score * depthFit * timing * unitFit);
+}
+
+export function finalGateScreenScore({
+  turn = 1,
+  hexToObjective = Infinity,
+  axisToObjective = Infinity,
+  axisToHex = Infinity,
+  gateCount = 0,
+  lineLinks = 0,
+  occupiedByAllied = false,
+  zocCutsLane = false,
+  combat = 0,
+  movement = 0,
+  weights = AI_HEURISTIC_WEIGHTS.finalGate,
+}) {
+  if (turn < 2 || hexToObjective > 2 || axisToObjective > 6 || axisToHex > axisToObjective + 4) return 0;
+  const urgency = turn >= 4 ? 1.85 : turn === 3 ? 1.35 : 1;
+  const need = Math.max(0, (turn >= 4 ? 4 : 3) - Number(gateCount || 0));
+  const links = Math.min(3, Number(lineLinks || 0));
+  const combatFit = Number(combat || 0) >= 4 ? 1.16 : Number(combat || 0) >= 2 ? 1 : 0.56;
+  const mobileFit = Number(movement || 0) >= 7 ? weights.mobile : 0;
+  let score = 0;
+
+  if (hexToObjective === 0) {
+    score += (occupiedByAllied ? weights.heldObjectiveBase : weights.objectiveBase)
+      + need * weights.missingGate * 0.65
+      + links * weights.lineLink
+      + Number(combat || 0) * weights.combat;
+    if (!occupiedByAllied && axisToObjective <= 4) score += weights.immediateThreat;
+  } else if (hexToObjective === 1) {
+    score += weights.adjacentBase
+      + need * weights.missingGate
+      + links * weights.lineLink
+      + (zocCutsLane ? weights.laneCut : 0)
+      + Number(combat || 0) * weights.combat
+      + mobileFit;
+  } else if (hexToObjective === 2 && Number(movement || 0) >= 7) {
+    score += weights.mobileReserveBase
+      + need * weights.missingGate * 0.35
+      + links * weights.lineLink * 0.55
+      + (zocCutsLane ? weights.laneCut * 0.35 : 0)
+      + mobileFit;
+  }
+
+  if (links === 0 && hexToObjective <= 1) score -= weights.noLinkPenalty;
+  return Math.max(0, score * urgency * combatFit);
 }

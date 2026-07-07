@@ -5,9 +5,13 @@ import {
   bridgeheadSupportScore,
   combatDeclarationThreshold,
   combatOvercommitPenalty,
+  finalGateScreenScore,
   finalApproachTempoScore,
+  forcedRetreatObjectiveDenialScore,
   forcedRetreatTrapScore,
   lineSpacingScore,
+  localAttackOvermassPenalty,
+  objectiveEntrySecurityScore,
   objectiveGateLatchScore,
   objectiveRetreatHoldScore,
   roadApproachScreenScore,
@@ -67,6 +71,29 @@ assert.ok(
   "low-odds counterattacks should not strip the line with a six-unit stack",
 );
 
+const redundantSpearheadCrowd = localAttackOvermassPenalty({
+  attackerSide: "axis",
+  candidateCombat: 6,
+  candidateMovement: 10,
+  defense: 2,
+  otherAttackStrength: 8,
+  otherAdjacentAttackers: 2,
+  trappedExitCount: 0,
+});
+const neededExactAttacker = localAttackOvermassPenalty({
+  attackerSide: "axis",
+  candidateCombat: 6,
+  candidateMovement: 10,
+  defense: 2,
+  otherAttackStrength: 2,
+  otherAdjacentAttackers: 1,
+  trappedExitCount: 3,
+});
+assert.ok(
+  redundantSpearheadCrowd > 900 && neededExactAttacker === 0,
+  "Axis spearheads should leave already sealed 4:1 attacks instead of piling on",
+);
+
 const finalApproachPush = finalApproachTempoScore({
   turn: 3,
   currentDistance: 5,
@@ -120,6 +147,16 @@ const openRetreat = forcedRetreatTrapScore({
 });
 assert.ok(sealedRetreat > openRetreat * 2, "forced retreat control should prefer sealed ZOC traps over merely distant retreats");
 
+assert.ok(
+  forcedRetreatObjectiveDenialScore({
+    controllerSide: "allied",
+    retreatingSide: "axis",
+    isAxisObjective: true,
+    axisObjectiveDistance: 0,
+  }) < -2000,
+  "Allied forced retreat control must not push Axis units onto objective hexes",
+);
+
 const supportedObjectiveRetreat = objectiveRetreatHoldScore({
   isObjective: true,
   combat: 6,
@@ -137,6 +174,27 @@ const exposedObjectiveRetreat = objectiveRetreatHoldScore({
 assert.ok(
   supportedObjectiveRetreat > exposedObjectiveRetreat + 400,
   "Axis AI should avoid retreating onto an exposed objective bridgehead",
+);
+
+const secureObjectiveEntry = objectiveEntrySecurityScore({
+  isObjective: true,
+  turn: 3,
+  combat: 6,
+  supportStrength: 8,
+  adjacentSupportCount: 2,
+  counterattackThreat: 6,
+});
+const exposedObjectiveEntry = objectiveEntrySecurityScore({
+  isObjective: true,
+  turn: 3,
+  combat: 6,
+  supportStrength: 0,
+  adjacentSupportCount: 0,
+  counterattackThreat: 12,
+});
+assert.ok(
+  secureObjectiveEntry > 300 && exposedObjectiveEntry < -700,
+  "Axis AI should prefer secure objective entries over unsupported rushes",
 );
 
 const urgentBridgeheadSupport = bridgeheadSupportScore({
@@ -187,6 +245,33 @@ const isolatedRoadScreen = roadApproachScreenScore({
 assert.ok(
   forwardRoadScreen > isolatedRoadScreen * 2,
   "Allied AI should prefer interlocked ZOC screens forward of the road objective",
+);
+
+const urgentFinalGate = finalGateScreenScore({
+  turn: 4,
+  hexToObjective: 1,
+  axisToObjective: 3,
+  axisToHex: 2,
+  gateCount: 1,
+  lineLinks: 2,
+  zocCutsLane: true,
+  combat: 4,
+  movement: 8,
+});
+const isolatedFinalGate = finalGateScreenScore({
+  turn: 4,
+  hexToObjective: 1,
+  axisToObjective: 3,
+  axisToHex: 2,
+  gateCount: 1,
+  lineLinks: 0,
+  zocCutsLane: false,
+  combat: 2,
+  movement: 4,
+});
+assert.ok(
+  urgentFinalGate > isolatedFinalGate * 2,
+  "late Allied defense should seal objective gates with linked ZOC instead of isolated blockers",
 );
 
 console.log("El Alamein AI heuristic tests passed.");
