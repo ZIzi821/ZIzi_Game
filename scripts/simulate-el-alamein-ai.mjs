@@ -46,6 +46,7 @@ const seedList = args.has("seeds")
 const sampleCount = Number(args.get("sample") || 0);
 const traceSeed = args.has("trace") ? Number(args.get("trace") || seed) : null;
 const expectAxis = args.has("expect-axis");
+const delayAxisVictory = args.has("delay-axis-victory");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -84,6 +85,7 @@ function makeState() {
     usedDefenders: [],
     declaredCombats: [],
     eliminatedUnitIds: [],
+    firstAxisObjective: null,
     winner: null,
   };
 }
@@ -156,7 +158,7 @@ function runMovement(state, trace = false) {
       if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
       return;
     }
-    if (unit.side === "axis" && checkAxisVictory(state)) return;
+    if (unit.side === "axis" && maybeCheckAxisVictory(state)) return;
   }
 }
 
@@ -228,7 +230,7 @@ function runCombat(state, rng, trace = false) {
   }
 
   for (const battle of state.declaredCombats.slice()) {
-    if (!battle.resolved) resolveBattle(state, battle, rng);
+    if (!battle.resolved) resolveBattle(state, battle, rng, trace);
     if (trace) console.error(`result ${battle.id} roll=${battle.roll ?? "-"} ${battle.result ?? "-"}`);
   }
 }
@@ -266,7 +268,7 @@ function declareBattle(state, defender, attackers) {
   return battle;
 }
 
-function resolveBattle(state, battle, rng) {
+function resolveBattle(state, battle, rng, trace = false) {
   const defender = unitById(state.units, battle.defenderId);
   const attackers = battle.attackerIds.map((id) => unitById(state.units, id)).filter((unit) => unit && !unit.eliminated);
   if (!defender || defender.eliminated || !attackers.length) {
@@ -292,24 +294,27 @@ function resolveBattle(state, battle, rng) {
     return;
   }
   if (result === "AR") {
-    retreatUnits(state, battle, attackers, 1, battle.side, false);
+    retreatUnits(state, battle, attackers, 1, battle.side, false, trace);
     battle.resolved = true;
     return;
   }
   const retreat = result.match(/^DR(\d+)$/);
   if (retreat) {
-    retreatUnits(state, battle, [defender], Number(retreat[1]), battle.side, true);
+    retreatUnits(state, battle, [defender], Number(retreat[1]), battle.side, true, trace);
     advanceAfterCombat(state, battle);
     battle.resolved = true;
   }
 }
 
-function retreatUnits(state, battle, units, steps, controllerSide, disruptAfterRetreat) {
+function retreatUnits(state, battle, units, steps, controllerSide, disruptAfterRetreat, trace = false) {
   for (const unit of units) {
     if (!unit || unit.eliminated) continue;
     const origin = battle.attackerOrigins?.[unit.id] || battle.defenderHexId || unit.hexId;
     const paths = getLegalRetreatPaths(context(state), unit, steps, origin);
     const destination = chooseRetreat(state, unit, paths, controllerSide);
+    if (trace) {
+      console.error(`retreat ${unit.id}:${hexLabel(unit.hexId)} -> ${destination ? hexLabel(destination) : "eliminated"} controller=${controllerSide} paths=${paths.size}`);
+    }
     if (!destination) {
       eliminate(state, unit);
       continue;
@@ -389,7 +394,7 @@ function advanceAfterCombat(state, battle) {
   }
   if (best && best.gain > 0) {
     best.unit.hexId = battle.defenderHexId;
-    if (best.unit.side === "axis") checkAxisVictory(state);
+    if (best.unit.side === "axis") maybeCheckAxisVictory(state);
   }
 }
 
@@ -449,14 +454,32 @@ function endPhase(state, trace = false) {
   }
 }
 
-function checkAxisVictory(state) {
-  const axisHexes = new Set(liveUnits(state.units).filter((unit) => unit.side === "axis").map((unit) => unit.hexId));
-  if (scenario.objectives.alamHalfaRidge.some((hexId) => axisHexes.has(hexId))) {
-    state.winner = { side: "axis", reason: "ridge", turn: state.turn };
-    return true;
+function maybeCheckAxisVictory(state) {
+  if (delayAxisVictory) {
+    recordAxisObjective(state);
+    return false;
   }
-  if (scenario.objectives.coastalRoadEast.some((hexId) => axisHexes.has(hexId))) {
-    state.winner = { side: "axis", reason: "road", turn: state.turn };
+  return checkAxisVictory(state);
+}
+
+function recordAxisObjective(state) {
+  if (state.firstAxisObjective) return;
+  const reason = axisObjectiveReason(state);
+  if (reason) state.firstAxisObjective = { reason, turn: state.turn, phase: phase(state).id };
+}
+
+function axisObjectiveReason(state) {
+  const axisHexes = new Set(liveUnits(state.units).filter((unit) => unit.side === "axis").map((unit) => unit.hexId));
+  if (scenario.objectives.alamHalfaRidge.some((hexId) => axisHexes.has(hexId))) return "ridge";
+  if (scenario.objectives.coastalRoadEast.some((hexId) => axisHexes.has(hexId))) return "road";
+  return null;
+}
+
+function checkAxisVictory(state) {
+  const reason = axisObjectiveReason(state);
+  if (reason) {
+    state.winner = { side: "axis", reason, turn: state.turn };
+    recordAxisObjective(state);
     return true;
   }
   return false;
@@ -2033,6 +2056,7 @@ function summarizeGame(state, gameSeed) {
     alliedEliminated: state.eliminatedUnitIds.filter((id) => unitById(state.units, id)?.side === "allied").length,
     ridge: scenario.objectives.alamHalfaRidge.some((hexId) => axisHexes.has(hexId)),
     road: scenario.objectives.coastalRoadEast.some((hexId) => axisHexes.has(hexId)),
+    firstAxisObjective: state.firstAxisObjective,
     axisObjectiveDistance,
     closestAxis,
   };
@@ -2051,6 +2075,7 @@ const summary = {
   games: results.length,
   seed,
   seeds: seedList?.length ? gameSeeds : undefined,
+  delayAxisVictory: delayAxisVictory || undefined,
   wins,
   axisWinRate: Number(((wins.axis || 0) / results.length).toFixed(3)),
   alliedWinRate: Number(((wins.allied || 0) / results.length).toFixed(3)),
