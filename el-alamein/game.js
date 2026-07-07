@@ -8,7 +8,7 @@
   const LANG_KEY = "zizi-el-alamein-lang";
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
-  const AI_SCORE_BATCH_SIZE = 4;
+  const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
   const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-10");
@@ -1879,11 +1879,12 @@
       if (guardMove === "hold") return null;
       if (guardMove) return { hexId: guardMove, reachable };
     }
-    const currentScore = scoreAiHex(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
+    const scoreContext = createAiMoveScoreContext(unit);
+    const currentScore = scoreAiHex(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] }, scoreContext);
     let best = null;
     let scored = 0;
-    for (const [hexId, route] of reachable.entries()) {
-      const score = scoreAiHex(unit, hexId, route);
+    for (const { hexId, route } of prioritizedAiMoveCandidates(unit, reachable)) {
+      const score = scoreAiHex(unit, hexId, route, scoreContext);
       if (!best || score > best.score) best = { hexId, route, score };
       scored += 1;
       if (scored % AI_SCORE_BATCH_SIZE === 0) {
@@ -1893,6 +1894,55 @@
     }
     if (!best || best.score <= currentScore + aiMoveThreshold(unit)) return null;
     return { hexId: best.hexId, reachable };
+  }
+
+  function createAiMoveScoreContext(unit) {
+    return {
+      axisCurrentOvermass: unit.side === "axis" ? axisLocalAttackOvermassScore(unit, unit.hexId) : 0,
+    };
+  }
+
+  function prioritizedAiMoveCandidates(unit, reachable) {
+    return Array.from(reachable.entries())
+      .map(([hexId, route]) => ({ hexId, route, rough: roughAiMoveScore(unit, hexId, route) }))
+      .sort((a, b) => b.rough - a.rough || String(a.hexId).localeCompare(String(b.hexId)))
+      .slice(0, aiMoveCandidateLimit(unit));
+  }
+
+  function aiMoveCandidateLimit(unit) {
+    const movement = Number(unit.movement || 0);
+    if (unit.side === "axis" && movement >= 9) return 18;
+    if (movement >= 7) return 16;
+    return 14;
+  }
+
+  function roughAiMoveScore(unit, hexId, route = null) {
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    const targets = unit.side === "axis" ? axisUnitTargetHexes(unit) : alliedAnchorHexes();
+    const currentDistance = nearestDistance(unit.hexId, targets);
+    const candidateDistance = nearestDistance(hexId, targets);
+    const progress = currentDistance - candidateDistance;
+    let score = progress * (unit.side === "axis" ? (movement >= 9 ? 120 : 74) : 72);
+    score += Number(route?.remaining || 0) * (movement >= 9 ? 2.2 : 1.4);
+
+    if (unit.side === "axis") {
+      score += axisObjectiveScore(hexId) * 14;
+      if (candidateDistance <= 2) score += (3 - candidateDistance) * (movement >= 9 ? 180 : 92);
+      if (nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge) <= 1 && isAxisAssaultUnit(unit)) score -= 240;
+    } else {
+      const objectiveDistance = nearestDistance(hexId, axisObjectiveHexes());
+      if (objectiveDistance >= 4 && objectiveDistance <= 8) score += 170 - Math.abs(6 - objectiveDistance) * 18;
+      if (objectiveDistance <= 1) score -= app.state.turn <= 3 ? 150 : 40;
+      score += alliedDefenseScore(hexId) * 10;
+    }
+
+    for (const neighborId of neighborsOf(hexId)) {
+      const enemy = liveUnitAt(neighborId);
+      if (!enemy || enemy.side === unit.side || enemy.disrupted) continue;
+      score += Number(enemy.combat || 0) * (unit.side === "axis" ? 34 : 26) + combat * 8;
+    }
+    return score;
   }
 
   function chooseAxisExitGuardMove(unit, reachable) {
@@ -1931,7 +1981,7 @@
     return Number(unit.movement || 0) >= 7 ? 0.45 : 0.75;
   }
 
-  function scoreAiHex(unit, hexId, route = null) {
+  function scoreAiHex(unit, hexId, route = null, scoreContext = null) {
     const hex = hexById(hexId);
     if (!hex) return -Infinity;
     const side = unit.side;
@@ -1954,7 +2004,7 @@
       score += attackSetupScore(unit, hexId) * (assault ? 3.9 : 3.1);
       score += zocTrapSetupScore(unit, hexId) * (assault ? 8.4 : 6.1);
       score -= axisLocalAttackOvermassScore(unit, hexId) * (assault ? 1.22 : 1);
-      score += axisSurplusBreakthroughScore(unit, hexId, route) * (assault ? 1.18 : combat >= 3 ? 0.82 : 0.32);
+      score += axisSurplusBreakthroughScore(unit, hexId, route, scoreContext) * (assault ? 1.18 : combat >= 3 ? 0.82 : 0.32);
       if (assault) {
         score += axisPenetrationScore(unit, hexId, route);
         score += axisEncirclementScore(unit, hexId, route);
@@ -2264,13 +2314,13 @@
     return Math.min(1800, penalty);
   }
 
-  function axisSurplusBreakthroughScore(unit, hexId, route = null) {
+  function axisSurplusBreakthroughScore(unit, hexId, route = null, scoreContext = null) {
     if (unit.side !== "axis") return 0;
     const combat = Number(unit.combat || 0);
     const movement = Number(unit.movement || 0);
     if (combat < 3 && movement < 6) return 0;
 
-    const currentOvermass = axisLocalAttackOvermassScore(unit, unit.hexId);
+    const currentOvermass = scoreContext?.axisCurrentOvermass ?? axisLocalAttackOvermassScore(unit, unit.hexId);
     const candidateOvermass = axisLocalAttackOvermassScore(unit, hexId);
     const releasedOvermass = Math.max(0, currentOvermass - candidateOvermass);
     const currentObjectiveDistance = nearestDistance(unit.hexId, axisObjectiveHexes());
