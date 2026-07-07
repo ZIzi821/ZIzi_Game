@@ -1927,6 +1927,8 @@
     if (unit.side === "axis") {
       score += axisObjectiveScore(hexId) * 14;
       if (candidateDistance <= 2) score += (3 - candidateDistance) * (movement >= 9 ? 180 : 92);
+      score += axisFastEncirclementScore(unit, hexId, route);
+      score -= axisFastOvermassPenalty(unit, hexId);
       if (nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge) <= 1 && isAxisAssaultUnit(unit)) score -= 240;
     } else {
       const objectiveDistance = nearestDistance(hexId, axisObjectiveHexes());
@@ -1995,7 +1997,9 @@
       score += assault ? 0 : axisRearGuardScore(unit, hexId);
       score += assault ? 0 : axisForwardScreenTempoScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * (assault ? 3.9 : 3.1);
-      score += zocTrapSetupScore(unit, hexId) * (assault ? 8.4 : 6.1);
+      score += zocTrapSetupScore(unit, hexId) * (assault ? 9.4 : 6.6);
+      score += axisFastEncirclementScore(unit, hexId, route) * (assault ? 0.72 : combat >= 3 ? 0.48 : 0.25);
+      score -= axisFastOvermassPenalty(unit, hexId) * (assault ? 0.5 : 0.35);
       score -= axisLocalAttackOvermassScore(unit, hexId) * (assault ? 1.22 : 1);
       score += axisSurplusBreakthroughScore(unit, hexId, route, scoreContext) * (assault ? 1.18 : combat >= 3 ? 0.82 : 0.32);
       if (assault) {
@@ -2240,6 +2244,84 @@
     return score;
   }
 
+  function axisFastEncirclementScore(unit, hexId, route = null) {
+    if (unit.side !== "axis") return 0;
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    if (combat < 3 && movement < 7) return 0;
+
+    const allowance = Math.max(movementAllowance(unit), movement);
+    const spent = route ? Math.max(0, allowance - Number(route.remaining || 0)) : 0;
+    const efficientMove = !route || spent <= Math.max(5, allowance * 0.82);
+    let score = 0;
+
+    for (const enemy of liveUnits().filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
+      const enemyDistance = hexDistance(hexId, enemy.hexId);
+      if (enemyDistance > 2) continue;
+
+      const currentExits = retreatExitCount(enemy, null);
+      const trappedExits = retreatExitCount(enemy, { unit, hexId });
+      const reduced = Math.max(0, currentExits - trappedExits);
+      if (!reduced && trappedExits > 1) continue;
+
+      const adjacent = neighborsOf(enemy.hexId).includes(hexId);
+      const defense = Math.max(1, defenseBreakdown(enemy).total);
+      const otherAttackStrength = neighborsOf(enemy.hexId)
+        .map(liveUnitAt)
+        .filter((ally) => ally && ally.side === "axis" && ally.id !== unit.id && !ally.disrupted)
+        .reduce((sum, ally) => sum + Number(ally.combat || 0), 0);
+      const attackStrength = otherAttackStrength + (adjacent ? combat : 0);
+      const value = strategicUnitValueForSide("axis", enemy) + Number(enemy.combat || 0) * 5;
+      const sealValue = trappedExits <= 0
+        ? 620 + value * 3.6
+        : trappedExits === 1
+          ? 260 + value * 1.35
+          : Math.max(0, 3 - trappedExits) * 64;
+      const reductionValue = reduced * (118 + value * 0.45);
+      const killReady = attackStrength >= defense * 4
+        ? 170
+        : attackStrength >= defense * 2
+          ? 86
+          : attackStrength >= defense
+            ? 42
+            : 0;
+      const distanceFactor = adjacent ? 1.18 : 0.82;
+      score += (sealValue + reductionValue + killReady) * distanceFactor * (efficientMove ? 1 : 0.48);
+    }
+
+    const objectiveDrift = nearestDistance(hexId, axisObjectiveHexes()) - nearestDistance(unit.hexId, axisObjectiveHexes());
+    if (objectiveDrift > 2) score *= 0.42;
+    else if (objectiveDrift > 1) score *= 0.58;
+    else if (objectiveDrift > 0) score *= 0.78;
+    return Math.min(900, score);
+  }
+
+  function axisFastOvermassPenalty(unit, hexId) {
+    if (unit.side !== "axis") return 0;
+    const movement = Number(unit.movement || 0);
+    let penalty = 0;
+    const hypothetical = { unit, hexId };
+    for (const enemy of liveUnits().filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
+      if (!neighborsOf(enemy.hexId).includes(hexId)) continue;
+      const currentExits = retreatExitCount(enemy, null);
+      const trappedExits = retreatExitCount(enemy, hypothetical);
+      const improvesTrap = trappedExits < currentExits;
+      if (improvesTrap) continue;
+
+      const defense = Math.max(1, defenseBreakdown(enemy).total);
+      const otherAttackStrength = neighborsOf(enemy.hexId)
+        .map(liveUnitAt)
+        .filter((ally) => ally && ally.side === "axis" && ally.id !== unit.id && !ally.disrupted)
+        .reduce((sum, ally) => sum + Number(ally.combat || 0), 0);
+      if (otherAttackStrength >= defense * 4) {
+        penalty += 360 + (movement >= 7 ? 220 : 0);
+      } else if (trappedExits <= 0 && otherAttackStrength >= defense * 2) {
+        penalty += 210 + (movement >= 7 ? 120 : 0);
+      }
+    }
+    return Math.min(1100, penalty);
+  }
+
   function axisEncirclementScore(unit, hexId, route = null) {
     if (unit.side !== "axis") return 0;
     const combat = Number(unit.combat || 0);
@@ -2248,7 +2330,7 @@
 
     const allowance = Math.max(movementAllowance(unit), movement);
     const spent = route ? Math.max(0, allowance - Number(route.remaining || 0)) : 0;
-    const efficientMove = !route || spent <= Math.max(4, allowance * 0.72);
+    const efficientMove = !route || spent <= Math.max(5, allowance * 0.82);
     let score = 0;
 
     for (const enemy of liveUnits().filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
@@ -2269,18 +2351,20 @@
       const attackReady = adjacent || supportStrength >= defense;
       const value = strategicUnitValueForSide("axis", enemy) + Number(enemy.combat || 0) * 4;
       const killShape = trappedExits === 0
-        ? 132 + value * 2.2
+        ? 360 + value * 3.4
         : trappedExits === 1
-          ? 62 + value * 0.9
-          : Math.max(0, 3 - trappedExits) * 18;
-      const reductionValue = reduced * (24 + value * 0.15);
-      const attackValue = attackReady ? Math.min(90, (supportStrength / defense) * 24) : 0;
+          ? 150 + value * 1.25
+          : Math.max(0, 3 - trappedExits) * 46;
+      const reductionValue = reduced * (84 + value * 0.34);
+      const attackValue = attackReady ? Math.min(180, (supportStrength / defense) * 44) : 0;
       score += (killShape + reductionValue + attackValue) * (adjacent ? 1.16 : 0.82) * (efficientMove ? 1 : 0.55);
     }
 
     const objectiveDrift = nearestDistance(hexId, axisObjectiveHexes()) - nearestDistance(unit.hexId, axisObjectiveHexes());
-    if (objectiveDrift > 2) score *= 0.55;
-    return Math.min(460, score);
+    if (objectiveDrift > 2) score *= 0.42;
+    else if (objectiveDrift > 1) score *= 0.58;
+    else if (objectiveDrift > 0) score *= 0.78;
+    return Math.min(900, score);
   }
 
   function axisLocalAttackOvermassScore(unit, hexId) {
@@ -3450,7 +3534,13 @@
       const reduced = Math.max(0, currentExits - trappedExits);
       const scarcity = Math.max(0, 4 - trappedExits);
       const adjacent = neighborsOf(enemy.hexId).includes(hexId);
-      score += (reduced * 3 + scarcity * 1.8 + strategicUnitValueForSide(unit.side, enemy) * 0.04) * (adjacent ? 1.25 : 0.55);
+      const sealBonus = trappedExits <= 0
+        ? 52
+        : trappedExits === 1
+          ? 20
+          : 0;
+      const sideWeight = unit.side === "axis" ? 1.45 : 1;
+      score += (reduced * 7 + scarcity * 3.4 + sealBonus + strategicUnitValueForSide(unit.side, enemy) * 0.07) * (adjacent ? 1.3 : 0.72) * sideWeight;
     }
     return score;
   }

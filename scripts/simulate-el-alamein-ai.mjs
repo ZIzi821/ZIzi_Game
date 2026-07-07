@@ -846,7 +846,7 @@ function scoreHex(state, unit, hexId, route = null) {
     score += assault ? 0 : axisRearGuard(state, unit, hexId);
     score += assault ? 0 : axisForwardScreenTempo(state, unit, hexId);
     score += attackSetup(state, unit, hexId) * (assault ? 3.9 : 3.1);
-    score += zocTrapSetup(state, unit, hexId) * (assault ? 8.4 : 6.1);
+    score += zocTrapSetup(state, unit, hexId) * (assault ? 9.4 : 6.6);
     score -= axisLocalAttackOvermass(state, unit, hexId) * (assault ? 1.22 : 1);
     score += axisSurplusBreakthrough(state, unit, hexId, route) * (assault ? 1.18 : combat >= 3 ? 0.82 : 0.32);
     if (assault) {
@@ -1103,7 +1103,7 @@ function axisEncirclement(state, unit, hexId, route = null) {
 
   const allowance = Math.max(movementAllowance(state, unit), movement);
   const spent = route ? Math.max(0, allowance - Number(route.remaining || 0)) : 0;
-  const efficientMove = !route || spent <= Math.max(4, allowance * 0.72);
+  const efficientMove = !route || spent <= Math.max(5, allowance * 0.82);
   let score = 0;
 
   for (const enemy of liveUnits(state.units).filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
@@ -1124,18 +1124,20 @@ function axisEncirclement(state, unit, hexId, route = null) {
     const attackReady = adjacent || supportStrength >= defense;
     const value = strategicUnitValue(state, "axis", enemy) + Number(enemy.combat || 0) * 4;
     const killShape = trappedExits === 0
-      ? 132 + value * 2.2
+      ? 360 + value * 3.4
       : trappedExits === 1
-        ? 62 + value * 0.9
-        : Math.max(0, 3 - trappedExits) * 18;
-    const reductionValue = reduced * (24 + value * 0.15);
-    const attackValue = attackReady ? Math.min(90, (supportStrength / defense) * 24) : 0;
+        ? 150 + value * 1.25
+        : Math.max(0, 3 - trappedExits) * 46;
+    const reductionValue = reduced * (84 + value * 0.34);
+    const attackValue = attackReady ? Math.min(180, (supportStrength / defense) * 44) : 0;
     score += (killShape + reductionValue + attackValue) * (adjacent ? 1.16 : 0.82) * (efficientMove ? 1 : 0.55);
   }
 
   const objectiveDrift = nearestDistance(hexId, axisObjectives()) - nearestDistance(unit.hexId, axisObjectives());
-  if (objectiveDrift > 2) score *= 0.55;
-  return Math.min(460, score);
+  if (objectiveDrift > 2) score *= 0.42;
+  else if (objectiveDrift > 1) score *= 0.58;
+  else if (objectiveDrift > 0) score *= 0.78;
+  return Math.min(900, score);
 }
 
 function axisLocalAttackOvermass(state, unit, hexId) {
@@ -2301,7 +2303,13 @@ function zocTrapSetup(state, unit, hexId) {
     const reduced = Math.max(0, currentExits - trappedExits);
     const scarcity = Math.max(0, 4 - trappedExits);
     const adjacent = neighborsOf(board, enemy.hexId).includes(hexId);
-    score += (reduced * 3 + scarcity * 1.8 + strategicUnitValue(state, unit.side, enemy) * 0.04) * (adjacent ? 1.25 : 0.55);
+    const sealBonus = trappedExits <= 0
+      ? 52
+      : trappedExits === 1
+        ? 20
+        : 0;
+    const sideWeight = unit.side === "axis" ? 1.45 : 1;
+    score += (reduced * 7 + scarcity * 3.4 + sealBonus + strategicUnitValue(state, unit.side, enemy) * 0.07) * (adjacent ? 1.3 : 0.72) * sideWeight;
   }
   return score;
 }
