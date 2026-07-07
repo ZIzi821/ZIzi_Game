@@ -74,6 +74,16 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     mobile: 18,
     lineLink: 18,
   }),
+  roadScreen: Object.freeze({
+    base: 54,
+    laneCut: 78,
+    pressure: 8,
+    roadPressure: 7,
+    lineLink: 28,
+    noLinkPenalty: 32,
+    combat: 5.2,
+    mobile: 20,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -275,4 +285,39 @@ export function bridgeheadSupportScore({
     + Math.min(3, Number(lineLinks || 0)) * weights.lineLink
     + mobileFit;
   return score * distanceFit * urgency * unitFit;
+}
+
+export function roadApproachScreenScore({
+  turn = 1,
+  hexToRoad = Infinity,
+  axisToRoad = Infinity,
+  axisToHex = Infinity,
+  zocCutsLane = false,
+  lineLinks = 0,
+  combat = 0,
+  movement = 0,
+  weights = AI_HEURISTIC_WEIGHTS.roadScreen,
+}) {
+  if (hexToRoad < 3 || hexToRoad > 7) return 0;
+  if (axisToRoad > 10 || axisToHex < 2 || axisToHex > 8) return 0;
+  if (axisToHex + hexToRoad > axisToRoad + 4) return 0;
+
+  const depthFit = hexToRoad === 5 ? 1.25
+    : hexToRoad === 4 ? 1.15
+      : hexToRoad === 6 ? 1
+        : hexToRoad === 3 ? 0.78
+          : 0.62;
+  const timing = turn <= 2 ? 1.18 : turn === 3 ? 1.08 : 0.84;
+  const unitFit = Number(combat || 0) >= 4 ? 1.18 : Number(combat || 0) >= 2 ? 1 : 0.58;
+  const pressure = Math.max(0, 9 - Number(axisToHex || 0)) * weights.pressure
+    + Math.max(0, 8 - Number(axisToRoad || 0)) * weights.roadPressure;
+  const lineShape = Math.min(3, Number(lineLinks || 0)) * weights.lineLink
+    - (lineLinks > 0 ? 0 : weights.noLinkPenalty);
+  const score = weights.base
+    + (zocCutsLane ? weights.laneCut : 0)
+    + pressure
+    + lineShape
+    + Number(combat || 0) * weights.combat
+    + (Number(movement || 0) >= 7 ? weights.mobile : 0);
+  return Math.max(0, score * depthFit * timing * unitFit);
 }

@@ -10,6 +10,7 @@ import {
   lineSpacingScore,
   objectiveGateLatchScore,
   objectiveRetreatHoldScore,
+  roadApproachScreenScore,
 } from "../../src/app/ai-heuristics.js";
 
 const axisLine = AI_HEURISTIC_WEIGHTS.axisLine;
@@ -161,6 +162,31 @@ const distantBridgeheadSupport = bridgeheadSupportScore({
 assert.ok(
   urgentBridgeheadSupport > 250 && distantBridgeheadSupport === 0,
   "Axis AI should pull useful units next to an exposed objective bridgehead",
+);
+
+const forwardRoadScreen = roadApproachScreenScore({
+  turn: 2,
+  hexToRoad: 5,
+  axisToRoad: 6,
+  axisToHex: 3,
+  zocCutsLane: true,
+  lineLinks: 2,
+  combat: 4,
+  movement: 8,
+});
+const isolatedRoadScreen = roadApproachScreenScore({
+  turn: 2,
+  hexToRoad: 5,
+  axisToRoad: 6,
+  axisToHex: 3,
+  zocCutsLane: false,
+  lineLinks: 0,
+  combat: 2,
+  movement: 4,
+});
+assert.ok(
+  forwardRoadScreen > isolatedRoadScreen * 2,
+  "Allied AI should prefer interlocked ZOC screens forward of the road objective",
 );
 
 console.log("El Alamein AI heuristic tests passed.");

@@ -26,6 +26,7 @@ import {
   lineSpacingScore,
   objectiveRetreatHoldScore,
   objectiveGateLatchScore,
+  roadApproachScreenScore,
 } from "../el-alamein/src/app/ai-heuristics.js";
 
 const scenario = JSON.parse(fs.readFileSync(new URL("../el-alamein/local-data/scenario.json", import.meta.url), "utf8"));
@@ -50,6 +51,7 @@ const traceSeed = args.has("trace") ? Number(args.get("trace") || seed) : null;
 const expectAxis = args.has("expect-axis");
 const delayAxisVictory = args.has("delay-axis-victory");
 const expectRetainedObjective = args.has("expect-retained-objective");
+const expectSecureObjective = args.has("expect-secure-objective");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -856,6 +858,7 @@ function scoreHex(state, unit, hexId, route = null) {
     score += alliedForwardDefense(state, unit, hexId) * (combat >= 4 ? 1.05 : 0.82);
     score += alliedZocBarrier(state, unit, hexId) * (combat >= 4 ? 1.45 : 1.15);
     score += alliedInterlockingZoc(state, unit, hexId) * (combat >= 4 ? 1.5 : 1.18);
+    score += alliedRoadApproachScreen(state, unit, hexId) * (combat >= 3 ? 1.45 : 1.12);
     score += alliedRoadblock(state, unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
     score += alliedObjectiveGateLatch(state, unit, hexId) * (combat >= 3 ? 1.18 : 0.92);
     score += alliedSupportedLine(state, unit, hexId) * 0.78;
@@ -1532,6 +1535,55 @@ function alliedInterlockingZoc(state, unit, hexId) {
     }
   }
   return Math.min(70, score);
+}
+
+function alliedRoadApproachScreen(state, unit, hexId) {
+  if (unit.side !== "allied") return 0;
+  const axisAssaultUnits = liveUnits(state.units).filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+  if (!axisAssaultUnits.length) return 0;
+
+  const roadHexes = scenario.objectives.coastalRoadEast;
+  const zocHexes = [hexId, ...neighborsOf(board, hexId)];
+  const lineLinks = liveUnits(state.units).filter((ally) => (
+    ally.side === "allied"
+    && ally.id !== unit.id
+    && !ally.disrupted
+    && distance(hexId, ally.hexId) === 2
+    && nearestDistance(ally.hexId, roadHexes) <= 8
+  )).length;
+  const scores = [];
+
+  for (const roadHexId of roadHexes) {
+    const hexToRoad = distance(hexId, roadHexId);
+    if (hexToRoad < 3 || hexToRoad > 7) continue;
+    for (const axisUnit of axisAssaultUnits) {
+      const axisToRoad = distance(axisUnit.hexId, roadHexId);
+      const axisToHex = distance(axisUnit.hexId, hexId);
+      const zocCutsLane = zocHexes.some((zocHexId) => {
+        const zocToAxis = distance(zocHexId, axisUnit.hexId);
+        const zocToRoad = distance(zocHexId, roadHexId);
+        return zocToAxis >= 1
+          && zocToAxis <= 6
+          && zocToRoad < axisToRoad
+          && zocToAxis + zocToRoad <= axisToRoad + 2;
+      });
+      scores.push(roadApproachScreenScore({
+        turn: state.turn,
+        hexToRoad,
+        axisToRoad,
+        axisToHex,
+        zocCutsLane,
+        lineLinks,
+        combat: Number(unit.combat || 0),
+        movement: Number(unit.movement || 0),
+      }));
+    }
+  }
+
+  return scores
+    .sort((a, b) => b - a)
+    .slice(0, 2)
+    .reduce((sum, score) => sum + score, 0);
 }
 
 function alliedRoadblock(state, unit, hexId) {
@@ -2261,6 +2313,9 @@ const objectiveEntries = results.filter((result) => result.firstAxisObjective);
 const objectiveLostAfterEntry = objectiveEntries.filter((result) => result.winner !== "axis");
 const objectiveEverLostAfterEntry = objectiveEntries.filter((result) => result.axisObjectiveLostAfterEntry);
 const supportedObjectiveEntries = objectiveEntries.filter((result) => Number(result.axisObjectiveSupportCount || 0) > 0);
+const secureObjectiveEntries = objectiveEntries.filter((result) => (
+  Number(result.axisObjectiveSupportStrength || 0) >= Number(result.axisObjectiveCounterThreat || 0)
+));
 const averageFirstObjectiveTurn = objectiveEntries.length
   ? objectiveEntries.reduce((sum, result) => sum + Number(result.firstAxisObjective.turn || 0), 0) / objectiveEntries.length
   : 0;
@@ -2283,6 +2338,7 @@ const summary = {
   objectiveLostAfterEntry: objectiveLostAfterEntry.length,
   objectiveEverLostAfterEntry: objectiveEverLostAfterEntry.length,
   supportedObjectiveEntries: supportedObjectiveEntries.length,
+  secureObjectiveEntries: secureObjectiveEntries.length,
   averageAxisObjectiveSupportCount: Number(average("axisObjectiveSupportCount").toFixed(2)),
   averageAxisObjectiveSupportStrength: Number(average("axisObjectiveSupportStrength").toFixed(2)),
   averageAxisObjectiveCounterThreat: Number(average("axisObjectiveCounterThreat").toFixed(2)),
@@ -2304,5 +2360,10 @@ if (expectAxis && failures.length) {
 
 if (expectRetainedObjective && objectiveEverLostAfterEntry.length) {
   console.error(`Expected retained Axis objectives, but ${objectiveEverLostAfterEntry.length}/${objectiveEntries.length} entries were lost after entry.`);
+  process.exitCode = 1;
+}
+
+if (expectSecureObjective && secureObjectiveEntries.length < objectiveEntries.length) {
+  console.error(`Expected secure Axis objectives, but ${objectiveEntries.length - secureObjectiveEntries.length}/${objectiveEntries.length} entries had more counter-threat than support strength.`);
   process.exitCode = 1;
 }

@@ -10,7 +10,7 @@
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-7");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-8");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1966,6 +1966,7 @@
       score += alliedForwardDefenseScore(unit, hexId) * (combat >= 4 ? 1.05 : 0.82);
       score += alliedZocBarrierScore(unit, hexId) * (combat >= 4 ? 1.45 : 1.15);
       score += alliedInterlockingZocScore(unit, hexId) * (combat >= 4 ? 1.5 : 1.18);
+      score += alliedRoadApproachScreenScore(unit, hexId) * (combat >= 3 ? 1.45 : 1.12);
       score += alliedRoadblockScore(unit, hexId) * (combat >= 3 ? 1.1 : 0.9);
       score += alliedObjectiveGateLatchScore(unit, hexId) * (combat >= 3 ? 1.18 : 0.92);
       score += alliedSupportedLineScore(unit, hexId) * 0.78;
@@ -2641,6 +2642,55 @@
       }
     }
     return Math.min(70, score);
+  }
+
+  function alliedRoadApproachScreenScore(unit, hexId) {
+    if (unit.side !== "allied") return 0;
+    const axisAssaultUnits = liveUnits().filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+    if (!axisAssaultUnits.length) return 0;
+
+    const roadHexes = app.scenario.objectives.coastalRoadEast;
+    const zocHexes = [hexId, ...neighborsOf(hexId)];
+    const lineLinks = liveUnits().filter((ally) => (
+      ally.side === "allied"
+      && ally.id !== unit.id
+      && !ally.disrupted
+      && hexDistance(hexId, ally.hexId) === 2
+      && nearestDistance(ally.hexId, roadHexes) <= 8
+    )).length;
+    const scores = [];
+
+    for (const roadHexId of roadHexes) {
+      const hexToRoad = hexDistance(hexId, roadHexId);
+      if (hexToRoad < 3 || hexToRoad > 7) continue;
+      for (const axisUnit of axisAssaultUnits) {
+        const axisToRoad = hexDistance(axisUnit.hexId, roadHexId);
+        const axisToHex = hexDistance(axisUnit.hexId, hexId);
+        const zocCutsLane = zocHexes.some((zocHexId) => {
+          const zocToAxis = hexDistance(zocHexId, axisUnit.hexId);
+          const zocToRoad = hexDistance(zocHexId, roadHexId);
+          return zocToAxis >= 1
+            && zocToAxis <= 6
+            && zocToRoad < axisToRoad
+            && zocToAxis + zocToRoad <= axisToRoad + 2;
+        });
+        scores.push(app.aiHeuristics.roadApproachScreenScore({
+          turn: app.state.turn,
+          hexToRoad,
+          axisToRoad,
+          axisToHex,
+          zocCutsLane,
+          lineLinks,
+          combat: Number(unit.combat || 0),
+          movement: Number(unit.movement || 0),
+        }));
+      }
+    }
+
+    return scores
+      .sort((a, b) => b - a)
+      .slice(0, 2)
+      .reduce((sum, score) => sum + score, 0);
   }
 
   function alliedRoadblockScore(unit, hexId) {
