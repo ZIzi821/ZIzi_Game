@@ -8,22 +8,23 @@ import {
   forcedRetreatTrapScore,
   lineSpacingScore,
   objectiveGateLatchScore,
+  objectiveRetreatHoldScore,
 } from "../../src/app/ai-heuristics.js";
 
 const axisLine = AI_HEURISTIC_WEIGHTS.axisLine;
-assert.equal(
-  lineSpacingScore({
-    exactLinks: 2,
-    looseLinks: 1,
-    adjacentCrowd: 1,
-    closeCrowd: 2,
-    exactWeight: axisLine.exactSupport,
-    looseWeight: axisLine.looseSupport,
-    adjacentPenalty: axisLine.adjacentSupportPenalty,
-    closeLimit: 3,
-    closePenalty: axisLine.closeSupportPenalty,
-  }),
-  81,
+const twoHexLineScore = lineSpacingScore({
+  exactLinks: 2,
+  looseLinks: 1,
+  adjacentCrowd: 1,
+  closeCrowd: 2,
+  exactWeight: axisLine.exactSupport,
+  looseWeight: axisLine.looseSupport,
+  adjacentPenalty: axisLine.adjacentSupportPenalty,
+  closeLimit: 3,
+  closePenalty: axisLine.closeSupportPenalty,
+});
+assert.ok(
+  twoHexLineScore > 100,
   "line spacing should reward two-hex ZOC links more than adjacent crowding",
 );
 
@@ -49,6 +50,20 @@ const overstackedSixToOne = combatOvercommitPenalty({
   surrounded: true,
 });
 assert.ok(overstackedSixToOne > 400, "surrounded target should still punish wasting extra mobile attackers past 4:1");
+
+const bloatedLowOddsCounterattack = combatOvercommitPenalty({
+  attackerSide: "allied",
+  attackStrength: 15,
+  defense: 6,
+  oddsColumnIndex: 2,
+  attackerCount: 6,
+  attackerStrengths: [4, 4, 2, 2, 2, 1],
+  mobileUnits: 4,
+});
+assert.ok(
+  bloatedLowOddsCounterattack > 800,
+  "low-odds counterattacks should not strip the line with a six-unit stack",
+);
 
 const finalApproachPush = finalApproachTempoScore({
   turn: 3,
@@ -102,5 +117,24 @@ const openRetreat = forcedRetreatTrapScore({
   highValueEnemy: true,
 });
 assert.ok(sealedRetreat > openRetreat * 2, "forced retreat control should prefer sealed ZOC traps over merely distant retreats");
+
+const supportedObjectiveRetreat = objectiveRetreatHoldScore({
+  isObjective: true,
+  combat: 6,
+  supportStrength: 8,
+  adjacentSupportCount: 2,
+  counterattackThreat: 5,
+});
+const exposedObjectiveRetreat = objectiveRetreatHoldScore({
+  isObjective: true,
+  combat: 6,
+  supportStrength: 0,
+  adjacentSupportCount: 0,
+  counterattackThreat: 12,
+});
+assert.ok(
+  supportedObjectiveRetreat > exposedObjectiveRetreat + 400,
+  "Axis AI should avoid retreating onto an exposed objective bridgehead",
+);
 
 console.log("El Alamein AI heuristic tests passed.");

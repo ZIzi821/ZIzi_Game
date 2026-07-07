@@ -1,28 +1,28 @@
 export const AI_HEURISTIC_WEIGHTS = Object.freeze({
   axisLine: Object.freeze({
-    exactAssault: 34,
-    exactSupport: 52,
-    looseAssault: 5,
-    looseSupport: 9,
-    adjacentAssaultPenalty: 18,
-    adjacentSupportPenalty: 32,
-    closeAssaultPenalty: 48,
-    closeSupportPenalty: 72,
-    densePenalty: 46,
+    exactAssault: 44,
+    exactSupport: 70,
+    looseAssault: 7,
+    looseSupport: 12,
+    adjacentAssaultPenalty: 24,
+    adjacentSupportPenalty: 42,
+    closeAssaultPenalty: 64,
+    closeSupportPenalty: 92,
+    densePenalty: 64,
   }),
   alliedWall: Object.freeze({
-    exactLink: 60,
-    looseLink: 9,
-    adjacentPenalty: 20,
-    closePenalty: 54,
+    exactLink: 84,
+    looseLink: 12,
+    adjacentPenalty: 34,
+    closePenalty: 86,
   }),
   overcommit: Object.freeze({
-    excessColumn: 180,
-    extraAttacker: 190,
+    excessColumn: 260,
+    extraAttacker: 260,
     axisTempo: 1.5,
-    surrounded: 2.2,
-    axisMobileWaste: 105,
-    alliedMobileWaste: 40,
+    surrounded: 2.7,
+    axisMobileWaste: 180,
+    alliedMobileWaste: 70,
   }),
   finalApproach: Object.freeze({
     turnThreeGain: 90,
@@ -57,6 +57,14 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     objectiveDistance: 7,
     exitDistance: 7,
     highValueMultiplier: 1.24,
+  }),
+  objectiveRetreat: Object.freeze({
+    objectiveBonus: 88,
+    selfCombat: 10,
+    supportStrength: 18,
+    adjacentSupport: 38,
+    counterThreat: 24,
+    unsupportedPenalty: 190,
   }),
 });
 
@@ -107,7 +115,15 @@ export function combatOvercommitPenalty({
   surrounded = false,
   earlyNoExtraRelief = 1,
 }) {
-  if (oddsColumnIndex < 4) return 0;
+  const weights = AI_HEURISTIC_WEIGHTS.overcommit;
+  const mobilePenalty = attackerSide === "axis" ? weights.axisMobileWaste : weights.alliedMobileWaste;
+  if (oddsColumnIndex < 4) {
+    const bloatedAttackers = Math.max(0, attackerCount - 3);
+    const mobileWaste = Math.max(0, mobileUnits - 1);
+    const lowOddsRisk = 1 + Math.max(0, 3 - oddsColumnIndex) * 0.45;
+    const tempo = attackerSide === "axis" ? weights.axisTempo : 1.15;
+    return (bloatedAttackers * weights.extraAttacker * 0.85 + mobileWaste * mobilePenalty * 0.95) * lowOddsRisk * tempo;
+  }
   const targetStrength = Math.max(1, defense) * 4;
   const excessStrength = Math.max(0, attackStrength - targetStrength);
   const excessColumn = Math.max(0, oddsColumnIndex - 4);
@@ -115,9 +131,7 @@ export function combatOvercommitPenalty({
   const extraAttackers = minimumAttackers ? Math.max(0, attackerCount - minimumAttackers) : 0;
   if (excessStrength <= 1 && excessColumn === 0 && extraAttackers === 0) return 0;
 
-  const weights = AI_HEURISTIC_WEIGHTS.overcommit;
   const mobileWaste = Math.max(0, mobileUnits - 1);
-  const mobilePenalty = attackerSide === "axis" ? weights.axisMobileWaste : weights.alliedMobileWaste;
   const extraStrengthPenalty = surrounded ? 22 : 14;
   const earlyTempoRelief = extraAttackers === 0 ? earlyNoExtraRelief : 1;
   const tempo = attackerSide === "axis" ? weights.axisTempo : 1;
@@ -208,4 +222,22 @@ export function forcedRetreatTrapScore({
     + Math.min(12, Math.max(0, Number(enemyExitDistance || 0))) * weights.exitDistance;
   const score = exitScore + localTrap + positionalDenial;
   return highValueEnemy ? score * weights.highValueMultiplier : score;
+}
+
+export function objectiveRetreatHoldScore({
+  isObjective = false,
+  combat = 0,
+  supportStrength = 0,
+  adjacentSupportCount = 0,
+  counterattackThreat = 0,
+  weights = AI_HEURISTIC_WEIGHTS.objectiveRetreat,
+}) {
+  if (!isObjective) return 0;
+  const support = Number(supportStrength || 0) * weights.supportStrength
+    + Number(adjacentSupportCount || 0) * weights.adjacentSupport;
+  const threat = Number(counterattackThreat || 0) * weights.counterThreat;
+  const unsupported = adjacentSupportCount <= 0 && counterattackThreat > Number(combat || 0) + Number(supportStrength || 0)
+    ? weights.unsupportedPenalty
+    : 0;
+  return weights.objectiveBonus + Number(combat || 0) * weights.selfCombat + support - threat - unsupported;
 }
