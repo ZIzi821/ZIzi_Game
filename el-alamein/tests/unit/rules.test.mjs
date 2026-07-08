@@ -5,6 +5,7 @@ import {
   canAttack,
   createBoard,
   defenseBreakdown,
+  evaluateAlliedBreakthroughVictory,
   evaluateAxisObjectiveVictory,
   getLegalRetreatDestinations,
   getObjectiveStatus,
@@ -198,8 +199,24 @@ const westExitHex = scenario.objectives.alliedWestExitEdge[0];
 const axisZocBlocker = { id: "axis-zoc-blocker", side: "axis", hexId: neighborsOf(board, westExitHex)[0], disrupted: false, eliminated: false };
 assert.equal(
   isAlliedBreakthroughMove(context([axisZocBlocker]), { side: "allied" }, westExitHex, 1),
-  false,
-  "Axis ZOC on a west-edge hex should stop Allied breakthrough",
+  true,
+  "An Allied unit with movement remaining on a west-edge hex should be able to exit even from Axis ZOC",
+);
+const westExitAllied = { id: "west-exit-allied", side: "allied", hexId: westExitHex, movement: 4, disrupted: false, eliminated: false };
+assert.deepEqual(
+  evaluateAlliedBreakthroughVictory(context([westExitAllied, axisZocBlocker]), []),
+  { side: "allied", reason: "breakthrough", unitId: westExitAllied.id, hexId: westExitHex, type: "allied-breakthrough" },
+  "An unmoved Allied unit already on a west-edge hex should count as having movement available to break through",
+);
+assert.equal(
+  evaluateAlliedBreakthroughVictory(context([westExitAllied, axisZocBlocker]), [westExitAllied.id]),
+  null,
+  "An Allied unit that already moved this phase should not trigger already-on-edge breakthrough again",
+);
+assert.equal(
+  evaluateAlliedBreakthroughVictory(context([{ ...westExitAllied, disrupted: true }, axisZocBlocker]), []),
+  null,
+  "Disrupted Allied units on the west edge should not break through",
 );
 
 assert.equal(

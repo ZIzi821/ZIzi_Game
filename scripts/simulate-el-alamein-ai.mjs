@@ -5,9 +5,11 @@ import {
   canAttack,
   createBoard,
   defenseBreakdown,
+  evaluateAlliedBreakthroughVictory,
   getLegalRetreatPaths,
   getReachableHexes,
   hexDistance,
+  isAlliedBreakthroughMove,
   isEnemyZoc,
   liveUnitAt,
   liveUnits,
@@ -148,6 +150,7 @@ function playGame(gameSeed) {
 
 function runMovement(state, trace = false) {
   const side = activeSide(state);
+  if (side === "allied" && checkAlliedBreakthroughVictory(state, trace)) return;
   state.movementPlan = buildOperationalPlan(state, side);
   const units = liveUnits(state.units)
     .filter((unit) => unit.side === side && !unit.disrupted)
@@ -168,12 +171,7 @@ function runMovement(state, trace = false) {
     if (!order) continue;
     unit.hexId = order.hexId;
     state.movedUnits.push(unit.id);
-    if (
-      unit.side === "allied"
-      && scenario.objectives.alliedWestExitEdge.includes(order.hexId)
-      && order.route.remaining > 0
-      && !isEnemyZoc(context(state), order.hexId, unit.side, unit.id)
-    ) {
+    if (isAlliedBreakthroughMove(context(state), unit, order.hexId, order.route.remaining)) {
       state.winner = { side: "allied", reason: "breakthrough", turn: state.turn };
       if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
       return;
@@ -181,6 +179,14 @@ function runMovement(state, trace = false) {
     if (unit.side === "axis") recordAxisObjective(state);
   }
   state.movementPlan = null;
+}
+
+function checkAlliedBreakthroughVictory(state, trace = false) {
+  const victory = evaluateAlliedBreakthroughVictory(context(state), state.movedUnits);
+  if (!victory) return false;
+  state.winner = { side: "allied", reason: "breakthrough", turn: state.turn };
+  if (trace) console.error(`winner allied breakthrough ${victory.unitId} ${hexLabel(victory.hexId)} already-on-exit`);
+  return true;
 }
 
 function chooseMove(state, unit) {

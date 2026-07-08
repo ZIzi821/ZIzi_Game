@@ -14,7 +14,7 @@
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-15");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-16");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1147,6 +1147,7 @@
 
   function showGame() {
     setView("game");
+    checkAlliedBreakthroughVictory();
     draw();
   }
 
@@ -4665,6 +4666,10 @@
     } else {
       app.state.phaseIndex += 1;
       log(tr("text.enterPhase", { phase: phaseLabel(phase().id) }));
+      if (checkAlliedBreakthroughVictory()) {
+        draw();
+        return;
+      }
     }
     draw();
   }
@@ -4706,6 +4711,15 @@
       return true;
     }
     return false;
+  }
+
+  function checkAlliedBreakthroughVictory() {
+    if (app.state.winner || !isMovementPhase() || activeSide() !== "allied") return false;
+    const victory = app.core.evaluateAlliedBreakthroughVictory(coreContext(), app.state.movedUnits);
+    if (!victory) return false;
+    const unit = unitById(victory.unitId);
+    setWinner(victory.side, tr("text.exitWin", { unit: unitName(unit) }), victory.type);
+    return true;
   }
 
   function setWinner(side, reason, type = null) {

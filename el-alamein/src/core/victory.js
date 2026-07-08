@@ -1,4 +1,5 @@
 import { neighborsOf } from "./board.js";
+import { movementAllowance } from "./movement.js";
 import { liveUnitAt, liveUnits } from "./units.js";
 
 const EL_ALAMEIN_HEX_ID = "c12r03";
@@ -95,9 +96,32 @@ export function evaluateAxisObjectiveVictory(context) {
 }
 
 /**
+ * Evaluates Allied west-edge breakthrough for units that are already on an
+ * exit hex during their movement phase. A unit that has not moved yet still
+ * has movement available to leave the map from that edge hex.
+ *
+ * @param {{rules: object, scenario?: object, objectives?: object, units: object[], state: object}} context Core rule context.
+ * @param {string[]} movedUnitIds Unit IDs that already spent movement this phase.
+ * @returns {{side: "allied", reason: "breakthrough", unitId: string, hexId: string, type: "allied-breakthrough"}|null}
+ */
+export function evaluateAlliedBreakthroughVictory(context, movedUnitIds = []) {
+  const moved = new Set(movedUnitIds || []);
+  const exit = new Set(objectiveHexes(context, "alliedWestExitEdge"));
+  const unit = liveUnits(context.units).find((candidate) => (
+    candidate.side === "allied"
+    && !candidate.disrupted
+    && !moved.has(candidate.id)
+    && exit.has(candidate.hexId)
+    && movementAllowance(context.state, candidate, context.rules) > 0
+  ));
+  if (!unit) return null;
+  return { side: "allied", reason: "breakthrough", unitId: unit.id, hexId: unit.hexId, type: "allied-breakthrough" };
+}
+
+/**
  * Checks the Allied west-edge breakthrough victory condition after movement.
- * Axis ZOC on the edge hex stops the breakthrough: the unit has reached the
- * German line, but has not passed through it.
+ * If the unit reaches an exit-edge hex with movement remaining, it has enough
+ * movement left to leave the map from that edge hex.
  *
  * @param {{board: object, scenario?: object, objectives?: object, units: object[]}} context Core rule context.
  * @param {object} unit Moving unit.
@@ -109,5 +133,5 @@ export function isAlliedBreakthroughMove(context, unit, destinationHexId, remain
   if (unit?.side !== "allied") return false;
   if (Number(remainingMovement || 0) <= 0) return false;
   if (!objectiveHexes(context, "alliedWestExitEdge").includes(destinationHexId)) return false;
-  return !isSideZoc(context, destinationHexId, "axis");
+  return true;
 }
