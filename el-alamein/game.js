@@ -9,11 +9,13 @@
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
   const TRAINING_LOG_KEY = "zizi-el-alamein-training-log-v1";
+  const TRAINING_EVENT_KEY = "zizi-el-alamein-training-events-v1";
   const TRAINING_SESSION_KEY = "zizi-el-alamein-training-session-v1";
   const TRAINING_LOG_LIMIT = 420;
+  const TRAINING_EVENT_LIMIT = 520;
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
-  const coreRulesPromise = import("./src/core/index.js");
+  const coreRulesPromise = import("./src/core/index.js?v=20260708-training-env-1");
   const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-16");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
@@ -595,6 +597,7 @@
     training: {
       sessionId: getTrainingSessionId(),
       entries: loadTrainingEntries(),
+      events: loadTrainingEvents(),
     },
     ai: {
       mode: getSavedGameMode(),
@@ -726,6 +729,15 @@
     }
   }
 
+  function loadTrainingEvents() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(TRAINING_EVENT_KEY) || "[]");
+      return Array.isArray(parsed) ? parsed.slice(-TRAINING_EVENT_LIMIT) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   function saveTrainingEntries() {
     app.training.entries = app.training.entries.slice(-TRAINING_LOG_LIMIT);
     try {
@@ -736,6 +748,20 @@
         localStorage.setItem(TRAINING_LOG_KEY, JSON.stringify(app.training.entries));
       } catch {
         app.training.entries = [];
+      }
+    }
+  }
+
+  function saveTrainingEvents() {
+    app.training.events = app.training.events.slice(-TRAINING_EVENT_LIMIT);
+    try {
+      localStorage.setItem(TRAINING_EVENT_KEY, JSON.stringify(app.training.events));
+    } catch (_) {
+      app.training.events = app.training.events.slice(-Math.floor(TRAINING_EVENT_LIMIT / 2));
+      try {
+        localStorage.setItem(TRAINING_EVENT_KEY, JSON.stringify(app.training.events));
+      } catch {
+        app.training.events = [];
       }
     }
   }
@@ -763,6 +789,146 @@
       ...entry,
     });
     saveTrainingEntries();
+  }
+
+  function recordTrainingEvent(type, stateBefore = null, details = {}) {
+    if (!type || !app.state || !app.core?.createEnvironment) return;
+    const beforeSnapshot = stateBefore ? trainingStateSnapshot(stateBefore) : null;
+    const afterSnapshot = trainingStateSnapshot(app.state);
+    const beforeEnvironment = stateBefore ? trainingEnvironmentForState(stateBefore) : null;
+    const afterEnvironment = trainingEnvironmentForState(app.state);
+    const event = {
+      schema: "zizi-el-alamein-replay-event-v1",
+      id: `event-${Date.now().toString(36)}-${app.training.events.length}`,
+      createdAt: new Date().toISOString(),
+      sessionId: app.training.sessionId,
+      mode: app.ai.mode,
+      type,
+      turn: app.state.turn,
+      phaseId: phase()?.id || null,
+      phaseIndex: app.state.phaseIndex,
+      side: activeSide(),
+      stateHashBefore: beforeEnvironment ? app.core.stateHash(beforeEnvironment) : null,
+      stateHashAfter: app.core.stateHash(afterEnvironment),
+      legalActionsBefore: beforeEnvironment ? safeTrainingLegalActions(beforeEnvironment) : [],
+      legalActionsAfter: safeTrainingLegalActions(afterEnvironment),
+      metricsBefore: beforeEnvironment ? safeTrainingMetrics(beforeEnvironment) : null,
+      metricsAfter: safeTrainingMetrics(afterEnvironment),
+      stateBefore: beforeSnapshot,
+      stateAfter: afterSnapshot,
+      ...details,
+    };
+    app.training.events.push(event);
+    saveTrainingEvents();
+  }
+
+  function trainingEnvironmentForState(state) {
+    return app.core.createEnvironment({
+      scenario: app.scenario,
+      rules: app.rules,
+      board: app.board,
+      state,
+    });
+  }
+
+  function safeTrainingLegalActions(environment) {
+    try {
+      return app.core.generateLegalActions(environment, { includeChanceActions: true }).map(app.core.compactAction);
+    } catch (error) {
+      return [{ type: "ERROR", reason: "legal_action_generation_failed", message: String(error?.message || error) }];
+    }
+  }
+
+  function safeTrainingMetrics(environment) {
+    try {
+      return app.core.environmentMetrics(environment);
+    } catch (error) {
+      return { error: "metrics_generation_failed", message: String(error?.message || error) };
+    }
+  }
+
+  function trainingStateSnapshot(state) {
+    return {
+      version: state.version || 2,
+      turn: state.turn,
+      phaseIndex: state.phaseIndex,
+      phaseId: app.rules?.phases?.[state.phaseIndex]?.id || null,
+      combatMode: state.combatMode || "declare",
+      movedUnits: (state.movedUnits || []).slice(),
+      usedAttackers: (state.usedAttackers || []).slice(),
+      usedDefenders: (state.usedDefenders || []).slice(),
+      declaredCombats: (state.declaredCombats || []).map((battle) => ({
+        id: battle.id,
+        turn: battle.turn,
+        phaseId: battle.phaseId,
+        side: battle.side,
+        defenderId: battle.defenderId,
+        defenderHexId: battle.defenderHexId,
+        attackerIds: (battle.attackerIds || []).slice(),
+        attackerOrigins: clone(battle.attackerOrigins || {}),
+        attackerHexIds: (battle.attackerHexIds || []).slice(),
+        oddsShort: battle.oddsShort || null,
+        roll: battle.roll || null,
+        result: battle.resultCode || battle.result || null,
+        resolved: Boolean(battle.resolved),
+      })),
+      retreatTask: state.retreatTask ? {
+        battleId: state.retreatTask.battleId || null,
+        unitIds: (state.retreatTask.unitIds || []).slice(),
+        index: state.retreatTask.index || 0,
+        steps: state.retreatTask.steps,
+        result: state.retreatTask.result,
+        origins: clone(state.retreatTask.origins || {}),
+        controllerSide: state.retreatTask.controllerSide || null,
+        disruptAfterRetreat: Boolean(state.retreatTask.disruptAfterRetreat),
+        advanceAfter: Boolean(state.retreatTask.advanceAfter),
+      } : null,
+      advanceTask: state.advanceTask ? {
+        battleId: state.advanceTask.battleId,
+        targetHexId: state.advanceTask.targetHexId,
+        attackerIds: (state.advanceTask.attackerIds || []).slice(),
+      } : null,
+      winner: state.winner ? {
+        side: state.winner.side,
+        reason: state.winner.reason,
+        type: state.winner.type || null,
+        turn: state.winner.turn || state.turn,
+      } : null,
+      eliminatedUnitIds: (state.eliminatedUnitIds || []).slice(),
+      losses: clone(state.losses || makeStats()),
+      units: (state.units || []).map((unit) => ({
+        id: unit.id,
+        side: unit.side,
+        combat: Number(unit.combat || 0),
+        movement: Number(unit.movement || 0),
+        hexId: unit.hexId,
+        disrupted: Boolean(unit.disrupted),
+        eliminated: Boolean(unit.eliminated),
+      })),
+    };
+  }
+
+  function recordGameStartedEvents() {
+    recordTrainingEvent("GAME_STARTED", null, {
+      phaseStarted: phase()?.id || null,
+    });
+    recordTrainingEvent("PHASE_STARTED", app.state, {
+      phaseId: phase()?.id || null,
+      turn: app.state.turn,
+    });
+  }
+
+  function recordGameEndedEvent(stateBefore, details = {}) {
+    if (!app.state?.winner) return;
+    recordTrainingEvent("GAME_ENDED", stateBefore, {
+      winner: {
+        side: app.state.winner.side,
+        reason: app.state.winner.reason,
+        type: app.state.winner.type || null,
+        turn: app.state.winner.turn || app.state.turn,
+      },
+      ...details,
+    });
   }
 
   function trainingStateHash() {
@@ -915,10 +1081,11 @@
 
   function exportTrainingEntries() {
     const payload = {
-      schema: "zizi-el-alamein-training-log-v1",
+      schema: "zizi-el-alamein-training-log-v2",
       exportedAt: new Date().toISOString(),
       sessionId: app.training.sessionId,
       entries: app.training.entries,
+      events: app.training.events,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -933,7 +1100,9 @@
 
   function clearTrainingEntries() {
     app.training.entries = [];
+    app.training.events = [];
     localStorage.removeItem(TRAINING_LOG_KEY);
+    localStorage.removeItem(TRAINING_EVENT_KEY);
     draw();
   }
 
@@ -1162,6 +1331,7 @@
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
     app.retreatPaths.clear();
+    recordGameStartedEvents();
     saveTurnCheckpoint();
     showGame();
     log(tr("text.newGame"));
@@ -1433,6 +1603,7 @@
     if (!defender || !attackers.length) return;
     if (attackers.some((attacker) => !canAttack(attacker, defender))) return;
     const odds = calculateOdds(attackers, defender);
+    const eventStateBefore = clone(app.state);
     const trainingEntry = combatTrainingEntry(attackers, defender, odds);
     const battle = {
       id: `b${Date.now()}-${app.state.declaredCombats.length}`,
@@ -1455,6 +1626,25 @@
     app.state.usedDefenders.push(defender.id);
     app.state.usedAttackers.push(...attackers.map((unit) => unit.id));
     recordTrainingEntry(trainingEntry);
+    recordTrainingEvent("COMBAT_DECLARED", eventStateBefore, {
+      battleId: battle.id,
+      side: battle.side,
+      defender: unitTrainingSnapshot(defender),
+      defenderId: defender.id,
+      defenderHexId: defender.hexId,
+      defenderHex: hexLabel(defender.hexId),
+      attackers: attackers.map(unitTrainingSnapshot),
+      attackerIds: attackers.map((unit) => unit.id),
+      attackerHexIds: attackers.map((unit) => unit.hexId),
+      odds: {
+        attack: odds.attack,
+        defense: odds.defense,
+        ratio: odds.ratio,
+        columnIndex: odds.columnIndex,
+        column: odds.column,
+        label: formatOdds(odds),
+      },
+    });
     log(tr("text.battleDeclared", {
       attackers: attackers.map(unitName).join(" + "),
       defender: unitName(defender),
@@ -1532,6 +1722,7 @@
     const aiPhase = isAiTurn();
     if (aiPhase) app.ai.waitingForHuman = false;
     const battle = currentBattle();
+    const eventStateBefore = clone(app.state);
     if (!battle) {
       markCombatCompleteOnce();
       if (aiPhase) app.ai.waitingForHuman = true;
@@ -1544,6 +1735,14 @@
       battle.resolved = true;
       battle.result = "Skipped";
       app.state.lastCombatResult = { battleId: battle.id, result: "Skipped", events: [] };
+      recordTrainingEvent("COMBAT_RESOLVED", eventStateBefore, {
+        battleId: battle.id,
+        side: battle.side,
+        defenderId: battle.defenderId,
+        attackerIds: battle.attackerIds.slice(),
+        result: "Skipped",
+        skipped: true,
+      });
       log(tr("text.battleSkipped"));
       markCombatCompleteOnce();
       if (aiPhase) app.ai.waitingForHuman = true;
@@ -1571,6 +1770,28 @@
     };
     log(`${tr("text.currentBattle")}: ${formatBattleTitle(battle)} · ${tr("text.result")} ${combatResultLabel(result)}`);
     applyCombatResult(battle, result);
+    const afterCombatSnapshot = trainingStateSnapshot(app.state);
+    recordTrainingEvent("COMBAT_RESOLVED", eventStateBefore, {
+      battleId: battle.id,
+      side: battle.side,
+      defenderId: battle.defenderId,
+      defenderHexId: battle.defenderHexId,
+      attackerIds: battle.attackerIds.slice(),
+      attackerHexIds: battle.attackerHexIds.slice(),
+      dieRoll: roll,
+      result,
+      odds: {
+        attack: odds.attack,
+        defense: odds.defense,
+        ratio: odds.ratio,
+        columnIndex: odds.columnIndex,
+        column: odds.column,
+        label: formatOdds(odds),
+      },
+      eliminatedUnitIds: app.state.eliminatedUnitIds.filter((id) => !eventStateBefore.eliminatedUnitIds.includes(id)),
+      retreatTask: afterCombatSnapshot.retreatTask,
+      advanceTask: afterCombatSnapshot.advanceTask,
+    });
     markCombatCompleteOnce();
     if (aiPhase && !app.state.retreatTask && !app.state.advanceTask) app.ai.waitingForHuman = true;
     draw();
@@ -1739,6 +1960,8 @@
     const unit = unitById(task.unitIds[task.index]);
     if (!unit) return;
     const path = app.retreatPaths.get(hexId);
+    const eventStateBefore = clone(app.state);
+    const fromHexId = unit.hexId;
     const trainingEntry = retreatTrainingEntry(unit, hexId, path);
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
@@ -1757,6 +1980,19 @@
     task.index += 1;
     task.remainingSteps = task.steps;
     prepareCurrentRetreat();
+    recordTrainingEvent("UNIT_RETREATED", eventStateBefore, {
+      battleId: task.battleId || null,
+      unitId: unit.id,
+      unit: unitTrainingSnapshot(unit),
+      side: unit.side,
+      fromHexId,
+      fromHex: hexLabel(fromHexId),
+      toHexId: hexId,
+      toHex: hexLabel(hexId),
+      route: routeTrainingSnapshot({ path, remaining: 0 }),
+      disrupted: unit.disrupted,
+      result: task.result || null,
+    });
   }
 
   function finishRetreatTask() {
@@ -1789,20 +2025,41 @@
 
   async function advanceUnit(unitId) {
     const task = app.state.advanceTask;
+    const eventStateBefore = clone(app.state);
     const trainingEntry = advanceTrainingEntry(unitId);
     if (!task || unitId === "skip") {
       recordTrainingEntry(trainingEntry);
       app.state.advanceTask = null;
+      if (task) {
+        recordTrainingEvent("UNIT_ADVANCED", eventStateBefore, {
+          battleId: task.battleId,
+          targetHexId: task.targetHexId,
+          targetHex: hexLabel(task.targetHexId),
+          unitId: "skip",
+          skipped: true,
+        });
+      }
       draw();
       return;
     }
     const unit = unitById(unitId);
     if (unit && !unit.eliminated && !liveUnitAt(task.targetHexId)) {
+      const fromHexId = unit.hexId;
       await animateUnitPath(unit, [unit.hexId, task.targetHexId]);
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       recordTrainingEntry(trainingEntry);
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
+      recordTrainingEvent("UNIT_ADVANCED", eventStateBefore, {
+        battleId: task.battleId,
+        unitId: unit.id,
+        unit: unitTrainingSnapshot(unit),
+        side: unit.side,
+        fromHexId,
+        fromHex: hexLabel(fromHexId),
+        toHexId: task.targetHexId,
+        toHex: hexLabel(task.targetHexId),
+      });
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
@@ -1871,6 +2128,7 @@
     const fromHexId = unit.hexId;
     const path = route.path || [fromHexId, destinationHexId];
     const movedUnitsBefore = app.state.movedUnits.slice();
+    const eventStateBefore = clone(app.state);
     const trainingEntry = movementTrainingEntry(unit, fromHexId, destinationHexId, route, app.reachable);
     app.reachable.clear();
     await animateUnitPath(unit, path);
@@ -1880,8 +2138,20 @@
     recordTrainingEntry(trainingEntry);
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
-      setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
+      setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough", eventStateBefore);
     }
+    recordTrainingEvent("UNIT_MOVED", eventStateBefore, {
+      unitId: unit.id,
+      unit: unitTrainingSnapshot(unit),
+      side: unit.side,
+      fromHexId,
+      fromHex: hexLabel(fromHexId),
+      toHexId: destinationHexId,
+      toHex: hexLabel(destinationHexId),
+      route: routeTrainingSnapshot(route),
+      remainingMovement: route.remaining,
+    });
+    if (app.state.winner) recordGameEndedEvent(eventStateBefore, { causedBy: "UNIT_MOVED", unitId: unit.id });
     app.state.selectedUnitId = unit.id;
     draw();
   }
@@ -4642,6 +4912,9 @@
       draw();
       return;
     }
+    const eventStateBefore = clone(app.state);
+    const endedPhaseId = phase().id;
+    const endedTurn = app.state.turn;
     app.ai.waitingForHuman = false;
     app.ai.scheduled = false;
     if (isCombatPhase()) recoverSide(activeSide());
@@ -4652,24 +4925,68 @@
     });
     if (fullTurnEnd) {
       if (checkAxisObjectiveVictory()) {
+        recordTrainingEvent("PHASE_ENDED", eventStateBefore, {
+          phaseId: endedPhaseId,
+          endedTurn,
+          fullTurnEnd: true,
+          endedWithWinner: true,
+        });
+        recordGameEndedEvent(eventStateBefore, { causedBy: "AXIS_OBJECTIVE" });
         draw();
         return;
       }
       if (app.state.turn >= app.rules.turns.length) {
         setWinner("allied", tr("text.fourTurnWin"), "axis-failed");
+        recordTrainingEvent("PHASE_ENDED", eventStateBefore, {
+          phaseId: endedPhaseId,
+          endedTurn,
+          fullTurnEnd: true,
+          endedWithWinner: true,
+        });
+        recordGameEndedEvent(eventStateBefore, { causedBy: "AXIS_FAILED" });
       } else {
         app.state.turn += 1;
         app.state.phaseIndex = 0;
         log(tr("text.turnStart", { turn: app.state.turn }));
         saveTurnCheckpoint();
+        recordTrainingEvent("PHASE_ENDED", eventStateBefore, {
+          phaseId: endedPhaseId,
+          endedTurn,
+          fullTurnEnd: true,
+          nextPhaseId: phase().id,
+          nextTurn: app.state.turn,
+        });
+        recordTrainingEvent("PHASE_STARTED", app.state, {
+          phaseId: phase().id,
+          turn: app.state.turn,
+        });
       }
     } else {
       app.state.phaseIndex += 1;
       log(tr("text.enterPhase", { phase: phaseLabel(phase().id) }));
       if (checkAlliedBreakthroughVictory()) {
+        recordTrainingEvent("PHASE_ENDED", eventStateBefore, {
+          phaseId: endedPhaseId,
+          endedTurn,
+          fullTurnEnd: false,
+          nextPhaseId: phase().id,
+          endedWithWinner: true,
+        });
+        recordGameEndedEvent(eventStateBefore, { causedBy: "ALLIED_BREAKTHROUGH_READY" });
         draw();
         return;
       }
+      recordTrainingEvent("PHASE_ENDED", eventStateBefore, {
+        phaseId: endedPhaseId,
+        endedTurn,
+        fullTurnEnd: false,
+        nextPhaseId: phase().id,
+        nextTurn: app.state.turn,
+      });
+      recordTrainingEvent("PHASE_STARTED", app.state, {
+        phaseId: phase().id,
+        turn: app.state.turn,
+      });
     }
     draw();
   }
@@ -5356,19 +5673,20 @@
   function appendTrainingRecordCard() {
     if (!app.state) return;
     const count = app.training.entries.length;
-    const card = operationCard("AI Training", `${count} local samples`, count ? "good" : "");
+    const eventCount = app.training.events.length;
+    const card = operationCard("AI Training", `${count} preference samples\n${eventCount} replay events`, count || eventCount ? "good" : "");
     card.classList.add("training-record-card");
     const actions = document.createElement("div");
     actions.className = "training-actions";
     const exportButton = document.createElement("button");
     exportButton.type = "button";
     exportButton.textContent = "Export JSON";
-    exportButton.disabled = count <= 0;
+    exportButton.disabled = count <= 0 && eventCount <= 0;
     exportButton.addEventListener("click", exportTrainingEntries);
     const clearButton = document.createElement("button");
     clearButton.type = "button";
     clearButton.textContent = "Clear";
-    clearButton.disabled = count <= 0;
+    clearButton.disabled = count <= 0 && eventCount <= 0;
     clearButton.addEventListener("click", clearTrainingEntries);
     actions.append(exportButton, clearButton);
     card.append(actions);
