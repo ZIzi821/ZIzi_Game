@@ -117,9 +117,9 @@
         pendingTitle: "战役进行中",
         subtitle: "第 {turn} 回合 · {reason}",
         losses: "损失统计",
-        eliminated: "被歼灭单位",
+        eliminated: "歼灭单位",
         battles: "战斗记录",
-        noEliminated: "尚无单位被歼灭。",
+        noEliminated: "尚无歼灭单位。",
       },
       side: { axis: "轴心国", allied: "英军" },
       nationality: { german: "德军", italian: "意军", "british-commonwealth": "英联邦" },
@@ -355,9 +355,8 @@
     lossReport: "战损统计",
     initialStrength: "开局总战力",
     currentStrength: "当前总战力",
-    eliminatedUnits: "被歼灭单位",
-    lostStrength: "损失战力",
-    eliminatedTarget: "歼灭",
+    eliminatedUnits: "歼灭单位",
+    lostStrength: "歼灭战力",
     victoryImpact: "胜利宣言",
     objectives: "胜利条件",
     ridgeObjectives: "阿拉姆哈勒法岭",
@@ -389,8 +388,7 @@
     initialStrength: "Initial Combat Strength",
     currentStrength: "Current Combat Strength",
     eliminatedUnits: "Eliminated Units",
-    lostStrength: "Combat Strength Lost",
-    eliminatedTarget: "Eliminated",
+    lostStrength: "Eliminated Strength",
     victoryImpact: "Operational Impact",
     objectives: "Victory Conditions",
     ridgeObjectives: "Alam Halfa Ridge",
@@ -445,7 +443,7 @@
     commonwealthGroup: "英联邦",
     mechanizedTag: "机械化",
     nonMechanizedTag: "非机械化",
-    noEliminated: "无被歼灭单位",
+    noEliminated: "无歼灭单位",
     axisImpact: "隆美尔和他的战士们将继续追歼残敌，在中东完成与南方面军的伟大会师！",
   });
   Object.assign(I18N.en.text, {
@@ -5335,15 +5333,12 @@
     sideBox.dataset.side = side;
     const heading = document.createElement("h3");
     heading.textContent = sideLabel(side);
-    const target = document.createElement("p");
-    target.className = "casualty-target";
-    target.textContent = `${tr("text.eliminatedTarget")}: ${sideLabel(targetSide)}`;
     const loss = data.losses[targetSide] || { units: 0, combat: 0 };
     const stats = document.createElement("div");
     stats.className = "casualty-stats";
     [
-      [tr("text.initialStrength"), data.initialStrength[targetSide] ?? 0],
-      [tr("text.currentStrength"), data.currentStrength[targetSide] ?? 0],
+      [tr("text.initialStrength"), data.initialStrength[side] ?? 0],
+      [tr("text.currentStrength"), data.currentStrength[side] ?? 0],
       [tr("text.eliminatedUnits"), loss.units],
       [tr("text.lostStrength"), loss.combat],
     ].forEach(([label, value]) => {
@@ -5361,7 +5356,7 @@
     casualtyGroupsForSide(targetSide, data.eliminatedBySide[targetSide] || []).forEach((group) => {
       groups.append(casualtyGroupLine(group.label, group.units));
     });
-    sideBox.append(heading, target, stats, groups);
+    sideBox.append(heading, stats, groups);
     return sideBox;
   }
 
