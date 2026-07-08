@@ -11,10 +11,10 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     densePenalty: 104,
   }),
   alliedWall: Object.freeze({
-    exactLink: 128,
-    looseLink: 5,
-    adjacentPenalty: 58,
-    closePenalty: 128,
+    exactLink: 172,
+    looseLink: 8,
+    adjacentPenalty: 70,
+    closePenalty: 156,
   }),
   overcommit: Object.freeze({
     excessColumn: 430,
@@ -136,18 +136,18 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     axisPlanCrowdPenalty: 64,
     axisPlanScreenRelease: 118,
     axisPlanZocLockPenalty: 360,
-    alliedForwardBand: 165,
-    alliedLaneCut: 145,
-    alliedLineLink: 72,
+    alliedForwardBand: 190,
+    alliedLaneCut: 174,
+    alliedLineLink: 108,
     alliedCombat: 13,
     alliedMobile: 28,
-    alliedObjectiveHugPenalty: 150,
+    alliedObjectiveHugPenalty: 180,
     alliedAxisContactPenalty: 85,
-    alliedPlanForwardBand: 92,
-    alliedPlanLaneCut: 104,
-    alliedPlanLine: 58,
+    alliedPlanForwardBand: 126,
+    alliedPlanLaneCut: 132,
+    alliedPlanLine: 88,
     alliedPlanCounterTrap: 72,
-    alliedPlanObjectiveHugPenalty: 96,
+    alliedPlanObjectiveHugPenalty: 128,
   }),
 });
 
@@ -621,7 +621,9 @@ export function alliedForwardWallPlaybookScore({
     + (Number(movement || 0) >= 7 ? weights.alliedMobile : 0);
 
   if (objectiveDistance <= 1 && !occupiedByAllied) score -= weights.alliedObjectiveHugPenalty * (turn <= 3 ? 1 : 0.45);
-  if (links === 0 && objectiveDistance <= 4) score -= weights.alliedLineLink;
+  if (links >= 2) score += weights.alliedLineLink * 0.75;
+  else if (links === 1) score += weights.alliedLineLink * 0.25;
+  if (links === 0 && objectiveDistance >= 3 && objectiveDistance <= 8) score -= weights.alliedLineLink * 1.35;
   return Math.max(0, score * timing);
 }
 
@@ -759,12 +761,14 @@ export function alliedOperationalPlanMoveScore({
   }
 
   score += links * weights.alliedPlanLine;
+  if (links >= 2) score += weights.alliedPlanLine * 0.82;
+  else if (links === 1) score += weights.alliedPlanLine * 0.28;
   score -= Number(adjacentCrowd || 0) * 34;
   if (zocCutsLane) score += weights.alliedPlanLaneCut;
   score += Math.max(0, Number(counterTrapGain || 0)) * weights.alliedPlanCounterTrap;
   score += Number(combat || 0) * weights.alliedCombat * 0.72;
   if (Number(movement || 0) >= 7 && objectiveDistance >= 3) score += weights.alliedMobile * 0.82;
-  if (links === 0 && objectiveDistance >= 4 && objectiveDistance <= 8) score -= weights.alliedPlanLine * 0.9;
+  if (links === 0 && objectiveDistance >= 4 && objectiveDistance <= 8) score -= weights.alliedPlanLine * 1.45;
 
   return clampScore(score * timing * roleFit * combatFit, -240, 560);
 }

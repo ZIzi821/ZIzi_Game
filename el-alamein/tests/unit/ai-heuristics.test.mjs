@@ -362,9 +362,24 @@ const objectiveHug = alliedForwardWallPlaybookScore({
   combat: 4,
   movement: 8,
 });
+const isolatedForwardPost = alliedForwardWallPlaybookScore({
+  turn: 2,
+  hexToObjective: 6,
+  axisToObjective: 7,
+  axisToHex: 3,
+  onApproachLane: true,
+  lineLinks: 0,
+  zocCutsLane: true,
+  combat: 4,
+  movement: 8,
+});
 assert.ok(
   forwardWall > objectiveHug * 3,
   "Allied playbook should build a linked forward ZOC wall instead of sitting on the objective",
+);
+assert.ok(
+  forwardWall > isolatedForwardPost + 300,
+  "Allied forward defense should punish gaps instead of placing isolated posts on the approach lane",
 );
 
 const axisPlannedPocket = axisOperationalPlanMoveScore({

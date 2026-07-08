@@ -14,6 +14,7 @@ import {
   isAlliedBreakthroughMove,
   neighborsOf,
   planCombatResult,
+  shouldCheckAxisObjectiveVictoryAtPhaseEnd,
   terrainRule,
 } from "../../src/core/index.js";
 import { loadLocalData } from "../fixtures/load-local-data.mjs";
@@ -199,4 +200,15 @@ assert.equal(
   isAlliedBreakthroughMove(context([axisZocBlocker]), { side: "allied" }, westExitHex, 1),
   false,
   "Axis ZOC on a west-edge hex should stop Allied breakthrough",
+);
+
+assert.equal(
+  shouldCheckAxisObjectiveVictoryAtPhaseEnd({ phaseIndex: 0, phases: rules.phases }),
+  false,
+  "Axis objective victory must not be checked during movement or intermediate phases",
+);
+assert.equal(
+  shouldCheckAxisObjectiveVictoryAtPhaseEnd({ phaseIndex: rules.phases.length - 1, phases: rules.phases }),
+  true,
+  "Axis objective victory should be checked only when the final phase of a full turn ends",
 );

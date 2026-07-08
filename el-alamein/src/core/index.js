@@ -5,4 +5,5 @@ export { isEnemyZoc } from "./zoc.js";
 export { getReachableHexes, movementAllowance } from "./movement.js";
 export { getLegalRetreatDestinations, getLegalRetreatPaths } from "./retreat.js";
 export { calculateOdds, canAttack, defenseBreakdown, planCombatResult } from "./combat.js";
+export { shouldCheckAxisObjectiveVictoryAtPhaseEnd } from "./phases.js";
 export { evaluateAxisObjectiveVictory, getObjectiveStatus, isAlliedBreakthroughMove } from "./victory.js";

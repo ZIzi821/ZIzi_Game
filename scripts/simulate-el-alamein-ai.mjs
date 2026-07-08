@@ -12,6 +12,7 @@ import {
   liveUnitAt,
   liveUnits,
   neighborsOf,
+  shouldCheckAxisObjectiveVictoryAtPhaseEnd,
   terrainRule,
   unitById,
 } from "../el-alamein/src/core/index.js";
@@ -58,7 +59,6 @@ const seedList = args.has("seeds")
 const sampleCount = Number(args.get("sample") || 0);
 const traceSeed = args.has("trace") ? Number(args.get("trace") || seed) : null;
 const expectAxis = args.has("expect-axis");
-const delayAxisVictory = args.has("delay-axis-victory");
 const expectRetainedObjective = args.has("expect-retained-objective");
 const expectSecureObjective = args.has("expect-secure-objective");
 
@@ -178,7 +178,7 @@ function runMovement(state, trace = false) {
       if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
       return;
     }
-    if (unit.side === "axis" && maybeCheckAxisVictory(state)) return;
+    if (unit.side === "axis") recordAxisObjective(state);
   }
   state.movementPlan = null;
 }
@@ -395,7 +395,7 @@ function retreatUnits(state, battle, units, steps, controllerSide, disruptAfterR
     }
     unit.hexId = destination;
     unit.disrupted = Boolean(disruptAfterRetreat);
-    if (unit.side === "axis" && maybeCheckAxisVictory(state)) return;
+    if (unit.side === "axis") recordAxisObjective(state);
   }
 }
 
@@ -514,7 +514,7 @@ function advanceAfterCombat(state, battle) {
   }
   if (best && best.gain > 0) {
     best.unit.hexId = battle.defenderHexId;
-    if (best.unit.side === "axis") maybeCheckAxisVictory(state);
+    if (best.unit.side === "axis") recordAxisObjective(state);
   }
 }
 
@@ -560,7 +560,7 @@ function endPhase(state, trace = false) {
   state.declaredCombats = [];
 
   if (state.winner) return;
-  if (state.phaseIndex === rules.phases.length - 1) {
+  if (shouldCheckAxisObjectiveVictoryAtPhaseEnd({ phaseIndex: state.phaseIndex, phases: rules.phases })) {
     if (checkAxisVictory(state)) return;
     if (state.turn >= rules.turns.length) {
       state.winner = { side: "allied", reason: "axis-failed", turn: state.turn };
@@ -574,14 +574,6 @@ function endPhase(state, trace = false) {
   }
 }
 
-function maybeCheckAxisVictory(state) {
-  if (delayAxisVictory) {
-    recordAxisObjective(state);
-    return false;
-  }
-  return checkAxisVictory(state);
-}
-
 function recordAxisObjective(state) {
   if (state.firstAxisObjective) return;
   const reason = axisObjectiveReason(state);
@@ -589,7 +581,7 @@ function recordAxisObjective(state) {
 }
 
 function observeAxisObjectiveRetention(state) {
-  if (!delayAxisVictory || !state.firstAxisObjective || state.axisObjectiveLostAfterEntry) return;
+  if (!state.firstAxisObjective || state.axisObjectiveLostAfterEntry) return;
   if (!axisObjectiveReason(state)) state.axisObjectiveLostAfterEntry = true;
 }
 
@@ -2302,14 +2294,14 @@ function alliedForwardZocWall(state, unit, hexId) {
               : 0.58;
     const suitability = combat >= 4 ? 1.2 : combat >= 2 ? 1 : 0.58;
     const contactRisk = candidateToAxis === 1 ? -36 : candidateToAxis === 2 ? 18 : 0;
-    score += ((blocksLane ? 128 : 52) + Math.max(0, 8 - candidateToAxis) * 9 + exactLinks * 34 + contactRisk) * depth * suitability;
+    score += ((blocksLane ? 152 : 64) + Math.max(0, 8 - candidateToAxis) * 10 + exactLinks * 52 + contactRisk) * depth * suitability;
     if (movement >= 7 && candidateToObjective >= 3) score += 24;
   }
 
-  if (!exactLinks && candidateObjectiveDistance >= 4 && candidateObjectiveDistance <= 9) score -= 156;
-  if (exactLinks && adjacentCrowd === 0) score += exactLinks >= 2 ? 112 : 72;
+  if (!exactLinks && candidateObjectiveDistance >= 4 && candidateObjectiveDistance <= 9) score -= 240;
+  if (exactLinks && adjacentCrowd === 0) score += exactLinks >= 2 ? 168 : 104;
 
-  return clampScore(score, -220, 680);
+  return clampScore(score, -260, 760);
 }
 
 function alliedSpearheadCounterattackPosition(state, unit, hexId) {
@@ -2759,7 +2751,6 @@ const summary = {
   games: results.length,
   seed,
   seeds: seedList?.length ? gameSeeds : undefined,
-  delayAxisVictory: delayAxisVictory || undefined,
   wins,
   axisWinRate: Number(((wins.axis || 0) / results.length).toFixed(3)),
   alliedWinRate: Number(((wins.allied || 0) / results.length).toFixed(3)),

@@ -14,7 +14,7 @@
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-14");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-15");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -1755,14 +1755,6 @@
     unit.disrupted = Boolean(task.disruptAfterRetreat);
     task.index += 1;
     task.remainingSteps = task.steps;
-    if (unit.side === "axis" && checkAxisObjectiveVictory()) {
-      app.state.retreatTask = null;
-      app.legalRetreats.clear();
-      app.legalRetreatSteps.clear();
-      app.retreatPaths.clear();
-      draw();
-      return;
-    }
     prepareCurrentRetreat();
   }
 
@@ -1810,7 +1802,6 @@
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
       recordTrainingEntry(trainingEntry);
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
-      if (unit.side === "axis") checkAxisObjectiveVictory();
     }
     app.state.advanceTask = null;
     markCombatCompleteOnce();
@@ -1889,8 +1880,6 @@
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
-    } else if (unit.side === "axis") {
-      checkAxisObjectiveVictory();
     }
     app.state.selectedUnitId = unit.id;
     draw();
@@ -2165,6 +2154,8 @@
   function aiMoveCandidateLimit(unit) {
     const movement = Number(unit.movement || 0);
     if (unit.side === "axis" && movement >= 9) return 3;
+    if (unit.side === "allied" && movement >= 7) return 5;
+    if (unit.side === "allied") return 4;
     if (movement >= 7) return 3;
     return 2;
   }
@@ -2199,7 +2190,7 @@
       if (objectiveDistance >= 4 && objectiveDistance <= 8) score += 170 - Math.abs(6 - objectiveDistance) * 18;
       if (objectiveDistance <= 1) score -= app.state.turn <= 3 ? 150 : 40;
       score += alliedDefenseScore(hexId) * 10;
-      score += alliedOperationalPlanMoveScoreForUnit(unit, hexId) * 0.22;
+      score += alliedOperationalPlanMoveScoreForUnit(unit, hexId) * 0.5;
     }
 
     for (const neighborId of neighborsOf(hexId)) {
@@ -3773,14 +3764,14 @@
                 : 0.58;
       const suitability = combat >= 4 ? 1.2 : combat >= 2 ? 1 : 0.58;
       const contactRisk = candidateToAxis === 1 ? -36 : candidateToAxis === 2 ? 18 : 0;
-      score += ((blocksLane ? 128 : 52) + Math.max(0, 8 - candidateToAxis) * 9 + exactLinks * 34 + contactRisk) * depth * suitability;
+      score += ((blocksLane ? 152 : 64) + Math.max(0, 8 - candidateToAxis) * 10 + exactLinks * 52 + contactRisk) * depth * suitability;
       if (movement >= 7 && candidateToObjective >= 3) score += 24;
     }
 
-    if (!exactLinks && candidateObjectiveDistance >= 4 && candidateObjectiveDistance <= 9) score -= 156;
-    if (exactLinks && adjacentCrowd === 0) score += exactLinks >= 2 ? 112 : 72;
+    if (!exactLinks && candidateObjectiveDistance >= 4 && candidateObjectiveDistance <= 9) score -= 240;
+    if (exactLinks && adjacentCrowd === 0) score += exactLinks >= 2 ? 168 : 104;
 
-    return app.aiHeuristics.clampScore(score, -220, 680);
+    return app.aiHeuristics.clampScore(score, -260, 760);
   }
 
   function alliedSpearheadCounterattackPositionScore(unit, hexId) {
@@ -4654,7 +4645,11 @@
     app.ai.scheduled = false;
     if (isCombatPhase()) recoverSide(activeSide());
     clearPhaseState();
-    if (app.state.phaseIndex === app.rules.phases.length - 1) {
+    const fullTurnEnd = app.core.shouldCheckAxisObjectiveVictoryAtPhaseEnd({
+      phaseIndex: app.state.phaseIndex,
+      phases: app.rules.phases,
+    });
+    if (fullTurnEnd) {
       if (checkAxisObjectiveVictory()) {
         draw();
         return;
