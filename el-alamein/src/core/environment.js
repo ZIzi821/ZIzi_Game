@@ -113,16 +113,20 @@ export function generateLegalActions(environment, options = {}) {
 }
 
 export function applyEnvironmentAction(environment, action, options = {}) {
-  const previousState = cloneGameState(environment.state);
+  const enrichEvents = options.enrichEvents !== false;
+  const keepPreviousState = options.previousState !== false;
+  const previousState = keepPreviousState ? cloneGameState(environment.state) : null;
   const nextEnvironment = {
     scenario: environment.scenario,
     rules: environment.rules,
     board: environment.board,
     state: options.mutate ? environment.state : cloneGameState(environment.state),
   };
-  const stateBefore = cloneGameState(nextEnvironment.state);
-  const legalActionsBefore = generateLegalActions(nextEnvironment, { includeChanceActions: true }).map(compactAction);
-  const metricsBefore = environmentMetrics(nextEnvironment);
+  const stateBefore = enrichEvents ? cloneGameState(nextEnvironment.state) : null;
+  const legalActionsBefore = enrichEvents
+    ? generateLegalActions(nextEnvironment, { includeChanceActions: true }).map(compactAction)
+    : [];
+  const metricsBefore = enrichEvents ? environmentMetrics(nextEnvironment) : null;
   const events = [];
   const fail = (reason) => ({
     ok: false,
@@ -166,22 +170,26 @@ export function applyEnvironmentAction(environment, action, options = {}) {
   if (!result?.ok) return fail(result?.reason || "illegal_action");
 
   events.push(...(result.events || []));
-  const legalActionsAfter = generateLegalActions(nextEnvironment, { includeChanceActions: true }).map(compactAction);
-  const metricsAfter = environmentMetrics(nextEnvironment);
-  const stateHashBefore = stateHashForState(nextEnvironment, stateBefore);
-  const stateHashAfter = stateHash(nextEnvironment);
-  const enrichedEvents = events.map((event) => ({
-    ...event,
-    action: compactAction(action),
-    stateHashBefore,
-    stateHashAfter,
-    legalActionsBefore,
-    legalActionsAfter,
-    metricsBefore,
-    metricsAfter,
-  }));
+  const legalActionsAfter = enrichEvents
+    ? generateLegalActions(nextEnvironment, { includeChanceActions: true }).map(compactAction)
+    : [];
+  const metricsAfter = enrichEvents ? environmentMetrics(nextEnvironment) : null;
+  const stateHashBefore = enrichEvents ? stateHashForState(nextEnvironment, stateBefore) : null;
+  const stateHashAfter = enrichEvents ? stateHash(nextEnvironment) : null;
+  const enrichedEvents = enrichEvents
+    ? events.map((event) => ({
+      ...event,
+      action: compactAction(action),
+      stateHashBefore,
+      stateHashAfter,
+      legalActionsBefore,
+      legalActionsAfter,
+      metricsBefore,
+      metricsAfter,
+    }))
+    : events;
 
-  if (nextEnvironment.state.winner && !enrichedEvents.some((event) => event.type === ENV_EVENT.GAME_ENDED)) {
+  if (enrichEvents && nextEnvironment.state.winner && !enrichedEvents.some((event) => event.type === ENV_EVENT.GAME_ENDED)) {
     enrichedEvents.push({
       type: ENV_EVENT.GAME_ENDED,
       winner: cloneGameState(nextEnvironment.state.winner),
@@ -200,7 +208,7 @@ export function applyEnvironmentAction(environment, action, options = {}) {
     ok: true,
     action: compactAction(action),
     previousState,
-    state: cloneGameState(nextEnvironment.state),
+    state: options.cloneResultState === false ? nextEnvironment.state : cloneGameState(nextEnvironment.state),
     environment: nextEnvironment,
     events: enrichedEvents,
   };

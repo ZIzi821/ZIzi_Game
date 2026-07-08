@@ -8,6 +8,7 @@
   const LANG_KEY = "zizi-el-alamein-lang";
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
+  const AI_DIFFICULTY_KEY = "zizi-el-alamein-ai-difficulty-v1";
   const TRAINING_LOG_KEY = "zizi-el-alamein-training-log-v1";
   const TRAINING_EVENT_KEY = "zizi-el-alamein-training-events-v1";
   const TRAINING_SESSION_KEY = "zizi-el-alamein-training-session-v1";
@@ -17,6 +18,8 @@
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js?v=20260708-training-env-1");
   const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-16");
+  const aiPhaseSearchPromise = import("./src/app/ai-phase-search.js?v=20260709-ai-projection-1");
+  const aiTacticsPromise = import("./src/app/ai-tactics.js?v=20260708-ai-tactics-1");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -495,6 +498,16 @@
     modeLabel: "Choose Mode",
     hotseatMode: "Hotseat Mode",
   });
+  Object.assign(I18N.zh.menu, {
+    aiDifficultyLabel: "AI \u96be\u5ea6",
+    normalAiDifficulty: "\u666e\u901a AI",
+    expertAiDifficulty: "\u6781\u96be AI",
+  });
+  Object.assign(I18N.en.menu, {
+    aiDifficultyLabel: "AI Difficulty",
+    normalAiDifficulty: "Normal AI",
+    expertAiDifficulty: "Expert AI",
+  });
   Object.assign(I18N.zh.ui, {
     aiThinking: "极难 AI 正在指挥 {side}",
     aiAwaitingInput: "极难 AI 已完成动作，请点击阶段按钮继续",
@@ -506,6 +519,18 @@
     aiAwaitingInput: "Expert AI has finished. Use the phase buttons to continue",
     aiWaiting: "You command {side}; Expert AI commands {enemy}",
     hotseatStatus: "Hotseat mode: both sides are human",
+  });
+  Object.assign(I18N.zh.ui, {
+    aiThinking: "{ai} \u6b63\u5728\u6307\u6325 {side}",
+    aiAwaitingInput: "{ai} \u5df2\u5b8c\u6210\u52a8\u4f5c\uff0c\u8bf7\u70b9\u51fb\u9636\u6bb5\u6309\u94ae\u7ee7\u7eed",
+    aiWaiting: "\u4f60\u6307\u6325 {side}\uff0c{ai} \u6307\u6325 {enemy}",
+    hotseatStatus: "",
+  });
+  Object.assign(I18N.en.ui, {
+    aiThinking: "{ai} is commanding {side}",
+    aiAwaitingInput: "{ai} has finished. Use the phase buttons to continue",
+    aiWaiting: "You command {side}; {ai} commands {enemy}",
+    hotseatStatus: "",
   });
   Object.assign(I18N.zh.text, {
     aiMovementDone: "AI 完成 {side} 移动。",
@@ -531,6 +556,8 @@
     axisAiModeButton: document.getElementById("axisAiModeButton"),
     alliedAiModeButton: document.getElementById("alliedAiModeButton"),
     hotseatModeButton: document.getElementById("hotseatModeButton"),
+    normalAiDifficultyButton: document.getElementById("normalAiDifficultyButton"),
+    expertAiDifficultyButton: document.getElementById("expertAiDifficultyButton"),
     startCampaignButton: document.getElementById("startCampaignButton"),
     continueCampaignButton: document.getElementById("continueCampaignButton"),
     menuLoadButton: document.getElementById("menuLoadButton"),
@@ -578,6 +605,9 @@
   const app = {
     core: null,
     aiHeuristics: null,
+    aiPhaseSearch: null,
+    aiTactics: null,
+    aiWeights: null,
     scenario: null,
     rules: null,
     board: null,
@@ -602,6 +632,7 @@
     ai: {
       mode: getSavedGameMode(),
       humanSide: humanSideForMode(getSavedGameMode()),
+      difficulty: getSavedAiDifficulty(),
       running: false,
       scheduled: false,
       waitingForHuman: false,
@@ -621,15 +652,37 @@
     };
   }
 
+  function aiSearchEnvironment(state = app.state) {
+    if (!app.core?.createEnvironment || !state) return null;
+    return app.core.createEnvironment({
+      scenario: app.scenario,
+      rules: app.rules,
+      board: app.board,
+      state,
+    });
+  }
+
   function getSavedGameMode() {
     const savedMode = localStorage.getItem(AI_GAME_MODE_KEY);
     if (["axis-vs-ai", "allied-vs-ai", "hotseat"].includes(savedMode)) return savedMode;
     return localStorage.getItem(AI_HUMAN_SIDE_KEY) === "allied" ? "allied-vs-ai" : "axis-vs-ai";
   }
 
+  function getSavedAiDifficulty() {
+    return localStorage.getItem(AI_DIFFICULTY_KEY) === "normal" ? "normal" : "expert";
+  }
+
   function humanSideForMode(mode) {
     if (mode === "allied-vs-ai") return "allied";
     return "axis";
+  }
+
+  function isExpertAiEnabled() {
+    return app.ai.difficulty === "expert";
+  }
+
+  function aiDifficultyLabel() {
+    return tr(isExpertAiEnabled() ? "menu.expertAiDifficulty" : "menu.normalAiDifficulty");
   }
 
   function tr(key, params = {}) {
@@ -1184,14 +1237,20 @@
 
   async function init() {
     try {
-      const [core, aiHeuristics, scenario, rules] = await Promise.all([
+      const [core, aiHeuristics, aiPhaseSearch, aiTactics, scenario, rules, aiWeights] = await Promise.all([
         coreRulesPromise,
         aiHeuristicsPromise,
+        aiPhaseSearchPromise,
+        aiTacticsPromise,
         fetchJson("local-data/scenario.json"),
         fetchJson("local-data/rules.json"),
+        fetchJson("local-data/ai-weights-expert.json").catch(() => null),
       ]);
       app.core = core;
       app.aiHeuristics = aiHeuristics;
+      app.aiPhaseSearch = aiPhaseSearch;
+      app.aiTactics = aiTactics;
+      app.aiWeights = aiWeights;
       app.scenario = scenario;
       app.rules = rules;
       app.board = app.core.createBoard(scenario);
@@ -1235,6 +1294,8 @@
     el.axisAiModeButton.addEventListener("click", () => setGameMode("axis-vs-ai"));
     el.alliedAiModeButton.addEventListener("click", () => setGameMode("allied-vs-ai"));
     el.hotseatModeButton.addEventListener("click", () => setGameMode("hotseat"));
+    el.normalAiDifficultyButton.addEventListener("click", () => setAiDifficulty("normal"));
+    el.expertAiDifficultyButton.addEventListener("click", () => setAiDifficulty("expert"));
     el.startCampaignButton.addEventListener("click", startNewCampaign);
     el.continueCampaignButton.addEventListener("click", continueCampaign);
     el.menuLoadButton.addEventListener("click", () => loadGame({ fromMenu: true }));
@@ -1287,10 +1348,21 @@
     scheduleAiTurn();
   }
 
+  function setAiDifficulty(difficulty) {
+    app.ai.difficulty = difficulty === "normal" ? "normal" : "expert";
+    app.ai.movementPlan = null;
+    localStorage.setItem(AI_DIFFICULTY_KEY, app.ai.difficulty);
+    drawAiControls();
+    drawStatus();
+    scheduleAiTurn();
+  }
+
   function drawAiControls() {
     if (el.axisAiModeButton) el.axisAiModeButton.dataset.active = String(app.ai.mode === "axis-vs-ai");
     if (el.alliedAiModeButton) el.alliedAiModeButton.dataset.active = String(app.ai.mode === "allied-vs-ai");
     if (el.hotseatModeButton) el.hotseatModeButton.dataset.active = String(app.ai.mode === "hotseat");
+    if (el.normalAiDifficultyButton) el.normalAiDifficultyButton.dataset.active = String(app.ai.difficulty === "normal");
+    if (el.expertAiDifficultyButton) el.expertAiDifficultyButton.dataset.active = String(app.ai.difficulty === "expert");
   }
 
   function setMenuStatus(text = "") {
@@ -2331,7 +2403,8 @@
       }
       if (app.state.advanceTask) {
         if (!options.force && !isAiSide(activeSide())) return handled;
-        await advanceUnit(chooseAiAdvanceUnit() || "skip");
+        const tacticalAdvance = isExpertAiEnabled() ? chooseAiTacticalAdvanceUnit() : null;
+        await advanceUnit(tacticalAdvance || chooseAiAdvanceUnit() || "skip");
         handled = true;
         await delay(360);
         continue;
@@ -2348,6 +2421,7 @@
     const units = liveUnits()
       .filter((unit) => unit.side === side && !unit.disrupted)
       .sort((a, b) => aiMovePriority(b) - aiMovePriority(a) || String(a.id).localeCompare(String(b.id)));
+    moved += await executeAiMovementPhasePlan(chooseAiMovementPhasePlan(side), side);
 
     for (const unit of units) {
       if (app.state.winner || !isAiTurn()) break;
@@ -2373,6 +2447,53 @@
     draw();
   }
 
+  function chooseAiMovementPhasePlan(side) {
+    if (!isExpertAiEnabled()) return null;
+    if (!app.aiPhaseSearch?.beamSearchMovementPhase) return null;
+    const environment = aiSearchEnvironment();
+    if (!environment) return null;
+    try {
+      return app.aiPhaseSearch.beamSearchMovementPhase(environment, {
+        side,
+        beamWidth: 10,
+        candidateLimit: 20,
+        maxActions: 5,
+        nodeLimit: 72,
+        timeBudgetMs: 190,
+        minNodes: 16,
+        projectionCandidateLimit: 10,
+        projectionBeamLimit: 3,
+        weights: app.aiWeights?.phaseSearch || null,
+      });
+    } catch (error) {
+      console.warn("AI phase search failed; falling back to unit heuristics.", error);
+      return null;
+    }
+  }
+
+  async function executeAiMovementPhasePlan(plan, side) {
+    if (!plan?.actions?.length) return 0;
+    let moved = 0;
+    for (const action of plan.actions) {
+      if (app.state.winner || !isAiTurn() || activeSide() !== side) break;
+      if (action.type !== app.core?.ENV_ACTION?.MOVE_UNIT) continue;
+      const unit = unitById(action.unitId);
+      if (!unit || unit.eliminated || unit.disrupted || unit.side !== side || app.state.movedUnits.includes(unit.id)) continue;
+      const reachable = reachableHexes(unit);
+      const route = reachable.get(action.toHexId);
+      if (!route) continue;
+      if (isExpertAiEnabled() && isAiMoveTacticallyUnsafe(unit, action.toHexId, route)) continue;
+      app.state.selectedUnitId = unit.id;
+      app.reachable = new Map([[action.toHexId, route]]);
+      drawAnimationFrame();
+      await yieldToBrowser();
+      await attemptMove(action.toHexId);
+      moved += 1;
+      await delay(6);
+    }
+    return moved;
+  }
+
   async function runAiCombatPhase() {
     const declared = declareAiCombats();
     if (!declared) log(tr("text.aiNoCombat"));
@@ -2383,6 +2504,8 @@
   async function chooseAiMove(unit) {
     const reachable = reachableHexes(unit);
     if (!reachable.size) return null;
+    const tacticalMove = isExpertAiEnabled() ? chooseAiTacticalMove(unit, reachable) : null;
+    if (tacticalMove) return tacticalMove;
     if (unit.side === "axis") {
       const guardMove = chooseAxisExitGuardMove(unit, reachable);
       if (guardMove === "hold") return null;
@@ -2395,6 +2518,7 @@
     let best = null;
     let scored = 0;
     for (const candidate of prioritizedAiMoveCandidates(unit, reachable)) {
+      if (isExpertAiEnabled() && isAiMoveTacticallyUnsafe(unit, candidate.hexId, candidate.route)) continue;
       const detailed = scoreAiHex(unit, candidate.hexId, candidate.route, scoreContext);
       const score = detailed + candidate.rough * 0.06;
       if (!best || score > best.score) best = { hexId: candidate.hexId, route: candidate.route, score };
@@ -2406,6 +2530,38 @@
     }
     if (!best || best.score <= currentScore + aiRoughMoveThreshold(unit)) return null;
     return { hexId: best.hexId, route: best.route, reachable };
+  }
+
+  function chooseAiTacticalMove(unit, reachable) {
+    if (!isExpertAiEnabled()) return null;
+    if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.ENV_ACTION) return null;
+    const environment = aiSearchEnvironment();
+    if (!environment) return null;
+    const actions = Array.from(reachable.entries()).map(([hexId, route]) => ({
+      type: app.core.ENV_ACTION.MOVE_UNIT,
+      unitId: unit.id,
+      fromHexId: unit.hexId,
+      toHexId: hexId,
+      route,
+    }));
+    const tactical = app.aiTactics.findImmediateTacticalAction(environment, actions, { side: unit.side });
+    if (!tactical || tactical.action?.type !== app.core.ENV_ACTION.MOVE_UNIT) return null;
+    const route = reachable.get(tactical.action.toHexId);
+    return route ? { hexId: tactical.action.toHexId, route, reachable, tacticalReason: tactical.reason } : null;
+  }
+
+  function isAiMoveTacticallyUnsafe(unit, hexId, route) {
+    if (!isExpertAiEnabled()) return false;
+    if (!app.aiTactics?.actionAllowsOpponentImmediateWin || !app.core?.ENV_ACTION) return false;
+    const environment = aiSearchEnvironment();
+    if (!environment) return false;
+    return app.aiTactics.actionAllowsOpponentImmediateWin(environment, {
+      type: app.core.ENV_ACTION.MOVE_UNIT,
+      unitId: unit.id,
+      fromHexId: unit.hexId,
+      toHexId: hexId,
+      route,
+    }, { side: unit.side });
   }
 
   function buildAiMoveScoreContext(unit) {
@@ -4411,14 +4567,37 @@
     let guard = 0;
     while (guard < 30) {
       guard += 1;
-      const candidate = bestAiCombatCandidate();
-      if (!candidate || candidate.score < aiCombatThreshold()) break;
+      const tacticalCandidate = isExpertAiEnabled() ? bestAiTacticalCombatCandidate() : null;
+      const candidate = tacticalCandidate || bestAiCombatCandidate();
+      if (!candidate || (!tacticalCandidate && candidate.score < aiCombatThreshold())) break;
       app.state.selectedDefenderId = candidate.defender.id;
       app.state.selectedAttackers = candidate.attackers.map((unit) => unit.id);
       declareBattle();
       declared += 1;
     }
     return declared;
+  }
+
+  function bestAiTacticalCombatCandidate() {
+    if (!isExpertAiEnabled()) return null;
+    if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.generateLegalActions) return null;
+    const environment = aiSearchEnvironment();
+    if (!environment) return null;
+    const actions = app.core.generateLegalActions(environment, { includeChanceActions: true })
+      .filter((action) => action.type === app.core.ENV_ACTION.DECLARE_COMBAT);
+    if (!actions.length) return null;
+    const tactical = app.aiTactics.findImmediateTacticalAction(environment, actions, { side: activeSide() });
+    if (!tactical || tactical.action?.type !== app.core.ENV_ACTION.DECLARE_COMBAT) return null;
+    const defender = unitById(tactical.action.defenderId);
+    const attackers = tactical.action.attackerIds.map(unitById).filter(Boolean);
+    if (!defender || !attackers.length || attackers.some((attacker) => !canAttack(attacker, defender))) return null;
+    return {
+      defender,
+      attackers,
+      odds: calculateOdds(attackers, defender),
+      score: tactical.score,
+      tacticalReason: tactical.reason,
+    };
   }
 
   function bestAiCombatCandidate() {
@@ -4865,6 +5044,17 @@
       if (!best || score > best.score) best = { id, score };
     }
     return best && best.score > 0 ? best.id : null;
+  }
+
+  function chooseAiTacticalAdvanceUnit() {
+    if (!isExpertAiEnabled()) return null;
+    if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.generateLegalActions) return null;
+    const environment = aiSearchEnvironment();
+    if (!environment) return null;
+    const actions = app.core.generateLegalActions(environment, { includeChanceActions: true })
+      .filter((action) => action.type === app.core.ENV_ACTION.ADVANCE_UNIT || action.type === app.core.ENV_ACTION.SKIP_ADVANCE);
+    const tactical = app.aiTactics.findImmediateTacticalAction(environment, actions, { side: activeSide() });
+    return tactical?.action?.type === app.core.ENV_ACTION.ADVANCE_UNIT ? tactical.action.unitId : null;
   }
 
   function axisAdvanceObjectiveScore(unit, fromHexId, toHexId) {
@@ -5350,10 +5540,10 @@
     el.aiStatus.textContent = app.ai.mode === "hotseat"
       ? ""
       : app.ai.waitingForHuman && isAiTurn()
-        ? tr("ui.aiAwaitingInput")
+        ? tr("ui.aiAwaitingInput", { ai: aiDifficultyLabel() })
         : app.ai.running || isAiTurn()
-        ? tr("ui.aiThinking", { side: sideLabel(activeSide()) })
-        : tr("ui.aiWaiting", { side: sideLabel(app.ai.humanSide), enemy: sideLabel(enemySide(app.ai.humanSide)) });
+        ? tr("ui.aiThinking", { ai: aiDifficultyLabel(), side: sideLabel(activeSide()) })
+        : tr("ui.aiWaiting", { ai: aiDifficultyLabel(), side: sideLabel(app.ai.humanSide), enemy: sideLabel(enemySide(app.ai.humanSide)) });
     el.boardBadge.textContent = boardBadgeText();
     el.finishDeclarationsButton.hidden = !(isCombatPhase() && app.state.combatMode === "declare");
     el.resolveBattleButton.hidden = !(isCombatPhase() && app.state.combatMode === "resolve");

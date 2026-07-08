@@ -4,6 +4,7 @@ import {
   calculateOdds,
   canAttack,
   createBoard,
+  createEnvironment,
   defenseBreakdown,
   evaluateAlliedBreakthroughVictory,
   getLegalRetreatPaths,
@@ -18,6 +19,7 @@ import {
   terrainRule,
   unitById,
 } from "../el-alamein/src/core/index.js";
+import { beamSearchMovementPhase } from "../el-alamein/src/app/ai-phase-search.js";
 import {
   AI_HEURISTIC_WEIGHTS,
   alliedOperationalPlanMoveScore,
@@ -43,6 +45,7 @@ import {
 
 const scenario = JSON.parse(fs.readFileSync(new URL("../el-alamein/local-data/scenario.json", import.meta.url), "utf8"));
 const rules = JSON.parse(fs.readFileSync(new URL("../el-alamein/local-data/rules.json", import.meta.url), "utf8"));
+const expertWeights = readJsonOrNull(new URL("../el-alamein/local-data/ai-weights-expert.json", import.meta.url));
 const board = createBoard(scenario);
 const AXIS_OBJECTIVE_HEXES = Object.freeze([...scenario.objectives.alamHalfaRidge, ...scenario.objectives.coastalRoadEast]);
 const ALLIED_ANCHOR_HEXES = Object.freeze([...AXIS_OBJECTIVE_HEXES, ...scenario.objectives.alliedWestExitEdge]);
@@ -66,6 +69,14 @@ const expectSecureObjective = args.has("expect-secure-objective");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function readJsonOrNull(url) {
+  try {
+    return JSON.parse(fs.readFileSync(url, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 function mulberry32(initialSeed) {
@@ -100,9 +111,16 @@ function makeState() {
     usedAttackers: [],
     usedDefenders: [],
     declaredCombats: [],
+    combatMode: "declare",
+    combatCompleteNotified: false,
+    retreatTask: null,
+    advanceTask: null,
+    lastMove: null,
+    lastCombatResult: null,
     eliminatedUnitIds: [],
     firstAxisObjective: null,
     axisObjectiveLostAfterEntry: false,
+    phaseSearchMoves: 0,
     movementPlan: null,
     winner: null,
   };
@@ -119,6 +137,7 @@ function activeSide(state) {
 function context(state) {
   return {
     board,
+    scenario,
     rules,
     state,
     units: state.units,
@@ -152,6 +171,7 @@ function runMovement(state, trace = false) {
   const side = activeSide(state);
   if (side === "allied" && checkAlliedBreakthroughVictory(state, trace)) return;
   state.movementPlan = buildOperationalPlan(state, side);
+  applyBeamSearchMovementPlan(state, side, trace);
   const units = liveUnits(state.units)
     .filter((unit) => unit.side === side && !unit.disrupted)
     .sort((a, b) => movePriority(state, b) - movePriority(state, a) || String(a.id).localeCompare(String(b.id)));
@@ -169,16 +189,56 @@ function runMovement(state, trace = false) {
       console.error(`${side} ${unit.id} ${unit.combat}-${unit.movement} ${from} -> ${to} d=${dist} score=${order?.score?.toFixed?.(1) ?? "-"}`);
     }
     if (!order) continue;
-    unit.hexId = order.hexId;
-    state.movedUnits.push(unit.id);
-    if (isAlliedBreakthroughMove(context(state), unit, order.hexId, order.route.remaining)) {
-      state.winner = { side: "allied", reason: "breakthrough", turn: state.turn };
-      if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
-      return;
-    }
-    if (unit.side === "axis") recordAxisObjective(state);
+    applyMoveOrder(state, unit, order, trace);
   }
   state.movementPlan = null;
+}
+
+function applyBeamSearchMovementPlan(state, side, trace = false) {
+  const environment = createEnvironment({
+    scenario,
+    rules,
+    board,
+    state,
+  });
+  const plan = beamSearchMovementPhase(environment, {
+    side,
+    beamWidth: 10,
+    candidateLimit: 20,
+    maxActions: 5,
+    nodeLimit: 72,
+    timeBudgetMs: 190,
+    minNodes: 16,
+    projectionCandidateLimit: 10,
+    projectionBeamLimit: 3,
+    weights: expertWeights?.phaseSearch || null,
+  });
+  if (!plan?.actions?.length) return 0;
+  let moved = 0;
+  for (const action of plan.actions) {
+    if (state.winner || action.type !== "MOVE_UNIT") break;
+    const unit = unitById(state.units, action.unitId);
+    if (!unit || unit.eliminated || unit.disrupted || unit.side !== side || state.movedUnits.includes(unit.id)) continue;
+    const route = getReachableHexes(context(state), unit).get(action.toHexId);
+    if (!route) continue;
+    if (trace) console.error(`beam ${side} ${unit.id} ${hexLabel(unit.hexId)} -> ${hexLabel(action.toHexId)} projection=${plan.projection?.reason || "-"}`);
+    applyMoveOrder(state, unit, { hexId: action.toHexId, route }, trace);
+    moved += 1;
+  }
+  state.phaseSearchMoves += moved;
+  return moved;
+}
+
+function applyMoveOrder(state, unit, order, trace = false) {
+  unit.hexId = order.hexId;
+  state.movedUnits.push(unit.id);
+  if (isAlliedBreakthroughMove(context(state), unit, order.hexId, order.route.remaining)) {
+    state.winner = { side: "allied", reason: "breakthrough", turn: state.turn };
+    if (trace) console.error(`winner allied breakthrough ${unit.id} ${hexLabel(order.hexId)} remaining=${order.route.remaining}`);
+    return false;
+  }
+  if (unit.side === "axis") recordAxisObjective(state);
+  return true;
 }
 
 function checkAlliedBreakthroughVictory(state, trace = false) {
@@ -564,6 +624,12 @@ function endPhase(state, trace = false) {
   state.usedAttackers = [];
   state.usedDefenders = [];
   state.declaredCombats = [];
+  state.combatMode = "declare";
+  state.combatCompleteNotified = false;
+  state.retreatTask = null;
+  state.advanceTask = null;
+  state.lastMove = null;
+  state.lastCombatResult = null;
 
   if (state.winner) return;
   if (shouldCheckAxisObjectiveVictoryAtPhaseEnd({ phaseIndex: state.phaseIndex, phases: rules.phases })) {
@@ -2706,6 +2772,7 @@ function summarizeGame(state, gameSeed) {
     axisObjectiveHoldStrength: bridgehead.holdStrength,
     axisObjectiveCounterThreat: bridgehead.counterThreat,
     axisObjectiveDistance,
+    phaseSearchMoves: state.phaseSearchMoves || 0,
     closestAxis,
   };
 }
@@ -2765,6 +2832,7 @@ const summary = {
   averageAlliedCombat: Number(average("alliedCombat").toFixed(2)),
   averageAxisEliminated: Number(average("axisEliminated").toFixed(2)),
   averageAlliedEliminated: Number(average("alliedEliminated").toFixed(2)),
+  averagePhaseSearchMoves: Number(average("phaseSearchMoves").toFixed(2)),
   averageAxisObjectiveDistance: Number(average("axisObjectiveDistance").toFixed(2)),
   axisObjectiveEntries: objectiveEntries.length,
   objectiveLostAfterEntry: objectiveLostAfterEntry.length,
