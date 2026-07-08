@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 
 import {
   AI_HEURISTIC_WEIGHTS,
+  alliedOperationalPlanMoveScore,
+  alliedForwardWallPlaybookScore,
+  axisOperationalPlanMoveScore,
+  axisSpearheadPlaybookScore,
   bridgeheadSupportScore,
   combatDeclarationThreshold,
   combatOvercommitPenalty,
@@ -272,6 +276,188 @@ const isolatedFinalGate = finalGateScreenScore({
 assert.ok(
   urgentFinalGate > isolatedFinalGate * 2,
   "late Allied defense should seal objective gates with linked ZOC instead of isolated blockers",
+);
+
+const spearheadBreakthrough = axisSpearheadPlaybookScore({
+  turn: 3,
+  currentFocusDistance: 6,
+  candidateFocusDistance: 2,
+  currentObjectiveDistance: 6,
+  candidateObjectiveDistance: 3,
+  movement: 10,
+  combat: 4,
+  isAssault: true,
+  encirclementScore: 420,
+  lineLinks: 2,
+  remainingMovement: 2,
+});
+const driftingEncirclement = axisSpearheadPlaybookScore({
+  turn: 3,
+  currentFocusDistance: 4,
+  candidateFocusDistance: 4,
+  currentObjectiveDistance: 3,
+  candidateObjectiveDistance: 6,
+  movement: 10,
+  combat: 4,
+  isAssault: true,
+  encirclementScore: 420,
+  lineLinks: 1,
+  remainingMovement: 1,
+});
+assert.ok(
+  spearheadBreakthrough > driftingEncirclement + 700,
+  "Axis playbook should use encirclement to open the objective road, not chase away from it",
+);
+
+const forwardWall = alliedForwardWallPlaybookScore({
+  turn: 2,
+  hexToObjective: 6,
+  axisToObjective: 7,
+  axisToHex: 3,
+  onApproachLane: true,
+  lineLinks: 2,
+  zocCutsLane: true,
+  combat: 4,
+  movement: 8,
+});
+const objectiveHug = alliedForwardWallPlaybookScore({
+  turn: 2,
+  hexToObjective: 1,
+  axisToObjective: 7,
+  axisToHex: 6,
+  onApproachLane: true,
+  lineLinks: 0,
+  zocCutsLane: false,
+  combat: 4,
+  movement: 8,
+});
+assert.ok(
+  forwardWall > objectiveHug * 3,
+  "Allied playbook should build a linked forward ZOC wall instead of sitting on the objective",
+);
+
+const axisPlannedPocket = axisOperationalPlanMoveScore({
+  turn: 3,
+  role: "spearhead",
+  currentFocusDistance: 6,
+  candidateFocusDistance: 3,
+  currentObjectiveDistance: 7,
+  candidateObjectiveDistance: 4,
+  movement: 10,
+  combat: 6,
+  lineLinks: 2,
+  currentTrapExits: 3,
+  candidateTrapExits: 0,
+  targetValue: 64,
+});
+const axisOffPlanPocket = axisOperationalPlanMoveScore({
+  turn: 3,
+  role: "spearhead",
+  currentFocusDistance: 4,
+  candidateFocusDistance: 6,
+  currentObjectiveDistance: 4,
+  candidateObjectiveDistance: 7,
+  movement: 10,
+  combat: 6,
+  lineLinks: 1,
+  currentTrapExits: 3,
+  candidateTrapExits: 0,
+  targetValue: 64,
+});
+assert.ok(
+  axisPlannedPocket > axisOffPlanPocket + 800,
+  "Axis operational plan should encircle on the breakthrough line instead of chasing away from objectives",
+);
+
+const releasedAxisScreen = axisOperationalPlanMoveScore({
+  turn: 2,
+  role: "screen",
+  currentFocusDistance: 9,
+  candidateFocusDistance: 7,
+  currentObjectiveDistance: 10,
+  candidateObjectiveDistance: 8,
+  movement: 6,
+  combat: 3,
+  lineLinks: 2,
+  westExitDistance: 5,
+  westExitThreat: 12,
+});
+const wastedAxisScreen = axisOperationalPlanMoveScore({
+  turn: 2,
+  role: "screen",
+  currentFocusDistance: 9,
+  candidateFocusDistance: 10,
+  currentObjectiveDistance: 10,
+  candidateObjectiveDistance: 11,
+  movement: 6,
+  combat: 3,
+  lineLinks: 1,
+  westExitDistance: 1,
+  westExitThreat: 12,
+});
+assert.ok(
+  releasedAxisScreen > wastedAxisScreen + 350,
+  "Axis screen units should release forward when the west exit is not under serious threat",
+);
+
+const riskyZocLock = axisOperationalPlanMoveScore({
+  turn: 3,
+  role: "spearhead",
+  currentFocusDistance: 5,
+  candidateFocusDistance: 4,
+  currentObjectiveDistance: 5,
+  candidateObjectiveDistance: 3,
+  movement: 10,
+  combat: 6,
+  lineLinks: 1,
+  inEnemyZoc: true,
+  ownEscapeExits: 1,
+});
+const cleanApproach = axisOperationalPlanMoveScore({
+  turn: 3,
+  role: "spearhead",
+  currentFocusDistance: 5,
+  candidateFocusDistance: 4,
+  currentObjectiveDistance: 5,
+  candidateObjectiveDistance: 3,
+  movement: 10,
+  combat: 6,
+  lineLinks: 1,
+  inEnemyZoc: false,
+  ownEscapeExits: 5,
+});
+assert.ok(
+  cleanApproach > riskyZocLock + 400,
+  "Axis spearheads should avoid being locked in enemy ZOC before they are close enough to the objective",
+);
+
+const alliedPlannedWall = alliedOperationalPlanMoveScore({
+  turn: 2,
+  role: "wall",
+  hexToObjective: 6,
+  axisToObjective: 7,
+  axisToHex: 3,
+  onApproachLane: true,
+  lineLinks: 2,
+  zocCutsLane: true,
+  combat: 4,
+  movement: 8,
+});
+const alliedLateObjectiveHug = alliedOperationalPlanMoveScore({
+  turn: 2,
+  role: "wall",
+  hexToObjective: 1,
+  axisToObjective: 7,
+  axisToHex: 6,
+  onApproachLane: true,
+  lineLinks: 0,
+  zocCutsLane: false,
+  combat: 4,
+  movement: 8,
+});
+assert.ok(
+  alliedPlannedWall > alliedLateObjectiveHug + 250,
+  "Allied operational plan should prefer a forward linked wall over early objective hugging",
 );
 
 console.log("El Alamein AI heuristic tests passed.");

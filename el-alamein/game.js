@@ -11,7 +11,7 @@
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-10");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-12");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -595,6 +595,7 @@
       running: false,
       scheduled: false,
       waitingForHuman: false,
+      movementPlan: null,
     },
   };
 
@@ -1839,6 +1840,7 @@
   async function runAiMovementPhase() {
     let moved = 0;
     const side = activeSide();
+    app.ai.movementPlan = buildAiOperationalPlan(side);
     const units = liveUnits()
       .filter((unit) => unit.side === side && !unit.disrupted)
       .sort((a, b) => aiMovePriority(b) - aiMovePriority(a) || String(a.id).localeCompare(String(b.id)));
@@ -1846,6 +1848,7 @@
     for (const unit of units) {
       if (app.state.winner || !isAiTurn()) break;
       if (app.state.movedUnits.includes(unit.id) || unit.eliminated) continue;
+      app.ai.movementPlan = buildAiOperationalPlan(side);
       app.state.selectedUnitId = unit.id;
       app.reachable.clear();
       drawAnimationFrame();
@@ -1860,6 +1863,7 @@
 
     app.state.selectedUnitId = null;
     app.reachable.clear();
+    app.ai.movementPlan = null;
     log(moved ? tr("text.aiMovementDone", { side: sideLabel(side) }) : tr("text.aiNoMove"));
     app.ai.waitingForHuman = true;
     draw();
@@ -1880,11 +1884,16 @@
       if (guardMove === "hold") return null;
       if (guardMove) return { hexId: guardMove, route: reachable.get(guardMove), reachable };
     }
-    const currentScore = roughAiMoveScore(unit, unit.hexId, { remaining: movementAllowance(unit), path: [unit.hexId] });
+    app.ai.movementPlan = buildAiOperationalPlan(unit.side);
+    const scoreContext = buildAiMoveScoreContext(unit);
+    const currentRoute = { remaining: movementAllowance(unit), path: [unit.hexId] };
+    const currentScore = scoreAiHex(unit, unit.hexId, currentRoute, scoreContext) + roughAiMoveScore(unit, unit.hexId, currentRoute) * 0.06;
     let best = null;
     let scored = 0;
     for (const candidate of prioritizedAiMoveCandidates(unit, reachable)) {
-      if (!best || candidate.rough > best.score) best = { hexId: candidate.hexId, route: candidate.route, score: candidate.rough };
+      const detailed = scoreAiHex(unit, candidate.hexId, candidate.route, scoreContext);
+      const score = detailed + candidate.rough * 0.06;
+      if (!best || score > best.score) best = { hexId: candidate.hexId, route: candidate.route, score };
       scored += 1;
       if (scored % AI_SCORE_BATCH_SIZE === 0) {
         await yieldToBrowser();
@@ -1893,6 +1902,13 @@
     }
     if (!best || best.score <= currentScore + aiRoughMoveThreshold(unit)) return null;
     return { hexId: best.hexId, route: best.route, reachable };
+  }
+
+  function buildAiMoveScoreContext(unit) {
+    return {
+      operationalPlan: currentAiMovementPlan(unit.side),
+      axisCurrentOvermass: unit.side === "axis" ? axisLocalAttackOvermassScore(unit, unit.hexId) : 0,
+    };
   }
 
   function prioritizedAiMoveCandidates(unit, reachable) {
@@ -1927,14 +1943,19 @@
     if (unit.side === "axis") {
       score += axisObjectiveScore(hexId) * 14;
       if (candidateDistance <= 2) score += (3 - candidateDistance) * (movement >= 9 ? 180 : 92);
-      score += axisFastEncirclementScore(unit, hexId, route);
-      score -= axisFastOvermassPenalty(unit, hexId);
+      const fastEncirclement = axisFastEncirclementScore(unit, hexId, route);
+      const fastOvermass = axisFastOvermassPenalty(unit, hexId);
+      score += fastEncirclement;
+      score += axisSpearheadPlaybookMoveScore(unit, hexId, route, fastEncirclement, fastOvermass);
+      score += axisOperationalPlanMoveScoreForUnit(unit, hexId, route) * 0.48;
+      score -= fastOvermass;
       if (nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge) <= 1 && isAxisAssaultUnit(unit)) score -= 240;
     } else {
       const objectiveDistance = nearestDistance(hexId, axisObjectiveHexes());
       if (objectiveDistance >= 4 && objectiveDistance <= 8) score += 170 - Math.abs(6 - objectiveDistance) * 18;
       if (objectiveDistance <= 1) score -= app.state.turn <= 3 ? 150 : 40;
       score += alliedDefenseScore(hexId) * 10;
+      score += alliedOperationalPlanMoveScoreForUnit(unit, hexId) * 0.22;
     }
 
     for (const neighborId of neighborsOf(hexId)) {
@@ -1976,6 +1997,60 @@
     return movement * 1.7 + combat * 1.2 + objectivePressure + reliefPriority;
   }
 
+  function currentAiMovementPlan(side) {
+    if (
+      app.ai.movementPlan
+      && app.ai.movementPlan.side === side
+      && app.ai.movementPlan.turn === app.state.turn
+      && app.ai.movementPlan.phaseIndex === app.state.phaseIndex
+    ) {
+      return app.ai.movementPlan;
+    }
+    app.ai.movementPlan = buildAiOperationalPlan(side);
+    return app.ai.movementPlan;
+  }
+
+  function buildAiOperationalPlan(side) {
+    const units = liveUnits().filter((unit) => unit.side === side && !unit.disrupted);
+    if (side === "axis") {
+      const focusObjectiveHex = axisFocusObjectiveHex();
+      const westExitThreat = Math.max(0, ...app.scenario.objectives.alliedWestExitEdge.map((hexId) => alliedExitThreat(hexId)));
+      const ranked = units
+        .filter((unit) => Number(unit.movement || 0) >= 6 || Number(unit.combat || 0) >= 3)
+        .sort((a, b) => (
+          Number(b.movement || 0) * 2.2 + Number(b.combat || 0) * 1.7 + (isAxisAssaultUnit(b) ? 16 : 0)
+        ) - (
+          Number(a.movement || 0) * 2.2 + Number(a.combat || 0) * 1.7 + (isAxisAssaultUnit(a) ? 16 : 0)
+        ));
+      const spearheadUnitIds = new Set(ranked.slice(0, Math.max(5, Math.min(8, ranked.length))).map((unit) => unit.id));
+      return {
+        side,
+        turn: app.state.turn,
+        phaseIndex: app.state.phaseIndex,
+        focusObjectiveHex,
+        spearheadUnitIds,
+        westExitThreat,
+      };
+    }
+
+    const axisAssaultUnits = liveUnits()
+      .filter((unit) => isAxisAssaultUnit(unit) && !unit.disrupted)
+      .sort((a, b) => nearestDistance(a.hexId, axisObjectiveHexes()) - nearestDistance(b.hexId, axisObjectiveHexes()));
+    const wallUnitIds = new Set(units
+      .filter((unit) => Number(unit.combat || 0) >= 2 || Number(unit.movement || 0) >= 7)
+      .sort((a, b) => Number(b.combat || 0) * 1.4 + Number(b.movement || 0) - (Number(a.combat || 0) * 1.4 + Number(a.movement || 0)))
+      .slice(0, Math.max(6, Math.min(10, units.length)))
+      .map((unit) => unit.id));
+    return {
+      side,
+      turn: app.state.turn,
+      phaseIndex: app.state.phaseIndex,
+      focusObjectiveHex: axisFocusObjectiveHex(),
+      axisSpearheadIds: new Set(axisAssaultUnits.slice(0, 6).map((unit) => unit.id)),
+      wallUnitIds,
+    };
+  }
+
   function scoreAiHex(unit, hexId, route = null, scoreContext = null) {
     const hex = hexById(hexId);
     if (!hex) return -Infinity;
@@ -1998,8 +2073,12 @@
       score += assault ? 0 : axisForwardScreenTempoScore(unit, hexId);
       score += attackSetupScore(unit, hexId) * (assault ? 3.9 : 3.1);
       score += zocTrapSetupScore(unit, hexId) * (assault ? 9.4 : 6.6);
-      score += axisFastEncirclementScore(unit, hexId, route) * (assault ? 0.72 : combat >= 3 ? 0.48 : 0.25);
-      score -= axisFastOvermassPenalty(unit, hexId) * (assault ? 0.5 : 0.35);
+      const fastEncirclement = axisFastEncirclementScore(unit, hexId, route);
+      const fastOvermass = axisFastOvermassPenalty(unit, hexId);
+      score += fastEncirclement * (assault ? 0.72 : combat >= 3 ? 0.48 : 0.25);
+      score += axisSpearheadPlaybookMoveScore(unit, hexId, route, fastEncirclement, fastOvermass) * (assault ? 0.82 : 0.48);
+      score += axisOperationalPlanMoveScoreForUnit(unit, hexId, route, scoreContext) * (assault ? 0.72 : 0.5);
+      score -= fastOvermass * (assault ? 0.5 : 0.35);
       score -= axisLocalAttackOvermassScore(unit, hexId) * (assault ? 1.22 : 1);
       score += axisSurplusBreakthroughScore(unit, hexId, route, scoreContext) * (assault ? 1.18 : combat >= 3 ? 0.82 : 0.32);
       if (assault) {
@@ -2033,6 +2112,7 @@
       score += alliedApproachInterdictionScore(unit, hexId) * 1.28;
       score += alliedForwardScreenLineScore(unit, hexId) * (combat >= 4 ? 1.32 : 1.06);
       score += alliedForwardZocWallScore(unit, hexId) * (combat >= 3 ? 2.7 : 1.95);
+      score += alliedOperationalPlanMoveScoreForUnit(unit, hexId, scoreContext) * (combat >= 3 ? 0.36 : 0.24);
       score += alliedSpearheadCounterattackPositionScore(unit, hexId);
       score -= alliedIsolatedObjectivePenaltyScore(unit, hexId);
       score += alliedRidgeReserveScore(unit, hexId) * (combat >= 4 ? 1.05 : 0.9);
@@ -2242,6 +2322,208 @@
       score += trapGain * 9 + Math.max(0, 3 - trappedExits) * 3;
     }
     return score;
+  }
+
+  function axisSpearheadPlaybookMoveScore(unit, hexId, route = null, encirclementScore = 0, overmassPenalty = 0) {
+    if (unit.side !== "axis") return 0;
+    const focus = axisFocusObjectiveHex();
+    if (!focus) return 0;
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    const lineLinks = liveUnits().filter((ally) => (
+      ally.side === "axis"
+      && ally.id !== unit.id
+      && !ally.disrupted
+      && hexDistance(hexId, ally.hexId) === 2
+      && hexDistance(ally.hexId, focus) <= 7
+    )).length;
+
+    return app.aiHeuristics.axisSpearheadPlaybookScore({
+      turn: app.state.turn,
+      currentFocusDistance: hexDistance(unit.hexId, focus),
+      candidateFocusDistance: hexDistance(hexId, focus),
+      currentObjectiveDistance: nearestDistance(unit.hexId, axisObjectiveHexes()),
+      candidateObjectiveDistance: nearestDistance(hexId, axisObjectiveHexes()),
+      movement,
+      combat,
+      isAssault: isAxisAssaultUnit(unit),
+      encirclementScore,
+      lineLinks,
+      remainingMovement: Number(route?.remaining || 0),
+      overmassPenalty,
+    });
+  }
+
+  function axisOperationalPlanMoveScoreForUnit(unit, hexId, route = null, scoreContext = null) {
+    if (unit.side !== "axis") return 0;
+    const plan = scoreContext?.operationalPlan || currentAiMovementPlan("axis");
+    const focus = plan?.focusObjectiveHex || axisFocusObjectiveHex();
+    if (!focus) return 0;
+
+    const combat = Number(unit.combat || 0);
+    const movement = Number(unit.movement || 0);
+    const role = plan.spearheadUnitIds?.has(unit.id)
+      ? "spearhead"
+      : combat >= 3 || movement >= 6
+        ? "support"
+        : "screen";
+    const mates = liveUnits().filter((ally) => ally.side === "axis" && ally.id !== unit.id && !ally.disrupted);
+    const lineLinks = mates.filter((ally) => hexDistance(hexId, ally.hexId) === 2 && nearestDistance(ally.hexId, axisObjectiveHexes()) <= 12).length;
+    const adjacentCrowd = mates.filter((ally) => hexDistance(hexId, ally.hexId) === 1 && nearestDistance(ally.hexId, axisObjectiveHexes()) <= 12).length;
+    const pocket = bestAxisOperationalPocket(unit, hexId, focus);
+    const localOvermass = scoreContext?.axisCurrentOvermass ?? axisLocalAttackOvermassScore(unit, unit.hexId);
+
+    return app.aiHeuristics.axisOperationalPlanMoveScore({
+      turn: app.state.turn,
+      role,
+      currentFocusDistance: hexDistance(unit.hexId, focus),
+      candidateFocusDistance: hexDistance(hexId, focus),
+      currentObjectiveDistance: nearestDistance(unit.hexId, axisObjectiveHexes()),
+      candidateObjectiveDistance: nearestDistance(hexId, axisObjectiveHexes()),
+      movement,
+      combat,
+      lineLinks,
+      adjacentCrowd,
+      currentTrapExits: pocket.currentTrapExits,
+      candidateTrapExits: pocket.candidateTrapExits,
+      targetValue: pocket.targetValue,
+      localOvermass,
+      westExitDistance: nearestDistance(hexId, app.scenario.objectives.alliedWestExitEdge),
+      westExitThreat: plan?.westExitThreat || 0,
+      inEnemyZoc: isEnemyZoc(hexId, unit.side, unit.id),
+      ownEscapeExits: retreatExitCount({ ...unit, hexId }, { unit, hexId }),
+    });
+  }
+
+  function bestAxisOperationalPocket(unit, hexId, focusObjectiveHex) {
+    const hypothetical = { unit, hexId };
+    let best = { currentTrapExits: 6, candidateTrapExits: 6, targetValue: 0, score: 0 };
+    for (const enemy of liveUnits().filter((candidate) => candidate.side === "allied" && !candidate.disrupted)) {
+      const enemyDistance = hexDistance(hexId, enemy.hexId);
+      if (enemyDistance > 2) continue;
+      const currentTrapExits = retreatExitCount(enemy, null);
+      const candidateTrapExits = retreatExitCount(enemy, hypothetical);
+      const trapGain = Math.max(0, currentTrapExits - candidateTrapExits);
+      if (!trapGain && candidateTrapExits > 1) continue;
+
+      const focusDistance = hexDistance(enemy.hexId, focusObjectiveHex);
+      const targetValue = strategicUnitValueForSide("axis", enemy)
+        + Number(enemy.combat || 0) * 8
+        + Math.max(0, 8 - focusDistance) * 5;
+      const score = trapGain * 86
+        + (candidateTrapExits <= 0 ? 240 : candidateTrapExits === 1 ? 96 : 0)
+        + targetValue
+        + (enemyDistance === 1 ? 38 : 0);
+      if (score > best.score) best = { currentTrapExits, candidateTrapExits, targetValue, score };
+    }
+    return best;
+  }
+
+  function alliedForwardWallPlaybookMoveScore(unit, hexId) {
+    if (unit.side !== "allied") return 0;
+    const axisAssaultUnits = liveUnits().filter((candidate) => isAxisAssaultUnit(candidate) && !candidate.disrupted);
+    if (!axisAssaultUnits.length) return 0;
+
+    const zocHexes = [hexId, ...neighborsOf(hexId)];
+    let best = 0;
+    for (const axisUnit of axisAssaultUnits) {
+      for (const objectiveHexId of axisUnitTargetHexes(axisUnit)) {
+        const axisToObjective = hexDistance(axisUnit.hexId, objectiveHexId);
+        const axisToHex = hexDistance(axisUnit.hexId, hexId);
+        const hexToObjective = hexDistance(hexId, objectiveHexId);
+        const onApproachLane = axisToHex + hexToObjective <= axisToObjective + 3;
+        const lineLinks = liveUnits().filter((ally) => (
+          ally.side === "allied"
+          && ally.id !== unit.id
+          && !ally.disrupted
+          && hexDistance(hexId, ally.hexId) === 2
+          && hexDistance(ally.hexId, objectiveHexId) >= 3
+          && hexDistance(ally.hexId, objectiveHexId) <= 9
+        )).length;
+        const zocCutsLane = zocHexes.some((zocHexId) => {
+          const zocToAxis = hexDistance(zocHexId, axisUnit.hexId);
+          const zocToObjective = hexDistance(zocHexId, objectiveHexId);
+          return zocToAxis >= 1
+            && zocToAxis <= 6
+            && zocToObjective < axisToObjective
+            && zocToAxis + zocToObjective <= axisToObjective + 2;
+        });
+        best = Math.max(best, app.aiHeuristics.alliedForwardWallPlaybookScore({
+          turn: app.state.turn,
+          hexToObjective,
+          axisToObjective,
+          axisToHex,
+          onApproachLane,
+          lineLinks,
+          zocCutsLane,
+          combat: Number(unit.combat || 0),
+          movement: Number(unit.movement || 0),
+          occupiedByAllied: liveUnitAt(objectiveHexId)?.side === "allied",
+        }));
+      }
+    }
+    return Math.min(680, best);
+  }
+
+  function alliedOperationalPlanMoveScoreForUnit(unit, hexId, scoreContext = null) {
+    if (unit.side !== "allied") return 0;
+    const plan = scoreContext?.operationalPlan || currentAiMovementPlan("allied");
+    const axisSpearheads = Array.from(plan?.axisSpearheadIds || [])
+      .map(unitById)
+      .filter((candidate) => candidate && !candidate.eliminated && !candidate.disrupted);
+    if (!axisSpearheads.length) return 0;
+
+    const role = plan?.wallUnitIds?.has(unit.id)
+      ? "wall"
+      : Number(unit.combat || 0) >= 4
+        ? "counter"
+        : "reserve";
+    const zocHexes = [hexId, ...neighborsOf(hexId)];
+    let best = 0;
+    for (const axisUnit of axisSpearheads) {
+      for (const objectiveHexId of axisUnitTargetHexes(axisUnit)) {
+        const axisToObjective = hexDistance(axisUnit.hexId, objectiveHexId);
+        const axisToHex = hexDistance(axisUnit.hexId, hexId);
+        const hexToObjective = hexDistance(hexId, objectiveHexId);
+        const onApproachLane = axisToHex + hexToObjective <= axisToObjective + 3;
+        if (!onApproachLane) continue;
+
+        const alliedMates = liveUnits().filter((ally) => (
+          ally.side === "allied"
+          && ally.id !== unit.id
+          && !ally.disrupted
+          && nearestDistance(ally.hexId, axisObjectiveHexes()) <= 10
+        ));
+        const lineLinks = alliedMates.filter((ally) => hexDistance(hexId, ally.hexId) === 2).length;
+        const adjacentCrowd = alliedMates.filter((ally) => hexDistance(hexId, ally.hexId) === 1).length;
+        const zocCutsLane = zocHexes.some((zocHexId) => {
+          const zocToAxis = hexDistance(zocHexId, axisUnit.hexId);
+          const zocToObjective = hexDistance(zocHexId, objectiveHexId);
+          return zocToAxis >= 1
+            && zocToAxis <= 6
+            && zocToObjective < axisToObjective
+            && zocToAxis + zocToObjective <= axisToObjective + 2;
+        });
+        const currentTrapExits = retreatExitCount(axisUnit, null);
+        const candidateTrapExits = retreatExitCount(axisUnit, { unit, hexId });
+        best = Math.max(best, app.aiHeuristics.alliedOperationalPlanMoveScore({
+          turn: app.state.turn,
+          role,
+          hexToObjective,
+          axisToObjective,
+          axisToHex,
+          onApproachLane,
+          lineLinks,
+          adjacentCrowd,
+          zocCutsLane,
+          combat: Number(unit.combat || 0),
+          movement: Number(unit.movement || 0),
+          occupiedByAllied: liveUnitAt(objectiveHexId)?.side === "allied",
+          counterTrapGain: Math.max(0, currentTrapExits - candidateTrapExits),
+        }));
+      }
+    }
+    return Math.min(420, best);
   }
 
   function axisFastEncirclementScore(unit, hexId, route = null) {

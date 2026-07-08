@@ -93,6 +93,34 @@ Before finishing:
 
 If multiple Codex conversations are active, only one should edit `el-alamein/game.js` at a time. Other conversations should do read-only review, write tests, or work in clearly separate files. When grouping changes for commit, stage core-rule refactors separately from AI tuning, CSS/UI changes, or generated assets.
 
+## Gstack-Style Collaboration Loop
+
+Use a lightweight version of the gstack workflow for non-trivial work. gstack's useful idea for this repo is not a new framework or dependency; it is a staged AI collaboration loop: clarify, plan, implement, review, QA, ship. Apply it as follows:
+
+1. Intake: restate the player-visible problem and the behavior group being changed. For vague requests, ask only the minimum blocking question; otherwise proceed with the best reasonable interpretation.
+2. Engineering plan: identify touched files, current dirty state, likely rule/UI/AI boundaries, and the checks that will prove the work. Keep the plan short unless the work is risky.
+3. Implementation: make the smallest coherent change that satisfies the behavior. Do not mix unrelated gstack stages into one edit; for example, do not combine AI tuning with visual redesign unless the user asked for both.
+4. Review pass: before finalizing, read the diff as a reviewer. Look specifically for rule contradictions, stale cache versions, accidental UI behavior changes, and duplicated logic between `game.js`, `src/core/`, tests, and simulation scripts.
+5. QA pass: run the required checks. For AI work, run at least one deterministic simulation or trace when feasible. For UI/performance work, inspect the browser version that the user will actually play.
+6. Ship pass: when the user asks to upload/sync, commit only the relevant files, push to `zizi-public main`, then verify or report the GitHub Pages cache version.
+
+Map gstack-style roles to this project:
+
+- Product/GM: player experience, scenario intent, victory pressure, and whether the AI behaves like a plausible opponent.
+- Engineer: code boundaries, maintainability, deterministic rule logic, and static GitHub Pages constraints.
+- Rules reviewer: ZOC, movement, combat, retreat, advance, and victory correctness.
+- QA: reproducible seeds, browser checks, no page stalls, no missing assets, no broken hotseat mode.
+
+Do not install or vendor gstack into this repository unless the user explicitly asks. Treat it as a workflow reference, not a runtime dependency.
+
+For El Alamein AI specifically:
+
+- Keep new reusable doctrine in `el-alamein/src/app/ai-heuristics.js` as pure functions with unit tests.
+- Let `game.js` and `scripts/simulate-el-alamein-ai.mjs` pass derived facts into those functions; do not duplicate large scoring formulas in both places.
+- AI must choose only from legal actions produced by core rule helpers such as reachable movement, attack legality, odds calculation, and legal retreat paths.
+- Treat each bad AI screenshot or seed as a regression case: describe the expected tactic, add or adjust a heuristic test when practical, then tune the implementation.
+- Preserve side-specific doctrine: Axis plans should open a road to objectives through breakthrough, encirclement, and mobile exploitation; Allied plans should build linked forward ZOC walls and counterattack overextended spearheads.
+
 ## El Alamein Architecture Rules
 
 Use this target shape:

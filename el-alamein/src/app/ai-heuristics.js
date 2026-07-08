@@ -112,6 +112,35 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     mobile: 34,
     immediateThreat: 170,
   }),
+  playbook: Object.freeze({
+    axisProgress: 92,
+    axisClose: 170,
+    axisFinalClose: 310,
+    axisEncircle: 0.22,
+    axisLineLink: 36,
+    axisReserve: 18,
+    axisDriftPenalty: 210,
+    axisLateHoldPenalty: 155,
+    axisPlanFocus: 128,
+    axisPlanObjective: 96,
+    axisPlanTrap: 132,
+    axisPlanLine: 58,
+    axisPlanCrowdPenalty: 64,
+    axisPlanScreenRelease: 118,
+    axisPlanZocLockPenalty: 360,
+    alliedForwardBand: 165,
+    alliedLaneCut: 145,
+    alliedLineLink: 72,
+    alliedCombat: 13,
+    alliedMobile: 28,
+    alliedObjectiveHugPenalty: 150,
+    alliedAxisContactPenalty: 85,
+    alliedPlanForwardBand: 92,
+    alliedPlanLaneCut: 104,
+    alliedPlanLine: 58,
+    alliedPlanCounterTrap: 72,
+    alliedPlanObjectiveHugPenalty: 96,
+  }),
 });
 
 export function clampScore(score, min, max) {
@@ -463,4 +492,233 @@ export function finalGateScreenScore({
 
   if (links === 0 && hexToObjective <= 1) score -= weights.noLinkPenalty;
   return Math.max(0, score * urgency * combatFit);
+}
+
+export function axisSpearheadPlaybookScore({
+  turn = 1,
+  currentFocusDistance = Infinity,
+  candidateFocusDistance = Infinity,
+  currentObjectiveDistance = Infinity,
+  candidateObjectiveDistance = Infinity,
+  movement = 0,
+  combat = 0,
+  isAssault = false,
+  encirclementScore = 0,
+  lineLinks = 0,
+  remainingMovement = 0,
+  overmassPenalty = 0,
+  weights = AI_HEURISTIC_WEIGHTS.playbook,
+}) {
+  const mobile = Number(movement || 0) >= 7;
+  const usefulCombat = Number(combat || 0) >= 3;
+  if (!mobile && !usefulCombat) return 0;
+
+  const focusProgress = Math.max(0, Number(currentFocusDistance || 0) - Number(candidateFocusDistance || 0));
+  const objectiveProgress = Math.max(0, Number(currentObjectiveDistance || 0) - Number(candidateObjectiveDistance || 0));
+  const urgency = turn >= 4 ? 1.9 : turn === 3 ? 1.35 : 1;
+  const assaultFit = isAssault ? 1.28 : mobile ? 0.9 : 0.58;
+  let score = (focusProgress * weights.axisProgress + objectiveProgress * weights.axisProgress * 0.72) * urgency * assaultFit;
+
+  if (candidateObjectiveDistance <= 1) score += weights.axisFinalClose * 1.45 * urgency * assaultFit;
+  else if (candidateObjectiveDistance <= 2) score += weights.axisClose * 0.86 * urgency * assaultFit;
+  else if (turn >= 3 && objectiveProgress > 0) score += objectiveProgress * weights.axisProgress * 0.88 * urgency * assaultFit;
+
+  if (candidateFocusDistance <= 1) score += weights.axisFinalClose * urgency * assaultFit;
+  else if (candidateFocusDistance <= 3) score += weights.axisClose * (4 - candidateFocusDistance) * 0.42 * urgency * assaultFit;
+  else if (turn >= 3 && candidateFocusDistance <= 5 && isAssault) score += 54 * urgency;
+
+  score += Math.min(3, Number(lineLinks || 0)) * weights.axisLineLink;
+  score += Math.min(4, Number(remainingMovement || 0)) * weights.axisReserve * (isAssault ? 1 : 0.55);
+  score += Math.max(0, Number(encirclementScore || 0)) * weights.axisEncircle;
+
+  const objectiveDrift = Number(candidateObjectiveDistance || 0) - Number(currentObjectiveDistance || 0);
+  if (objectiveDrift > 0) score -= objectiveDrift * weights.axisDriftPenalty * (turn >= 3 ? 1.2 : 0.82);
+  if (turn >= 3 && focusProgress <= 0 && candidateFocusDistance > 2) score -= weights.axisLateHoldPenalty * assaultFit;
+  score -= Math.max(0, Number(overmassPenalty || 0)) * 0.16;
+
+  return clampScore(score, -900, 1200);
+}
+
+export function alliedForwardWallPlaybookScore({
+  turn = 1,
+  hexToObjective = Infinity,
+  axisToObjective = Infinity,
+  axisToHex = Infinity,
+  onApproachLane = false,
+  lineLinks = 0,
+  zocCutsLane = false,
+  combat = 0,
+  movement = 0,
+  occupiedByAllied = false,
+  weights = AI_HEURISTIC_WEIGHTS.playbook,
+}) {
+  if (!onApproachLane || axisToObjective > 10 || axisToHex > 7) return 0;
+
+  const objectiveDistance = Number(hexToObjective || 0);
+  const axisDistance = Number(axisToHex || 0);
+  const links = Math.min(3, Number(lineLinks || 0));
+  const forwardBand = objectiveDistance >= 4 && objectiveDistance <= 8
+    ? weights.alliedForwardBand - Math.abs(6 - objectiveDistance) * 18
+    : objectiveDistance === 3
+      ? weights.alliedForwardBand * 0.45
+      : 0;
+  const contactShape = axisDistance >= 2 && axisDistance <= 4
+    ? Math.max(0, 5 - Math.abs(3 - axisDistance)) * 22
+    : axisDistance <= 1
+      ? -weights.alliedAxisContactPenalty
+      : 0;
+  const timing = turn <= 2 ? 1.25 : turn === 3 ? 1.1 : 0.85;
+  let score = forwardBand + contactShape
+    + links * weights.alliedLineLink
+    + (zocCutsLane ? weights.alliedLaneCut : 0)
+    + Number(combat || 0) * weights.alliedCombat
+    + (Number(movement || 0) >= 7 ? weights.alliedMobile : 0);
+
+  if (objectiveDistance <= 1 && !occupiedByAllied) score -= weights.alliedObjectiveHugPenalty * (turn <= 3 ? 1 : 0.45);
+  if (links === 0 && objectiveDistance <= 4) score -= weights.alliedLineLink;
+  return Math.max(0, score * timing);
+}
+
+export function axisOperationalPlanMoveScore({
+  turn = 1,
+  role = "support",
+  currentFocusDistance = Infinity,
+  candidateFocusDistance = Infinity,
+  currentObjectiveDistance = Infinity,
+  candidateObjectiveDistance = Infinity,
+  movement = 0,
+  combat = 0,
+  lineLinks = 0,
+  adjacentCrowd = 0,
+  currentTrapExits = 6,
+  candidateTrapExits = 6,
+  targetValue = 0,
+  localOvermass = 0,
+  westExitDistance = Infinity,
+  westExitThreat = 0,
+  inEnemyZoc = false,
+  ownEscapeExits = 6,
+  weights = AI_HEURISTIC_WEIGHTS.playbook,
+}) {
+  const mobile = Number(movement || 0) >= 7;
+  const usefulCombat = Number(combat || 0) >= 3;
+  if (!mobile && !usefulCombat) return 0;
+
+  const currentFocus = Number(currentFocusDistance || 0);
+  const candidateFocus = Number(candidateFocusDistance || 0);
+  const currentObjective = Number(currentObjectiveDistance || 0);
+  const candidateObjective = Number(candidateObjectiveDistance || 0);
+  const focusProgress = currentFocus - candidateFocus;
+  const objectiveProgress = currentObjective - candidateObjective;
+  const urgency = turn >= 4 ? 1.85 : turn === 3 ? 1.35 : 1;
+  const roleFit = role === "spearhead" ? 1.24 : role === "support" ? 0.9 : 0.48;
+  let score = 0;
+
+  score += Math.max(-2, focusProgress) * weights.axisPlanFocus * urgency * roleFit;
+  score += Math.max(-2, objectiveProgress) * weights.axisPlanObjective * urgency * roleFit;
+  if (candidateObjective <= 1) score += weights.axisFinalClose * 1.2 * urgency * roleFit;
+  else if (candidateObjective <= 3) score += weights.axisClose * Math.max(0, 4 - candidateObjective) * 0.52 * urgency * roleFit;
+  if (turn >= 4 && role === "spearhead") {
+    score += Math.max(0, 4 - candidateObjective) * 175 * roleFit;
+    if (objectiveProgress > 0) score += objectiveProgress * 155 * roleFit;
+  }
+
+  const trapGain = Math.max(0, Number(currentTrapExits || 0) - Number(candidateTrapExits || 0));
+  const sealed = Number(candidateTrapExits || 0) <= 0;
+  const trapOnPlan = candidateObjective <= currentObjective + 1 || candidateFocus <= currentFocus + 1;
+  if ((trapGain > 0 || sealed) && Number(targetValue || 0) > 0) {
+    const sealMultiplier = sealed ? 1.65 : Number(candidateTrapExits || 0) === 1 ? 1.18 : 0.82;
+    const driftPenalty = trapOnPlan ? 1 : 0.42;
+    const finalObjectiveGate = turn >= 4 && candidateObjective > 2 && objectiveProgress <= 0 ? 0.36 : 1;
+    score += (trapGain * weights.axisPlanTrap + Math.min(95, Number(targetValue || 0)) * sealMultiplier) * urgency * roleFit * driftPenalty * finalObjectiveGate;
+  }
+
+  score += Math.min(3, Number(lineLinks || 0)) * weights.axisPlanLine * (role === "screen" ? 1.3 : 1);
+  score -= Number(adjacentCrowd || 0) * weights.axisPlanCrowdPenalty * (role === "spearhead" ? 1.18 : 0.82);
+  score -= Math.max(0, Number(localOvermass || 0)) * 0.11;
+
+  if (role === "screen") {
+    if (Number(westExitThreat || 0) < 48 && Number(westExitDistance || 0) <= 2) {
+      score -= weights.axisPlanScreenRelease + Number(combat || 0) * 16 + Number(movement || 0) * 6;
+    } else if (Number(westExitThreat || 0) >= 48 && Number(westExitDistance || 0) <= 3) {
+      score += (4 - Number(westExitDistance || 0)) * 42;
+    }
+  } else if (Number(westExitDistance || 0) <= 2 && Number(westExitThreat || 0) < 72) {
+    score -= weights.axisPlanScreenRelease * (role === "spearhead" ? 1.45 : 0.8);
+  }
+
+  if (turn >= 4 && role === "spearhead" && candidateObjective > 1 && focusProgress <= 0 && objectiveProgress <= 0) {
+    score -= 420 * roleFit;
+  } else if (turn >= 3 && focusProgress <= 0 && candidateObjective > 3 && !trapGain) {
+    score -= weights.axisLateHoldPenalty * roleFit;
+  }
+  if (inEnemyZoc && role === "spearhead" && candidateObjective > 2) {
+    const exits = Number(ownEscapeExits || 0);
+    const exitPenalty = exits <= 0
+      ? weights.axisPlanZocLockPenalty * 1.55
+      : exits === 1
+        ? weights.axisPlanZocLockPenalty * 1.15
+        : exits === 2
+          ? weights.axisPlanZocLockPenalty * 0.58
+          : 0;
+    const timing = turn >= 3 ? 1 : 0.55;
+    score -= exitPenalty * timing * roleFit;
+    if (turn >= 3 && candidateObjective > 2 && exits <= 2) {
+      score -= weights.axisPlanZocLockPenalty * 0.42 * roleFit;
+    }
+  } else if (inEnemyZoc && role === "spearhead" && candidateObjective > 4 && turn === 2) {
+    score -= weights.axisPlanZocLockPenalty * 0.25 * roleFit;
+  }
+
+  return clampScore(score, -900, 1300);
+}
+
+export function alliedOperationalPlanMoveScore({
+  turn = 1,
+  role = "wall",
+  hexToObjective = Infinity,
+  axisToObjective = Infinity,
+  axisToHex = Infinity,
+  onApproachLane = false,
+  lineLinks = 0,
+  adjacentCrowd = 0,
+  zocCutsLane = false,
+  combat = 0,
+  movement = 0,
+  occupiedByAllied = false,
+  counterTrapGain = 0,
+  weights = AI_HEURISTIC_WEIGHTS.playbook,
+}) {
+  if (!onApproachLane || axisToObjective > 10 || axisToHex > 8) return 0;
+  const objectiveDistance = Number(hexToObjective || 0);
+  const axisDistance = Number(axisToHex || 0);
+  const links = Math.min(3, Number(lineLinks || 0));
+  const timing = turn <= 2 ? 1.18 : turn === 3 ? 1.04 : 0.78;
+  const roleFit = role === "wall" ? 1.12 : role === "counter" ? 0.94 : 0.72;
+  const combatFit = Number(combat || 0) >= 4 ? 1.16 : Number(combat || 0) >= 2 ? 1 : 0.55;
+  let score = 0;
+
+  if (objectiveDistance >= 4 && objectiveDistance <= 8) {
+    score += weights.alliedPlanForwardBand - Math.abs(6 - objectiveDistance) * 10;
+  } else if (objectiveDistance === 3) {
+    score += weights.alliedPlanForwardBand * 0.46;
+  } else if (objectiveDistance <= 1 && !occupiedByAllied) {
+    score -= weights.alliedPlanObjectiveHugPenalty * (turn <= 3 ? 1 : 0.4);
+  }
+
+  if (axisDistance >= 2 && axisDistance <= 5) {
+    score += Math.max(0, 6 - Math.abs(3 - axisDistance)) * 16;
+  } else if (axisDistance <= 1) {
+    score -= weights.alliedAxisContactPenalty * 0.75;
+  }
+
+  score += links * weights.alliedPlanLine;
+  score -= Number(adjacentCrowd || 0) * 34;
+  if (zocCutsLane) score += weights.alliedPlanLaneCut;
+  score += Math.max(0, Number(counterTrapGain || 0)) * weights.alliedPlanCounterTrap;
+  score += Number(combat || 0) * weights.alliedCombat * 0.72;
+  if (Number(movement || 0) >= 7 && objectiveDistance >= 3) score += weights.alliedMobile * 0.82;
+  if (links === 0 && objectiveDistance >= 4 && objectiveDistance <= 8) score -= weights.alliedPlanLine * 0.9;
+
+  return clampScore(score * timing * roleFit * combatFit, -240, 560);
 }
