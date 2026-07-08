@@ -112,6 +112,14 @@ export const AI_HEURISTIC_WEIGHTS = Object.freeze({
     mobile: 34,
     immediateThreat: 170,
   }),
+  combinedAttack: Object.freeze({
+    oddsGain: 92,
+    killingOdds: 230,
+    objective: 110,
+    nearObjective: 58,
+    combatMass: 4.2,
+    mobileCrowdPenalty: 34,
+  }),
   playbook: Object.freeze({
     axisProgress: 92,
     axisClose: 170,
@@ -211,12 +219,50 @@ export function combatOvercommitPenalty({
   const earlyTempoRelief = extraAttackers === 0 ? earlyNoExtraRelief : 1;
   const tempo = attackerSide === "axis" ? weights.axisTempo : 1;
   const surround = surrounded ? weights.surrounded : 1;
+  if (minimumAttackers === attackerCount && attackerCount > 1 && extraAttackers === 0) {
+    const unavoidableColumn = Math.max(0, excessColumn - 1);
+    const largestAttacker = Math.max(0, ...attackerStrengths.map((strength) => Number(strength || 0)));
+    const unavoidableExcess = Math.max(0, excessStrength - Math.max(1, largestAttacker * 0.45));
+    return (
+      unavoidableExcess * extraStrengthPenalty * 0.38
+      + unavoidableColumn * weights.excessColumn * 0.42
+      + Math.max(0, mobileWaste - 1) * mobilePenalty * 0.35
+    ) * earlyTempoRelief * surround * tempo;
+  }
   return (
     Math.max(0, excessStrength - 1) * extraStrengthPenalty
     + excessColumn * weights.excessColumn
     + extraAttackers * weights.extraAttacker
     + mobileWaste * mobilePenalty
   ) * earlyTempoRelief * surround * tempo;
+}
+
+export function coordinatedAttackScore({
+  attackerSide = null,
+  turn = 1,
+  attackerCount = 1,
+  attackStrength = 0,
+  defense = 1,
+  oddsColumnIndex = 0,
+  bestSingleOddsColumnIndex = 0,
+  mobileUnits = 0,
+  targetObjective = false,
+  targetNearObjective = false,
+  weights = AI_HEURISTIC_WEIGHTS.combinedAttack,
+}) {
+  if (attackerCount < 2 || oddsColumnIndex <= bestSingleOddsColumnIndex) return 0;
+  const usefulGain = Math.max(0, Math.min(4, oddsColumnIndex) - Math.min(4, bestSingleOddsColumnIndex));
+  if (!usefulGain) return 0;
+  const reachesKillingOdds = bestSingleOddsColumnIndex < 4 && oddsColumnIndex >= 4;
+  const timing = attackerSide === "axis" && turn >= 3 ? 1.16 : 1;
+  let score = usefulGain * weights.oddsGain;
+  if (reachesKillingOdds) score += weights.killingOdds;
+  if (targetObjective) score += weights.objective;
+  else if (targetNearObjective) score += weights.nearObjective;
+  score += Math.min(Math.max(1, defense) * 4, Number(attackStrength || 0)) * weights.combatMass;
+  if (oddsColumnIndex > 4 && !reachesKillingOdds) score *= 0.72;
+  score -= Math.max(0, Number(mobileUnits || 0) - 2) * weights.mobileCrowdPenalty;
+  return clampScore(score * timing, 0, 620);
 }
 
 export function localAttackOvermassPenalty({

@@ -599,6 +599,25 @@ body[data-view="aar"] .game-view {
   line-height: 1.35;
 }
 
+.training-record-card {
+  background:
+    linear-gradient(90deg, rgba(29, 98, 94, 0.1), rgba(255, 250, 232, 0.88)),
+    rgba(255, 250, 232, 0.84);
+}
+
+.training-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.training-actions button {
+  min-height: 28px;
+  padding: 4px 6px;
+  font-size: 0.76rem;
+}
+
 .declaration-focus {
   background:
     linear-gradient(180deg, rgba(255, 248, 220, 0.94), rgba(232, 211, 157, 0.88)),

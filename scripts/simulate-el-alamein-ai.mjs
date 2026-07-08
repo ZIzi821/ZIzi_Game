@@ -25,6 +25,7 @@ import {
   clampScore,
   combatDeclarationThreshold,
   combatOvercommitPenalty,
+  coordinatedAttackScore,
   finalGateScreenScore,
   finalApproachTempoScore,
   forcedRetreatObjectiveDenialScore,
@@ -647,7 +648,30 @@ function scoreCombat(state, attackers, defender, odds) {
   const counterattackOvercommit = counterattackUrgency || spearheadUrgency ? overcommit * 0.25 : overcommit;
   const objectiveOddsBonus = axisObjectiveOddsBonus(state, side, objectiveUrgency, attackers, odds);
   const perimeterOddsBonus = axisObjectivePerimeterOddsBonus(state, side, perimeterUrgency, attackers, odds);
-  return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + bridgeheadUrgency + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - counterattackOvercommit - combatOverkillPenalty(state, side, attackers, defender, odds) - axisBridgeheadLowOddsPenalty(state, side, attackers, defender, odds) - axisObjectiveGarrisonAttackPenalty(state, side, attackers, defender, odds) - axisObjectiveLowOddsPenalty(state, side, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(state, side, attackers, defender) - axisScreenAttackPenalty(state, attackers, odds) - alliedObjectiveDiversionPenalty(state, side, attackers, defender) - alliedSpoilingAttackPenalty(side, counterattackUrgency + spearheadUrgency, attackers, odds);
+  const coordinatedAttack = coordinatedCombatBonus(state, side, attackers, defender, odds);
+  return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + bridgeheadUrgency + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + coordinatedAttack + odds.columnIndex * 1.1 + strategicHexValue(state, side, defender.hexId) * 0.04 - counterattackOvercommit - combatOverkillPenalty(state, side, attackers, defender, odds) - axisBridgeheadLowOddsPenalty(state, side, attackers, defender, odds) - axisObjectiveGarrisonAttackPenalty(state, side, attackers, defender, odds) - axisObjectiveLowOddsPenalty(state, side, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(state, side, attackers, defender) - axisScreenAttackPenalty(state, attackers, odds) - alliedObjectiveDiversionPenalty(state, side, attackers, defender) - alliedSpoilingAttackPenalty(side, counterattackUrgency + spearheadUrgency, attackers, odds);
+}
+
+function coordinatedCombatBonus(state, attackerSide, attackers, defender, odds) {
+  if (attackerSide !== "axis") return 0;
+  if (attackers.length < 2) return 0;
+  const bestSingleOddsColumnIndex = Math.max(...attackers.map((unit) => calculateOdds(context(state), [unit], defender).columnIndex));
+  const targetObjective = axisObjectives().includes(defender.hexId);
+  const targetNearObjective = nearestDistance(defender.hexId, axisObjectives()) <= 2;
+  return coordinatedAttackScore({
+    attackerSide,
+    turn: state.turn,
+    attackerCount: attackers.length,
+    attackStrength: attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0),
+    defense: odds.defense,
+    oddsColumnIndex: odds.columnIndex,
+    bestSingleOddsColumnIndex,
+    mobileUnits: attackerSide === "axis"
+      ? attackers.filter((unit) => isAxisAssaultUnit(unit)).length
+      : attackers.filter((unit) => Number(unit.movement || 0) >= 7).length,
+    targetObjective,
+    targetNearObjective,
+  });
 }
 
 function axisObjectiveCombatUrgency(state, attackerSide, defenderHexId) {

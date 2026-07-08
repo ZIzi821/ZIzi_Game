@@ -9,6 +9,7 @@ import {
   bridgeheadSupportScore,
   combatDeclarationThreshold,
   combatOvercommitPenalty,
+  coordinatedAttackScore,
   finalGateScreenScore,
   finalApproachTempoScore,
   forcedRetreatObjectiveDenialScore,
@@ -60,6 +61,36 @@ const overstackedSixToOne = combatOvercommitPenalty({
   surrounded: true,
 });
 assert.ok(overstackedSixToOne > 400, "surrounded target should still punish wasting extra mobile attackers past 4:1");
+
+const necessaryCombinedFiveToOne = combatOvercommitPenalty({
+  attackerSide: "axis",
+  attackStrength: 10,
+  defense: 2,
+  oddsColumnIndex: 5,
+  attackerCount: 2,
+  attackerStrengths: [6, 4],
+  mobileUnits: 2,
+});
+assert.ok(
+  necessaryCombinedFiveToOne < 180,
+  "Axis AI should not treat a necessary two-unit attack that reaches killing odds as wasteful overcommit",
+);
+
+const usefulCombinedAttack = coordinatedAttackScore({
+  attackerSide: "axis",
+  turn: 2,
+  attackerCount: 2,
+  attackStrength: 10,
+  defense: 2,
+  oddsColumnIndex: 5,
+  bestSingleOddsColumnIndex: 3,
+  mobileUnits: 2,
+  targetNearObjective: true,
+});
+assert.ok(
+  usefulCombinedAttack > 350,
+  "AI combat scoring should reward adding another attacker when it raises combat to killing odds",
+);
 
 const bloatedLowOddsCounterattack = combatOvercommitPenalty({
   attackerSide: "allied",

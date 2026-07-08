@@ -8,10 +8,13 @@
   const LANG_KEY = "zizi-el-alamein-lang";
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
+  const TRAINING_LOG_KEY = "zizi-el-alamein-training-log-v1";
+  const TRAINING_SESSION_KEY = "zizi-el-alamein-training-session-v1";
+  const TRAINING_LOG_LIMIT = 420;
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
   const coreRulesPromise = import("./src/core/index.js");
-  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-12");
+  const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-14");
   const HIGHLIGHT = {
     selected: "rgba(0, 166, 166, 0.56)",
     reachable: "rgba(34, 124, 118, 0.34)",
@@ -589,6 +592,10 @@
     focusedBattleId: null,
     animating: false,
     logExpanded: false,
+    training: {
+      sessionId: getTrainingSessionId(),
+      entries: loadTrainingEntries(),
+    },
     ai: {
       mode: getSavedGameMode(),
       humanSide: humanSideForMode(getSavedGameMode()),
@@ -700,6 +707,234 @@
   function log(message) {
     app.state.log.push(`[T${app.state.turn}] ${message}`);
     if (app.state.log.length > 180) app.state.log.shift();
+  }
+
+  function getTrainingSessionId() {
+    const existing = localStorage.getItem(TRAINING_SESSION_KEY);
+    if (existing) return existing;
+    const next = `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(TRAINING_SESSION_KEY, next);
+    return next;
+  }
+
+  function loadTrainingEntries() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(TRAINING_LOG_KEY) || "[]");
+      return Array.isArray(parsed) ? parsed.slice(-TRAINING_LOG_LIMIT) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveTrainingEntries() {
+    app.training.entries = app.training.entries.slice(-TRAINING_LOG_LIMIT);
+    try {
+      localStorage.setItem(TRAINING_LOG_KEY, JSON.stringify(app.training.entries));
+    } catch (_) {
+      app.training.entries = app.training.entries.slice(-Math.floor(TRAINING_LOG_LIMIT / 2));
+      try {
+        localStorage.setItem(TRAINING_LOG_KEY, JSON.stringify(app.training.entries));
+      } catch {
+        app.training.entries = [];
+      }
+    }
+  }
+
+  function isHumanControlledSide(side) {
+    return app.ai.mode === "hotseat" || app.ai.humanSide === side;
+  }
+
+  function shouldRecordTraining(side = activeSide()) {
+    return Boolean(app.state && !app.state.winner && isHumanControlledSide(side));
+  }
+
+  function recordTrainingEntry(entry) {
+    if (!entry) return;
+    app.training.entries.push({
+      id: `sample-${Date.now().toString(36)}-${app.training.entries.length}`,
+      createdAt: new Date().toISOString(),
+      sessionId: app.training.sessionId,
+      mode: app.ai.mode,
+      turn: app.state.turn,
+      phaseId: phase().id,
+      phaseIndex: app.state.phaseIndex,
+      side: activeSide(),
+      stateHash: trainingStateHash(),
+      ...entry,
+    });
+    saveTrainingEntries();
+  }
+
+  function trainingStateHash() {
+    const payload = liveUnits()
+      .map((unit) => `${unit.id}:${unit.hexId}:${unit.disrupted ? 1 : 0}`)
+      .sort()
+      .join("|");
+    let hash = 2166136261;
+    const text = `${app.state.turn}:${app.state.phaseIndex}:${payload}`;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
+
+  function unitTrainingSnapshot(unit) {
+    if (!unit) return null;
+    return {
+      id: unit.id,
+      side: unit.side,
+      combat: Number(unit.combat || 0),
+      movement: Number(unit.movement || 0),
+      hexId: unit.hexId,
+      hex: hexLabel(unit.hexId),
+      disrupted: Boolean(unit.disrupted),
+    };
+  }
+
+  function routeTrainingSnapshot(route) {
+    if (!route) return null;
+    return {
+      remaining: Number(route.remaining || 0),
+      path: route.path ? route.path.slice() : [],
+      pathLabels: route.path ? route.path.map(hexLabel) : [],
+    };
+  }
+
+  function scoredMoveChoice(unit, hexId, route, scoreContext) {
+    const score = scoreAiHex(unit, hexId, route, scoreContext) + roughAiMoveScore(unit, hexId, route) * 0.06;
+    return {
+      hexId,
+      hex: hexLabel(hexId),
+      score: Number(score.toFixed(2)),
+      route: routeTrainingSnapshot(route),
+    };
+  }
+
+  function movementTrainingEntry(unit, fromHexId, destinationHexId, route, reachable) {
+    if (!shouldRecordTraining(unit.side)) return null;
+    const previousPlan = app.ai.movementPlan;
+    const operationalPlan = buildAiOperationalPlan(unit.side);
+    const scoreContext = {
+      operationalPlan,
+      axisCurrentOvermass: unit.side === "axis" ? axisLocalAttackOvermassScore(unit, unit.hexId) : 0,
+    };
+    app.ai.movementPlan = operationalPlan;
+    try {
+      const ranked = Array.from(reachable.entries())
+        .map(([hexId, candidateRoute]) => scoredMoveChoice(unit, hexId, candidateRoute, scoreContext))
+        .sort((a, b) => b.score - a.score || String(a.hexId).localeCompare(String(b.hexId)));
+      const humanChoice = scoredMoveChoice(unit, destinationHexId, route, scoreContext);
+      const aiChoice = ranked[0] || null;
+      return {
+        action: "move",
+        unit: unitTrainingSnapshot(unit),
+        fromHexId,
+        fromHex: hexLabel(fromHexId),
+        humanChoice,
+        aiChoice,
+        aiTopChoices: ranked.slice(0, 5),
+        legalChoiceCount: ranked.length,
+        scoreDelta: aiChoice ? Number((humanChoice.score - aiChoice.score).toFixed(2)) : 0,
+      };
+    } finally {
+      app.ai.movementPlan = previousPlan;
+    }
+  }
+
+  function combatTrainingEntry(attackers, defender, odds) {
+    if (!shouldRecordTraining(activeSide())) return null;
+    const best = bestAiCombatCandidate();
+    const humanScore = scoreAiCombat(attackers, defender, odds);
+    return {
+      action: "combat-declaration",
+      defender: unitTrainingSnapshot(defender),
+      attackers: attackers.map(unitTrainingSnapshot),
+      humanChoice: {
+        defenderId: defender.id,
+        defenderHexId: defender.hexId,
+        defenderHex: hexLabel(defender.hexId),
+        attackerIds: attackers.map((unit) => unit.id),
+        attackerHexIds: attackers.map((unit) => unit.hexId),
+        odds: formatOdds(odds),
+        score: Number(humanScore.toFixed(2)),
+      },
+      aiChoice: best ? {
+        defenderId: best.defender.id,
+        defenderHexId: best.defender.hexId,
+        defenderHex: hexLabel(best.defender.hexId),
+        attackerIds: best.attackers.map((unit) => unit.id),
+        attackerHexIds: best.attackers.map((unit) => unit.hexId),
+        odds: formatOdds(best.odds),
+        score: Number(best.score.toFixed(2)),
+      } : null,
+      scoreDelta: best ? Number((humanScore - best.score).toFixed(2)) : 0,
+    };
+  }
+
+  function retreatTrainingEntry(unit, hexId, path) {
+    const controllerSide = retreatControllerSide();
+    if (!shouldRecordTraining(controllerSide)) return null;
+    const aiHexId = chooseAiRetreatDestination(unit);
+    return {
+      action: "retreat",
+      controllerSide,
+      battleId: app.state.retreatTask?.battleId || null,
+      unit: unitTrainingSnapshot(unit),
+      humanChoice: {
+        hexId,
+        hex: hexLabel(hexId),
+        route: routeTrainingSnapshot({ path, remaining: 0 }),
+      },
+      aiChoice: aiHexId ? {
+        hexId: aiHexId,
+        hex: hexLabel(aiHexId),
+        route: routeTrainingSnapshot({ path: app.retreatPaths.get(aiHexId) || [], remaining: 0 }),
+      } : null,
+      legalChoiceCount: app.retreatPaths.size,
+    };
+  }
+
+  function advanceTrainingEntry(unitId) {
+    const task = app.state.advanceTask;
+    const controllerSide = activeSide();
+    if (!task || !shouldRecordTraining(controllerSide)) return null;
+    const aiUnitId = chooseAiAdvanceUnit() || "skip";
+    const unit = unitId === "skip" ? null : unitById(unitId);
+    const aiUnit = aiUnitId === "skip" ? null : unitById(aiUnitId);
+    return {
+      action: "advance",
+      battleId: task.battleId,
+      targetHexId: task.targetHexId,
+      targetHex: hexLabel(task.targetHexId),
+      eligibleUnitIds: task.attackerIds.slice(),
+      humanChoice: unit ? unitTrainingSnapshot(unit) : { id: "skip" },
+      aiChoice: aiUnit ? unitTrainingSnapshot(aiUnit) : { id: "skip" },
+    };
+  }
+
+  function exportTrainingEntries() {
+    const payload = {
+      schema: "zizi-el-alamein-training-log-v1",
+      exportedAt: new Date().toISOString(),
+      sessionId: app.training.sessionId,
+      entries: app.training.entries,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `el-alamein-training-${app.training.sessionId}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function clearTrainingEntries() {
+    app.training.entries = [];
+    localStorage.removeItem(TRAINING_LOG_KEY);
+    draw();
   }
 
   function makeStats() {
@@ -1197,6 +1432,7 @@
     if (!defender || !attackers.length) return;
     if (attackers.some((attacker) => !canAttack(attacker, defender))) return;
     const odds = calculateOdds(attackers, defender);
+    const trainingEntry = combatTrainingEntry(attackers, defender, odds);
     const battle = {
       id: `b${Date.now()}-${app.state.declaredCombats.length}`,
       turn: app.state.turn,
@@ -1217,6 +1453,7 @@
     app.state.combatCompleteNotified = false;
     app.state.usedDefenders.push(defender.id);
     app.state.usedAttackers.push(...attackers.map((unit) => unit.id));
+    recordTrainingEntry(trainingEntry);
     log(tr("text.battleDeclared", {
       attackers: attackers.map(unitName).join(" + "),
       defender: unitName(defender),
@@ -1501,6 +1738,7 @@
     const unit = unitById(task.unitIds[task.index]);
     if (!unit) return;
     const path = app.retreatPaths.get(hexId);
+    const trainingEntry = retreatTrainingEntry(unit, hexId, path);
     app.legalRetreats.clear();
     app.legalRetreatSteps.clear();
     app.retreatPaths.clear();
@@ -1512,6 +1750,7 @@
       log(tr("text.retreatExtra", { unit: unitName(unit) }));
     }
     addBattleEvent(task.battleId, { type: "retreat", unitId: unit.id, toHexId: hexId, text: tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }) });
+    recordTrainingEntry(trainingEntry);
     log(tr("text.retreated", { unit: unitName(unit), hex: hexLabel(hexId) }));
     unit.disrupted = Boolean(task.disruptAfterRetreat);
     task.index += 1;
@@ -1557,7 +1796,9 @@
 
   async function advanceUnit(unitId) {
     const task = app.state.advanceTask;
+    const trainingEntry = advanceTrainingEntry(unitId);
     if (!task || unitId === "skip") {
+      recordTrainingEntry(trainingEntry);
       app.state.advanceTask = null;
       draw();
       return;
@@ -1567,6 +1808,7 @@
       await animateUnitPath(unit, [unit.hexId, task.targetHexId]);
       unit.hexId = task.targetHexId;
       addBattleEvent(task.battleId, { type: "advance", unitId: unit.id, toHexId: task.targetHexId, text: tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }) });
+      recordTrainingEntry(trainingEntry);
       log(tr("text.advance", { unit: unitName(unit), hex: hexLabel(task.targetHexId) }));
       if (unit.side === "axis") checkAxisObjectiveVictory();
     }
@@ -1637,11 +1879,13 @@
     const fromHexId = unit.hexId;
     const path = route.path || [fromHexId, destinationHexId];
     const movedUnitsBefore = app.state.movedUnits.slice();
+    const trainingEntry = movementTrainingEntry(unit, fromHexId, destinationHexId, route, app.reachable);
     app.reachable.clear();
     await animateUnitPath(unit, path);
     unit.hexId = destinationHexId;
     app.state.movedUnits.push(unit.id);
     app.state.lastMove = { unitId: unit.id, fromHexId, toHexId: destinationHexId, path, movedUnitsBefore, turn: app.state.turn, phaseIndex: app.state.phaseIndex };
+    recordTrainingEntry(trainingEntry);
     log(tr("text.moved", { unit: unitName(unit), hex: hexLabel(destinationHexId), mp: route.remaining }));
     if (app.core.isAlliedBreakthroughMove(coreContext(), unit, destinationHexId, route.remaining)) {
       setWinner("allied", tr("text.exitWin", { unit: unitName(unit) }), "allied-breakthrough");
@@ -3980,7 +4224,30 @@
     const counterattackOvercommit = counterattackUrgency || spearheadUrgency ? overcommit * 0.25 : overcommit;
     const objectiveOddsBonus = axisObjectiveOddsBonus(attackerSide, objectiveUrgency, attackers, odds);
     const perimeterOddsBonus = axisObjectivePerimeterOddsBonus(attackerSide, perimeterUrgency, attackers, odds);
-    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + bridgeheadUrgency + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - combatOverkillPenalty(attackerSide, attackers, defender, odds) - axisBridgeheadLowOddsPenalty(attackerSide, attackers, defender, odds) - axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
+    const coordinatedAttack = coordinatedCombatBonus(attackerSide, attackers, defender, odds);
+    return (total / 6) + objectiveUrgency + objectiveOddsBonus + perimeterUrgency + perimeterOddsBonus + bridgeheadUrgency + counterattackUrgency + counterattackOddsBonus + spearheadUrgency + spearheadOddsBonus + coordinatedAttack + odds.columnIndex * 1.1 + strategicHexValueForSide(attackerSide, defender.hexId) * 0.04 - counterattackOvercommit - supportPenalty - combatOverkillPenalty(attackerSide, attackers, defender, odds) - axisBridgeheadLowOddsPenalty(attackerSide, attackers, defender, odds) - axisObjectiveGarrisonAttackPenalty(attackerSide, attackers, defender, odds) - axisObjectiveLowOddsPenalty(attackerSide, objectiveUrgency, attackers, odds) - axisObjectiveDiversionPenalty(attackerSide, attackers, defender) - axisScreenAttackPenalty(attackers, odds) - alliedObjectiveDiversionPenalty(attackerSide, attackers, defender) - alliedSpoilingAttackPenalty(attackerSide, counterattackUrgency + spearheadUrgency, attackers, odds);
+  }
+
+  function coordinatedCombatBonus(attackerSide, attackers, defender, odds) {
+    if (attackerSide !== "axis") return 0;
+    if (attackers.length < 2) return 0;
+    const bestSingleOddsColumnIndex = Math.max(...attackers.map((unit) => calculateOdds([unit], defender).columnIndex));
+    const targetObjective = axisObjectiveHexes().includes(defender.hexId);
+    const targetNearObjective = nearestDistance(defender.hexId, axisObjectiveHexes()) <= 2;
+    return app.aiHeuristics.coordinatedAttackScore({
+      attackerSide,
+      turn: app.state.turn,
+      attackerCount: attackers.length,
+      attackStrength: attackers.reduce((sum, unit) => sum + Number(unit.combat || 0), 0),
+      defense: odds.defense,
+      oddsColumnIndex: odds.columnIndex,
+      bestSingleOddsColumnIndex,
+      mobileUnits: attackerSide === "axis"
+        ? attackers.filter((unit) => isAxisAssaultUnit(unit)).length
+        : attackers.filter((unit) => Number(unit.movement || 0) >= 7).length,
+      targetObjective,
+      targetNearObjective,
+    });
   }
 
   function axisObjectiveCombatUrgency(attackerSide, defenderHexId) {
@@ -5033,6 +5300,7 @@
     if (isCombatPhase() && app.state.combatMode === "resolve" && (app.state.retreatTask || app.state.advanceTask)) {
       appendCombatResolutionFocus();
       appendCombatListForCurrentMode();
+      appendTrainingRecordCard();
       return;
     }
     if (isCombatPhase() && app.state.combatMode === "declare") {
@@ -5043,6 +5311,7 @@
       } else {
         app.state.declaredCombats.forEach((battle, index) => el.battleList.append(declaredBattleRow(battle, index)));
       }
+      appendTrainingRecordCard();
       return;
     }
     if (app.state.lastCombatResult) {
@@ -5072,6 +5341,29 @@
       appendBattleListTitle(tr("text.declaredBattles"));
       app.state.declaredCombats.forEach((battle) => el.battleList.append(resolutionBattleRow(battle)));
     }
+    appendTrainingRecordCard();
+  }
+
+  function appendTrainingRecordCard() {
+    if (!app.state) return;
+    const count = app.training.entries.length;
+    const card = operationCard("AI Training", `${count} local samples`, count ? "good" : "");
+    card.classList.add("training-record-card");
+    const actions = document.createElement("div");
+    actions.className = "training-actions";
+    const exportButton = document.createElement("button");
+    exportButton.type = "button";
+    exportButton.textContent = "Export JSON";
+    exportButton.disabled = count <= 0;
+    exportButton.addEventListener("click", exportTrainingEntries);
+    const clearButton = document.createElement("button");
+    clearButton.type = "button";
+    clearButton.textContent = "Clear";
+    clearButton.disabled = count <= 0;
+    clearButton.addEventListener("click", clearTrainingEntries);
+    actions.append(exportButton, clearButton);
+    card.append(actions);
+    el.operationsFocus.append(card);
   }
 
   function appendCombatResolutionFocus() {
