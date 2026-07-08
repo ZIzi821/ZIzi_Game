@@ -26,8 +26,8 @@ export function movementAllowance(state, unit, rules) {
  * Finds legal movement destinations for one unit.
  *
  * Enforces passable terrain, enemy occupation blocking, and El Alamein ZOC
- * restrictions. A unit may leave enemy ZOC, but may not move directly from one
- * enemy ZOC hex into another enemy ZOC hex during the same move.
+ * restrictions. A unit may leave enemy ZOC, but no individual movement step may
+ * go directly from one enemy ZOC hex into another enemy ZOC hex.
  *
  * @param {{board: object, rules: object, units: object[], state: object}} context Core rule context.
  * @param {object|string} unitOrId Moving unit object or unit ID.
@@ -42,7 +42,6 @@ export function getReachableHexes(context, unitOrId, allowance = null) {
   const moveAllowance = allowance ?? movementAllowance(state, unit, rules);
   const startHexId = unit.hexId;
   const result = new Map();
-  const startInZoc = isEnemyZoc(context, startHexId, unit.side, unit.id);
   const queue = [{ hexId: startHexId, spent: 0, firstStep: true, path: [startHexId] }];
   const bestSpent = new Map([[startHexId, 0]]);
 
@@ -61,7 +60,6 @@ export function getReachableHexes(context, unitOrId, allowance = null) {
 
       const nextInZoc = isEnemyZoc(context, nextId, unit.side, unit.id);
       if (currentInZoc && nextInZoc) continue;
-      if (startInZoc && nextInZoc) continue;
 
       const spent = current.spent + Number(rule.movement || 1);
       if (spent > moveAllowance) continue;

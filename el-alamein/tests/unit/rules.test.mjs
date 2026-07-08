@@ -76,10 +76,14 @@ const directZocNeighbor = startNeighbors.find((id) => id !== enemy.hexId && neig
 assert(directZocNeighbor, "test setup needs a second enemy-ZOC neighbor");
 assert.equal(isEnemyZoc(zocContext, start, "axis", "mover"), true);
 assert.equal(isEnemyZoc(zocContext, directZocNeighbor, "axis", "mover"), true);
-assert.equal(getReachableHexes(zocContext, mover, mover.movement).has(directZocNeighbor), false, "movement may not go directly from ZOC to ZOC");
-for (const destination of getReachableHexes(zocContext, mover, mover.movement).keys()) {
-  assert.equal(isEnemyZoc(zocContext, destination, "axis", "mover"), false, `movement from EZOC may not enter EZOC at ${destination}`);
-}
+const reachableFromZoc = getReachableHexes(zocContext, mover, mover.movement);
+assert.equal(reachableFromZoc.has(directZocNeighbor), true, "movement may leave EZOC and later enter an EZOC");
+assert.equal(isEnemyZoc(zocContext, "c09r09", "axis", "mover"), false, "test route must leave EZOC on the first step");
+assert.deepEqual(
+  reachableFromZoc.get(directZocNeighbor).path,
+  [start, "c09r09", directZocNeighbor],
+  "movement from EZOC must first step out of EZOC before entering another EZOC",
+);
 
 const retreatEnemy = { id: "retreat-enemy", side: "allied", hexId: "c13r10", disrupted: false, eliminated: false };
 const retreatUnit = { id: "retreater", side: "axis", hexId: "c12r10", disrupted: false, eliminated: false };

@@ -48,7 +48,7 @@ Use comments to explain rule intent, scenario exceptions, or non-obvious edge ca
 Good:
 
 ```js
-// El Alamein rule: a unit leaving enemy ZOC may not enter another enemy ZOC in the same move.
+// El Alamein rule: a unit may not step directly from one enemy ZOC hex into another enemy ZOC hex.
 ```
 
 Avoid:

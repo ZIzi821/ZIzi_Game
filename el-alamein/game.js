@@ -8,7 +8,6 @@
   const LANG_KEY = "zizi-el-alamein-lang";
   const AI_HUMAN_SIDE_KEY = "zizi-el-alamein-human-side-v1";
   const AI_GAME_MODE_KEY = "zizi-el-alamein-game-mode-v1";
-  const AI_DIFFICULTY_KEY = "zizi-el-alamein-ai-difficulty-v1";
   const TRAINING_LOG_KEY = "zizi-el-alamein-training-log-v1";
   const TRAINING_EVENT_KEY = "zizi-el-alamein-training-events-v1";
   const TRAINING_SESSION_KEY = "zizi-el-alamein-training-session-v1";
@@ -16,7 +15,7 @@
   const TRAINING_EVENT_LIMIT = 520;
   const AI_SCORE_BATCH_SIZE = 1;
   const OPPOSITE_SIDE = { axis: "allied", allied: "axis" };
-  const coreRulesPromise = import("./src/core/index.js?v=20260708-training-env-1");
+  const coreRulesPromise = import("./src/core/index.js?v=20260709-zoc-step-1");
   const aiHeuristicsPromise = import("./src/app/ai-heuristics.js?v=20260708-ai-heuristics-16");
   const aiPhaseSearchPromise = import("./src/app/ai-phase-search.js?v=20260709-ai-projection-1");
   const aiTacticsPromise = import("./src/app/ai-tactics.js?v=20260708-ai-tactics-1");
@@ -498,38 +497,16 @@
     modeLabel: "Choose Mode",
     hotseatMode: "Hotseat Mode",
   });
-  Object.assign(I18N.zh.menu, {
-    aiDifficultyLabel: "AI \u96be\u5ea6",
-    normalAiDifficulty: "\u666e\u901a AI",
-    expertAiDifficulty: "\u6781\u96be AI",
-  });
-  Object.assign(I18N.en.menu, {
-    aiDifficultyLabel: "AI Difficulty",
-    normalAiDifficulty: "Normal AI",
-    expertAiDifficulty: "Expert AI",
-  });
   Object.assign(I18N.zh.ui, {
-    aiThinking: "极难 AI 正在指挥 {side}",
-    aiAwaitingInput: "极难 AI 已完成动作，请点击阶段按钮继续",
-    aiWaiting: "你指挥 {side}，极难 AI 指挥 {enemy}",
-    hotseatStatus: "热座模式：双方由真人操作",
-  });
-  Object.assign(I18N.en.ui, {
-    aiThinking: "Expert AI is commanding {side}",
-    aiAwaitingInput: "Expert AI has finished. Use the phase buttons to continue",
-    aiWaiting: "You command {side}; Expert AI commands {enemy}",
-    hotseatStatus: "Hotseat mode: both sides are human",
-  });
-  Object.assign(I18N.zh.ui, {
-    aiThinking: "{ai} \u6b63\u5728\u6307\u6325 {side}",
-    aiAwaitingInput: "{ai} \u5df2\u5b8c\u6210\u52a8\u4f5c\uff0c\u8bf7\u70b9\u51fb\u9636\u6bb5\u6309\u94ae\u7ee7\u7eed",
-    aiWaiting: "\u4f60\u6307\u6325 {side}\uff0c{ai} \u6307\u6325 {enemy}",
+    aiThinking: "AI \u6b63\u5728\u6307\u6325 {side}",
+    aiAwaitingInput: "AI \u5df2\u5b8c\u6210\u52a8\u4f5c\uff0c\u8bf7\u70b9\u51fb\u9636\u6bb5\u6309\u94ae\u7ee7\u7eed",
+    aiWaiting: "\u4f60\u6307\u6325 {side}\uff0cAI \u6307\u6325 {enemy}",
     hotseatStatus: "",
   });
   Object.assign(I18N.en.ui, {
-    aiThinking: "{ai} is commanding {side}",
-    aiAwaitingInput: "{ai} has finished. Use the phase buttons to continue",
-    aiWaiting: "You command {side}; {ai} commands {enemy}",
+    aiThinking: "AI is commanding {side}",
+    aiAwaitingInput: "AI has finished. Use the phase buttons to continue",
+    aiWaiting: "You command {side}; AI commands {enemy}",
     hotseatStatus: "",
   });
   Object.assign(I18N.zh.text, {
@@ -556,8 +533,6 @@
     axisAiModeButton: document.getElementById("axisAiModeButton"),
     alliedAiModeButton: document.getElementById("alliedAiModeButton"),
     hotseatModeButton: document.getElementById("hotseatModeButton"),
-    normalAiDifficultyButton: document.getElementById("normalAiDifficultyButton"),
-    expertAiDifficultyButton: document.getElementById("expertAiDifficultyButton"),
     startCampaignButton: document.getElementById("startCampaignButton"),
     continueCampaignButton: document.getElementById("continueCampaignButton"),
     menuLoadButton: document.getElementById("menuLoadButton"),
@@ -632,7 +607,6 @@
     ai: {
       mode: getSavedGameMode(),
       humanSide: humanSideForMode(getSavedGameMode()),
-      difficulty: getSavedAiDifficulty(),
       running: false,
       scheduled: false,
       waitingForHuman: false,
@@ -668,21 +642,9 @@
     return localStorage.getItem(AI_HUMAN_SIDE_KEY) === "allied" ? "allied-vs-ai" : "axis-vs-ai";
   }
 
-  function getSavedAiDifficulty() {
-    return localStorage.getItem(AI_DIFFICULTY_KEY) === "normal" ? "normal" : "expert";
-  }
-
   function humanSideForMode(mode) {
     if (mode === "allied-vs-ai") return "allied";
     return "axis";
-  }
-
-  function isExpertAiEnabled() {
-    return app.ai.difficulty === "expert";
-  }
-
-  function aiDifficultyLabel() {
-    return tr(isExpertAiEnabled() ? "menu.expertAiDifficulty" : "menu.normalAiDifficulty");
   }
 
   function tr(key, params = {}) {
@@ -1294,8 +1256,6 @@
     el.axisAiModeButton.addEventListener("click", () => setGameMode("axis-vs-ai"));
     el.alliedAiModeButton.addEventListener("click", () => setGameMode("allied-vs-ai"));
     el.hotseatModeButton.addEventListener("click", () => setGameMode("hotseat"));
-    el.normalAiDifficultyButton.addEventListener("click", () => setAiDifficulty("normal"));
-    el.expertAiDifficultyButton.addEventListener("click", () => setAiDifficulty("expert"));
     el.startCampaignButton.addEventListener("click", startNewCampaign);
     el.continueCampaignButton.addEventListener("click", continueCampaign);
     el.menuLoadButton.addEventListener("click", () => loadGame({ fromMenu: true }));
@@ -1348,21 +1308,10 @@
     scheduleAiTurn();
   }
 
-  function setAiDifficulty(difficulty) {
-    app.ai.difficulty = difficulty === "normal" ? "normal" : "expert";
-    app.ai.movementPlan = null;
-    localStorage.setItem(AI_DIFFICULTY_KEY, app.ai.difficulty);
-    drawAiControls();
-    drawStatus();
-    scheduleAiTurn();
-  }
-
   function drawAiControls() {
     if (el.axisAiModeButton) el.axisAiModeButton.dataset.active = String(app.ai.mode === "axis-vs-ai");
     if (el.alliedAiModeButton) el.alliedAiModeButton.dataset.active = String(app.ai.mode === "allied-vs-ai");
     if (el.hotseatModeButton) el.hotseatModeButton.dataset.active = String(app.ai.mode === "hotseat");
-    if (el.normalAiDifficultyButton) el.normalAiDifficultyButton.dataset.active = String(app.ai.difficulty === "normal");
-    if (el.expertAiDifficultyButton) el.expertAiDifficultyButton.dataset.active = String(app.ai.difficulty === "expert");
   }
 
   function setMenuStatus(text = "") {
@@ -2247,7 +2196,6 @@
     const allowance = movementAllowance(unit);
     const startHexId = unit.hexId;
     const result = new Map();
-    const startInZoc = isEnemyZoc(startHexId, unit.side, unit.id);
     const queue = [{ hexId: startHexId, spent: 0, firstStep: true, path: [startHexId] }];
     const bestSpent = new Map([[startHexId, 0]]);
     while (queue.length) {
@@ -2262,7 +2210,6 @@
         if (occupant && occupant.side !== unit.side) continue;
         const nextInZoc = isEnemyZoc(nextId, unit.side, unit.id);
         if (currentInZoc && nextInZoc) continue;
-        if (startInZoc && nextInZoc) continue;
         const spent = current.spent + Number(rule.movement || 1);
         if (spent > allowance) continue;
         if (bestSpent.has(nextId) && bestSpent.get(nextId) <= spent) continue;
@@ -2403,8 +2350,7 @@
       }
       if (app.state.advanceTask) {
         if (!options.force && !isAiSide(activeSide())) return handled;
-        const tacticalAdvance = isExpertAiEnabled() ? chooseAiTacticalAdvanceUnit() : null;
-        await advanceUnit(tacticalAdvance || chooseAiAdvanceUnit() || "skip");
+        await advanceUnit(chooseAiTacticalAdvanceUnit() || chooseAiAdvanceUnit() || "skip");
         handled = true;
         await delay(360);
         continue;
@@ -2448,7 +2394,6 @@
   }
 
   function chooseAiMovementPhasePlan(side) {
-    if (!isExpertAiEnabled()) return null;
     if (!app.aiPhaseSearch?.beamSearchMovementPhase) return null;
     const environment = aiSearchEnvironment();
     if (!environment) return null;
@@ -2482,7 +2427,7 @@
       const reachable = reachableHexes(unit);
       const route = reachable.get(action.toHexId);
       if (!route) continue;
-      if (isExpertAiEnabled() && isAiMoveTacticallyUnsafe(unit, action.toHexId, route)) continue;
+      if (isAiMoveTacticallyUnsafe(unit, action.toHexId, route)) continue;
       app.state.selectedUnitId = unit.id;
       app.reachable = new Map([[action.toHexId, route]]);
       drawAnimationFrame();
@@ -2504,7 +2449,7 @@
   async function chooseAiMove(unit) {
     const reachable = reachableHexes(unit);
     if (!reachable.size) return null;
-    const tacticalMove = isExpertAiEnabled() ? chooseAiTacticalMove(unit, reachable) : null;
+    const tacticalMove = chooseAiTacticalMove(unit, reachable);
     if (tacticalMove) return tacticalMove;
     if (unit.side === "axis") {
       const guardMove = chooseAxisExitGuardMove(unit, reachable);
@@ -2518,7 +2463,7 @@
     let best = null;
     let scored = 0;
     for (const candidate of prioritizedAiMoveCandidates(unit, reachable)) {
-      if (isExpertAiEnabled() && isAiMoveTacticallyUnsafe(unit, candidate.hexId, candidate.route)) continue;
+      if (isAiMoveTacticallyUnsafe(unit, candidate.hexId, candidate.route)) continue;
       const detailed = scoreAiHex(unit, candidate.hexId, candidate.route, scoreContext);
       const score = detailed + candidate.rough * 0.06;
       if (!best || score > best.score) best = { hexId: candidate.hexId, route: candidate.route, score };
@@ -2533,7 +2478,6 @@
   }
 
   function chooseAiTacticalMove(unit, reachable) {
-    if (!isExpertAiEnabled()) return null;
     if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.ENV_ACTION) return null;
     const environment = aiSearchEnvironment();
     if (!environment) return null;
@@ -2551,7 +2495,6 @@
   }
 
   function isAiMoveTacticallyUnsafe(unit, hexId, route) {
-    if (!isExpertAiEnabled()) return false;
     if (!app.aiTactics?.actionAllowsOpponentImmediateWin || !app.core?.ENV_ACTION) return false;
     const environment = aiSearchEnvironment();
     if (!environment) return false;
@@ -4567,7 +4510,7 @@
     let guard = 0;
     while (guard < 30) {
       guard += 1;
-      const tacticalCandidate = isExpertAiEnabled() ? bestAiTacticalCombatCandidate() : null;
+      const tacticalCandidate = bestAiTacticalCombatCandidate();
       const candidate = tacticalCandidate || bestAiCombatCandidate();
       if (!candidate || (!tacticalCandidate && candidate.score < aiCombatThreshold())) break;
       app.state.selectedDefenderId = candidate.defender.id;
@@ -4579,7 +4522,6 @@
   }
 
   function bestAiTacticalCombatCandidate() {
-    if (!isExpertAiEnabled()) return null;
     if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.generateLegalActions) return null;
     const environment = aiSearchEnvironment();
     if (!environment) return null;
@@ -5047,7 +4989,6 @@
   }
 
   function chooseAiTacticalAdvanceUnit() {
-    if (!isExpertAiEnabled()) return null;
     if (!app.aiTactics?.findImmediateTacticalAction || !app.core?.generateLegalActions) return null;
     const environment = aiSearchEnvironment();
     if (!environment) return null;
@@ -5540,10 +5481,10 @@
     el.aiStatus.textContent = app.ai.mode === "hotseat"
       ? ""
       : app.ai.waitingForHuman && isAiTurn()
-        ? tr("ui.aiAwaitingInput", { ai: aiDifficultyLabel() })
+        ? tr("ui.aiAwaitingInput")
         : app.ai.running || isAiTurn()
-        ? tr("ui.aiThinking", { ai: aiDifficultyLabel(), side: sideLabel(activeSide()) })
-        : tr("ui.aiWaiting", { ai: aiDifficultyLabel(), side: sideLabel(app.ai.humanSide), enemy: sideLabel(enemySide(app.ai.humanSide)) });
+        ? tr("ui.aiThinking", { side: sideLabel(activeSide()) })
+        : tr("ui.aiWaiting", { side: sideLabel(app.ai.humanSide), enemy: sideLabel(enemySide(app.ai.humanSide)) });
     el.boardBadge.textContent = boardBadgeText();
     el.finishDeclarationsButton.hidden = !(isCombatPhase() && app.state.combatMode === "declare");
     el.resolveBattleButton.hidden = !(isCombatPhase() && app.state.combatMode === "resolve");
