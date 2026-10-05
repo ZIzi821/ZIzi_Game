@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-28T05:28:15.244Z",
+  "updatedAt": "2026-10-05T05:46:14.510Z",
   "leaderboards": {
     "starfall": [
       {
@@ -182,7 +182,15 @@
           "sourceRegion": ""
         }
       ],
-      "level5": [],
+      "level5": [
+        {
+          "id": "1txgQg4TwHtU0EB3Ov4e",
+          "nickname": "ZIzi",
+          "score": 15963240,
+          "createdAt": "2026-09-30T18:10:32.986Z",
+          "sourceRegion": ""
+        }
+      ],
       "level6": []
     },
     "chomp": {
