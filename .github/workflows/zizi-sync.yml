@@ -2,7 +2,8 @@ name: ZIzi Issue Sync
 
 on:
   schedule:
-    - cron: "47 0 * * 1"
+    # January 1 and July 1 at 00:47 UTC (08:47 UTC+8).
+    - cron: "47 0 1 1,7 *"
   workflow_dispatch:
 
 permissions:

@@ -32,7 +32,7 @@ Wargame Sandbox can export a complete scenario JSON.
 Wargame cloud saves use Firebase Firestore directly.
 They do not use GitHub Issue sync.
 Map, unit, and scenario data can be saved to Firebase and loaded by Cloud ID.
-GitHub cache / issue sync runs weekly as a fallback for community and leaderboard data.
+GitHub cache / issue sync runs every six months (January 1 and July 1, at 00:17 and 00:47 UTC respectively) as a fallback for community and leaderboard data. Both workflows can also be run manually.
 
 ## Unified Community
 
