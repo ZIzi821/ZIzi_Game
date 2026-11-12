@@ -12,6 +12,7 @@ Developer: https://zizi821.github.io/ZIzi_Game/developer.html
 
 ## Games
 
+- [Saltline](https://zizi821.github.io/ZIzi_Game/saltline/)
 - [Starfall / 星陨](https://zizi821.github.io/ZIzi_Game/aetherfall-protocol/)
 - [Sentinel / 哨兵防线](https://zizi821.github.io/ZIzi_Game/starline-defense/)
 - [Tang people sprint / 唐人冲刺](https://zizi821.github.io/ZIzi_Game/blue-crowd-rush/)
